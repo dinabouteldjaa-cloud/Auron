@@ -4,6 +4,7 @@ import { askClaude, askClaudeWithImage } from './lib/claude'
 import { useFoodLog } from './hooks/useFoodLog'
 import { useProfile } from './hooks/useProfile'
 import Auth from './components/Auth'
+import WorkoutsTab from './components/WorkoutsTab'
 
 const C = {
   gold: '#C9A84C', goldLight: 'rgba(201,168,76,0.12)', goldDark: '#8B6914',
@@ -572,79 +573,7 @@ function CaloriesTab({ userId, profile, updateProfile }) {
   )
 }
 
-// ── Workouts Tab ───────────────────────────────────────────────────────────
-
-function WorkoutsTab({ userId }) {
-  const [selected, setSelected] = useState(null)
-  const [filter, setFilter] = useState('All')
-  const [goal, setGoal] = useState('')
-  const [aiPlan, setAiPlan] = useState('')
-  const [aiLoading, setAiLoading] = useState(false)
-  const typeColors = { Strength: C.gold, HIIT: C.red, Cardio: C.blue, Mobility: C.green }
-  const filtered = filter === 'All' ? WORKOUTS : WORKOUTS.filter(w => w.type === filter)
-
-  const logWorkout = async (workout) => {
-    await supabase.from('workout_logs').insert({ user_id: userId, workout_name: workout.name, workout_type: workout.type, duration_minutes: workout.duration, calories_burned: workout.cal })
-  }
-
-  const generatePlan = async () => {
-    setAiLoading(true); setAiPlan('')
-    const plan = await askClaude('You are an expert personal trainer. Create a concise weekly workout plan. Plain text only, no markdown symbols, under 200 words.', `Create a weekly workout plan for: ${goal}`)
-    setAiPlan(plan); setAiLoading(false)
-  }
-
-  if (selected) return (
-    <div>
-      <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 13, marginBottom: 20 }}>← Back</button>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, marginBottom: 8 }}>{selected.name}</div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-        <Badge color={typeColors[selected.type]} bg={`${typeColors[selected.type]}22`}>{selected.type}</Badge>
-        <Badge color={C.textMuted} bg={C.surfaceLight}>⏱ {selected.duration} min</Badge>
-        <Badge color={C.textMuted} bg={C.surfaceLight}>🔥 {selected.cal} kcal</Badge>
-        <Badge color={C.textMuted} bg={C.surfaceLight}>{selected.level}</Badge>
-      </div>
-      <Card style={{ marginBottom: 20 }}>
-        {selected.exercises.map((ex, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < selected.exercises.length-1 ? `1px solid ${C.border}` : 'none' }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: C.goldLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: C.gold, flexShrink: 0 }}>{i+1}</div>
-            <div style={{ flex: 1, fontSize: 14 }}>{ex.split(' ').slice(0,-1).join(' ')}</div>
-            <div style={{ fontSize: 12, color: C.textMuted }}>{ex.split(' ').slice(-1)}</div>
-          </div>
-        ))}
-      </Card>
-      <GoldBtn onClick={() => logWorkout(selected)} style={{ width: '100%', padding: 14, fontSize: 14 }}>▶ Start & log workout</GoldBtn>
-    </div>
-  )
-
-  return (
-    <div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
-        {['All','Strength','HIIT','Cardio','Mobility'].map(t => (
-          <button key={t} onClick={() => setFilter(t)} style={{ padding: '6px 14px', borderRadius: 20, border: `1px solid ${filter===t?C.gold:C.border}`, background: filter===t?C.gold:'transparent', color: filter===t?C.dark:C.textMuted, fontSize: 13 }}>{t}</button>
-        ))}
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
-        {filtered.map(w => (
-          <Card key={w.id} onClick={() => setSelected(w)}>
-            <Badge color={typeColors[w.type]} bg={`${typeColors[w.type]}22`}>{w.type}</Badge>
-            <div style={{ fontSize: 15, fontWeight: 500, margin: '8px 0' }}>{w.name}</div>
-            <div style={{ fontSize: 12, color: C.textMuted }}>⏱ {w.duration}m · 🔥 {w.cal} kcal</div>
-          </Card>
-        ))}
-      </div>
-      <Card style={{ borderColor: C.borderStrong }}>
-        <div style={{ fontSize: 14, fontWeight: 500, color: C.gold, marginBottom: 6 }}>✨ AI workout plan generator</div>
-        <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>Describe your goal and get a custom weekly plan</div>
-        <input value={goal} onChange={e => setGoal(e.target.value)} placeholder="e.g. Lose weight, 4 days/week, no gym equipment" style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, outline: 'none', marginBottom: 10 }} />
-        <GoldBtn onClick={generatePlan} disabled={aiLoading || !goal.trim()} style={{ width: '100%', padding: 11 }}>
-          {aiLoading ? 'Building plan...' : 'Generate my plan ✨'}
-        </GoldBtn>
-        {aiLoading && <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}><Spinner /></div>}
-        {aiPlan && <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.8, marginTop: 14, whiteSpace: 'pre-line', borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>{aiPlan}</div>}
-      </Card>
-    </div>
-  )
-}
+// WorkoutsTab is imported from ./components/WorkoutsTab
 
 // ── Plans Tab ──────────────────────────────────────────────────────────────
 
@@ -902,7 +831,7 @@ export default function App() {
   const screens = {
     dashboard: <Dashboard logs={logs} waterCups={waterCups} setWaterCups={setWaterCups} profile={profile} userId={user.id} />,
     calories:  <CaloriesTab userId={user.id} profile={profile} updateProfile={updateProfile} />,
-    workouts:  <WorkoutsTab userId={user.id} />,
+    workouts:  <WorkoutsTab userId={user.id} key="workouts" />,
     plans:     <PlansTab userId={user.id} />,
     insights:  <InsightsTab userId={user.id} />,
     profile:   <ProfileTab user={user} profile={profile} updateProfile={updateProfile} />,
