@@ -1,60 +1,69 @@
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+
+function getKey() {
+  return import.meta.env.VITE_GEMINI_KEY
+}
+
 export async function askClaude(systemPrompt, userMessage) {
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(`${GEMINI_URL}?key=${getKey()}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [
+        contents: [
           {
             role: 'user',
-            content: systemPrompt + '\n\n' + userMessage
+            parts: [{ text: `${systemPrompt}\n\n${userMessage}` }]
           }
         ],
+        generationConfig: {
+          maxOutputTokens: 1000,
+          temperature: 0.7,
+        }
       }),
     })
     const data = await res.json()
-    console.log('Claude response:', data)
-    return data.content?.[0]?.text || 'No response.'
+    console.log('Gemini response:', data)
+    if (data.error) return `Error: ${data.error.message}`
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.'
   } catch (err) {
-    console.error('Claude error:', err)
+    console.error('Gemini error:', err)
     return 'Error: ' + err.message
   }
 }
 
 export async function askClaudeWithImage(systemPrompt, base64, mediaType) {
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(`${GEMINI_URL}?key=${getKey()}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: 'text', text: systemPrompt + '\n\nEstimate the nutritional content of this meal photo.' },
-          ],
-        }],
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: systemPrompt },
+              {
+                inline_data: {
+                  mime_type: mediaType,
+                  data: base64
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          maxOutputTokens: 1000,
+          temperature: 0.4,
+        }
       }),
     })
     const data = await res.json()
-    console.log('Claude image response:', data)
-    return data.content?.[0]?.text || ''
+    console.log('Gemini image response:', data)
+    if (data.error) return ''
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || ''
   } catch (err) {
-    console.error('Claude image error:', err)
+    console.error('Gemini image error:', err)
     return ''
   }
 }
