@@ -1,69 +1,48 @@
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
 function getKey() {
-  return import.meta.env.VITE_GEMINI_KEY
+  return import.meta.env.VITE_GROQ_KEY
 }
 
 export async function askClaude(systemPrompt, userMessage) {
   try {
-    const res = await fetch(`${GEMINI_URL}?key=${getKey()}`, {
+    const res = await fetch(GROQ_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getKey()}`,
+      },
       body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `${systemPrompt}\n\n${userMessage}` }]
-          }
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 1000,
+        temperature: 0.7,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
         ],
-        generationConfig: {
-          maxOutputTokens: 1000,
-          temperature: 0.7,
-        }
       }),
     })
     const data = await res.json()
-    console.log('Gemini response:', data)
+    console.log('Groq response:', data)
     if (data.error) return `Error: ${data.error.message}`
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response.'
+    return data.choices?.[0]?.message?.content || 'No response.'
   } catch (err) {
-    console.error('Gemini error:', err)
+    console.error('Groq error:', err)
     return 'Error: ' + err.message
   }
 }
 
+// Image scanning not supported on Groq free tier
+// Returns a friendly message instead
 export async function askClaudeWithImage(systemPrompt, base64, mediaType) {
-  try {
-    const res = await fetch(`${GEMINI_URL}?key=${getKey()}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: systemPrompt },
-              {
-                inline_data: {
-                  mime_type: mediaType,
-                  data: base64
-                }
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          maxOutputTokens: 1000,
-          temperature: 0.4,
-        }
-      }),
-    })
-    const data = await res.json()
-    console.log('Gemini image response:', data)
-    if (data.error) return ''
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-  } catch (err) {
-    console.error('Gemini image error:', err)
-    return ''
-  }
+  return JSON.stringify({
+    meal: "Photo scanning unavailable",
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+    items: [],
+    confidence: "low",
+    note: "Photo scanning requires a paid AI plan. Please use the 'Describe meal' option instead — it works great and is completely free!"
+  })
 }
