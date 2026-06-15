@@ -5,6 +5,7 @@ import { useFoodLog } from './hooks/useFoodLog'
 import { useProfile } from './hooks/useProfile'
 import Auth from './components/Auth'
 import WorkoutsTab from './components/WorkoutsTab'
+import TodayTab from './components/TodayTab'
 
 const C = {
   gold: '#C9A84C', goldLight: 'rgba(201,168,76,0.12)', goldDark: '#8B6914',
@@ -829,7 +830,7 @@ export default function App() {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 
   const screens = {
-    dashboard: <Dashboard logs={logs} waterCups={waterCups} setWaterCups={setWaterCups} profile={profile} userId={user.id} />,
+    dashboard: <TodayTab userId={user.id} profile={profile} updateProfile={updateProfile} key={user.id} />,
     calories:  <CaloriesTab userId={user.id} profile={profile} updateProfile={updateProfile} />,
     workouts:  <WorkoutsTab userId={user.id} key="workouts" />,
     plans:     <PlansTab userId={user.id} />,
