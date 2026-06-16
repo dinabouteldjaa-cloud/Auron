@@ -267,7 +267,7 @@ export default function TodayTab({ userId, profile, updateProfile }) {
     Promise.all([
       supabase.from('food_logs').select('*').eq('user_id', userId).eq('log_date', selectedDate),
       supabase.from('workout_logs').select('*').eq('user_id', userId).eq('log_date', selectedDate),
-      supabase.from('saved_plans').select('*').eq('user_id', userId).eq('is_active', true).limit(3),
+      supabase.from('ai_plans').select('*').eq('user_id', userId).eq('is_active', true).limit(3),
       supabase.from('daily_stats').select('*').eq('user_id', userId).eq('log_date', selectedDate).single(),
     ]).then(([food, workout, plans, stats]) => {
       setFoodLogs(food.data || [])
@@ -350,7 +350,7 @@ export default function TodayTab({ userId, profile, updateProfile }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, padding: '12px 16px', background: C.surfaceLight, borderRadius: 12, border: `1px solid ${C.borderStrong}` }}>
         <span style={{ fontSize: 20 }}>❤️</span>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 500 }}>Apple Health connected</div>
+          <div style={{ fontSize: 13, fontWeight: 500 }}>Health Sync Coming Soon</div>
           <div style={{ fontSize: 12, color: C.textMuted }}>Steps, heart rate & sleep syncing</div>
         </div>
         <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: C.greenLight, color: C.green, fontWeight: 500 }}>Live</span>
