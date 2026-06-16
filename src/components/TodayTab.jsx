@@ -774,10 +774,7 @@ export default function TodayTab({ userId, profile, updateProfile }) {
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Label style={{ marginBottom: 0 }}>Daily stats</Label>
-          <div style={{ fontSize: 10, color: C.textDim, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.textDim, display: 'inline-block' }} />
-            Manual · Health Sync coming soon
-          </div>
+          
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
           <StatCard icon="👟" label="Steps" value={dailyStats.steps} onChange={v => handleStatChange('steps', v)} unit="steps" color={C.blue} placeholder="0" isToday={isToday} />
