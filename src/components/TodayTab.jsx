@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const C = {
@@ -238,7 +238,9 @@ export default function TodayTab({ userId, profile, updateProfile }) {
   const [foodLogs, setFoodLogs] = useState([])
   const [workoutLogs, setWorkoutLogs] = useState([])
   const [savedPlans, setSavedPlans] = useState([])
+  const [dailyStats, setDailyStats] = useState({ steps: '', burned: '', sleep: '' })
   const [loading, setLoading] = useState(true)
+  const statsTimer = useRef(null)
 
   const isToday = selectedDate === todayStr
 
@@ -266,13 +268,30 @@ export default function TodayTab({ userId, profile, updateProfile }) {
       supabase.from('food_logs').select('*').eq('user_id', userId).eq('log_date', selectedDate),
       supabase.from('workout_logs').select('*').eq('user_id', userId).eq('log_date', selectedDate),
       supabase.from('saved_plans').select('*').eq('user_id', userId).eq('is_active', true).limit(3),
-    ]).then(([food, workout, plans]) => {
+      supabase.from('daily_stats').select('*').eq('user_id', userId).eq('log_date', selectedDate).single(),
+    ]).then(([food, workout, plans, stats]) => {
       setFoodLogs(food.data || [])
       setWorkoutLogs(workout.data || [])
       setSavedPlans(plans.data || [])
+      setDailyStats(stats.data ? { steps: stats.data.steps || '', burned: stats.data.burned_kcal || '', sleep: stats.data.sleep_hours || '' } : { steps: '', burned: '', sleep: '' })
       setLoading(false)
     })
   }, [userId, selectedDate])
+
+  const handleStatChange = (key, value) => {
+    setDailyStats(prev => ({ ...prev, [key]: value }))
+    if (statsTimer.current) clearTimeout(statsTimer.current)
+    statsTimer.current = setTimeout(async () => {
+      await supabase.from('daily_stats').upsert({
+        user_id: userId,
+        log_date: selectedDate,
+        steps: parseInt(dailyStats.steps) || null,
+        burned_kcal: parseInt(dailyStats.burned) || null,
+        sleep_hours: parseFloat(dailyStats.sleep) || null,
+        [key === 'steps' ? 'steps' : key === 'burned' ? 'burned_kcal' : 'sleep_hours']: key === 'sleep' ? parseFloat(value) : parseInt(value) || null,
+      })
+    }, 800)
+  }
 
   const totalCal = foodLogs.reduce((s, f) => s + f.calories, 0)
   const totalP   = foodLogs.reduce((s, f) => s + (f.protein || 0), 0)
@@ -343,14 +362,24 @@ export default function TodayTab({ userId, profile, updateProfile }) {
       {/* ── Stats Row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
         {[
-          { icon: '👟', label: 'Steps', value: '8,234', sub: 'goal: 10k', color: C.blue },
-          { icon: '🔥', label: 'Burned', value: '487', sub: 'kcal active', color: C.red },
-          { icon: '🌙', label: 'Sleep', value: '7h 12m', sub: 'goal: 8h', color: C.gold },
+          { icon: '👟', label: 'Steps', key: 'steps', placeholder: '8,000', color: C.blue, unit: 'steps' },
+          { icon: '🔥', label: 'Burned', key: 'burned', placeholder: '400', color: C.red, unit: 'kcal' },
+          { icon: '🌙', label: 'Sleep', key: 'sleep', placeholder: '7.5', color: C.gold, unit: 'hrs' },
         ].map(s => (
-          <div key={s.label} style={{ background: C.surfaceLight, borderRadius: 12, padding: '12px 14px', border: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 4 }}>{s.icon} {s.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 600, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 10, color: C.textMuted }}>{s.sub}</div>
+          <div key={s.key} style={{ background: C.surfaceLight, borderRadius: 12, padding: '12px 14px', border: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 6 }}>{s.icon} {s.label}</div>
+            {isToday ? (
+              <input
+                type="number"
+                value={dailyStats[s.key] || ''}
+                onChange={e => handleStatChange(s.key, e.target.value)}
+                placeholder={s.placeholder}
+                style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', color: s.color, fontSize: 18, fontWeight: 600, padding: 0 }}
+              />
+            ) : (
+              <div style={{ fontSize: 18, fontWeight: 600, color: dailyStats[s.key] ? s.color : C.border }}>{dailyStats[s.key] || '—'}</div>
+            )}
+            <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2 }}>{s.unit}</div>
           </div>
         ))}
       </div>
