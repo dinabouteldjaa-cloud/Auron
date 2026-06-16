@@ -5,7 +5,6 @@
 -- ============================================
 
 -- 1. PROFILES
--- Stores each user's personal info and goals
 create table if not exists profiles (
   id uuid references auth.users on delete cascade primary key,
   full_name text,
@@ -20,16 +19,17 @@ create table if not exists profiles (
   carbs_goal int default 250,
   fat_goal int default 73,
   water_goal int default 8,
+  water_unit text default 'cups',
+  water_goal_ml int default 2000,
+  cup_size_ml int default 250,
   updated_at timestamptz default now()
 );
 
--- Enable row-level security so users only see their own data
 alter table profiles enable row level security;
 create policy "Users can view own profile" on profiles for select using (auth.uid() = id);
 create policy "Users can update own profile" on profiles for update using (auth.uid() = id);
 create policy "Users can insert own profile" on profiles for insert with check (auth.uid() = id);
 
--- Auto-create a profile when a new user signs up
 create or replace function handle_new_user()
 returns trigger as $$
 begin
@@ -45,7 +45,6 @@ create or replace trigger on_auth_user_created
 
 
 -- 2. FOOD LOGS
--- Stores every food item a user logs, per meal, per day
 create table if not exists food_logs (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
@@ -65,12 +64,12 @@ create policy "Users manage own food logs" on food_logs for all using (auth.uid(
 
 
 -- 3. WATER LOGS
--- Tracks daily water intake (number of cups)
 create table if not exists water_logs (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
   log_date date not null default current_date,
   cups int default 0,
+  amount_ml int default 0,
   updated_at timestamptz default now(),
   unique(user_id, log_date)
 );
@@ -79,8 +78,24 @@ alter table water_logs enable row level security;
 create policy "Users manage own water logs" on water_logs for all using (auth.uid() = user_id);
 
 
--- 4. WORKOUT LOGS
--- Records completed workouts
+-- 4. DAILY STATS
+create table if not exists daily_stats (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  log_date date not null default current_date,
+  steps int,
+  burned_kcal int,
+  sleep_hours numeric,
+  source text default 'manual',
+  updated_at timestamptz default now(),
+  unique(user_id, log_date)
+);
+
+alter table daily_stats enable row level security;
+create policy "Users manage own daily stats" on daily_stats for all using (auth.uid() = user_id);
+
+
+-- 5. WORKOUT LOGS
 create table if not exists workout_logs (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
@@ -97,8 +112,7 @@ alter table workout_logs enable row level security;
 create policy "Users manage own workout logs" on workout_logs for all using (auth.uid() = user_id);
 
 
--- 5. AI PLANS
--- Saves AI-generated workout and nutrition plans
+-- 6. AI PLANS
 create table if not exists ai_plans (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
@@ -114,8 +128,7 @@ alter table ai_plans enable row level security;
 create policy "Users manage own plans" on ai_plans for all using (auth.uid() = user_id);
 
 
--- 6. BODY MEASUREMENTS
--- Tracks weight, body fat, etc over time
+-- 7. BODY MEASUREMENTS
 create table if not exists body_measurements (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
