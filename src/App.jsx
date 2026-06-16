@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './lib/supabase'
-import { askClaude, askClaudeWithImage } from './lib/claude'
+import { askClaude } from './lib/claude'
 import { useFoodLog } from './hooks/useFoodLog'
 import { useProfile } from './hooks/useProfile'
 import Auth from './components/Auth'
@@ -200,108 +200,84 @@ function Dashboard({ logs, waterCups, setWaterCups, profile, userId }) {
   )
 }
 
-// ── AI Scanner ─────────────────────────────────────────────────────────────
+// ── AI Describe & Estimate ─────────────────────────────────────────────────
 
-function AIScanner({ onLog }) {
-  const [mode, setMode] = useState('describe')
+function AIDescribe({ onLog }) {
   const [desc, setDesc] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
-  const [imgSrc, setImgSrc] = useState(null)
-  const fileRef = useRef()
 
-  const SYSTEM = `You are a nutrition expert. Respond ONLY with valid JSON, no markdown:
-{"meal":"name","calories":number,"protein":number,"carbs":number,"fat":number,"items":[{"name":"item","calories":number}],"confidence":"high/medium/low","note":"brief tip"}`
+  const SYSTEM = `You are a nutrition expert. Respond ONLY with valid JSON, no markdown, no explanation:
+{"meal":"meal name","calories":number,"protein":number,"carbs":number,"fat":number,"items":[{"name":"item name","calories":number}],"confidence":"high/medium/low","note":"one brief tip"}`
 
-  const analyze = async (text) => {
+  const analyze = async () => {
     setLoading(true); setResult(null)
     try {
-      const raw = await askClaude(SYSTEM, `Estimate nutrition for: ${text}`)
+      const raw = await askClaude(SYSTEM, `Estimate nutrition for: ${desc}`)
       setResult(JSON.parse(raw.replace(/```json|```/g, '').trim()))
-    } catch { setResult({ error: 'Could not parse. Try being more specific.' }) }
-    setLoading(false)
-  }
-
-  const analyzePhoto = async (file) => {
-    setLoading(true); setResult(null)
-    const reader = new FileReader()
-    reader.onload = async (e) => {
-      setImgSrc(e.target.result)
-      const base64 = e.target.result.split(',')[1]
-      try {
-        const raw = await askClaudeWithImage(SYSTEM, base64, file.type)
-        setResult(JSON.parse(raw.replace(/```json|```/g, '').trim()))
-      } catch { setResult({ error: 'Could not analyze photo. Try describing the meal instead.' }) }
-      setLoading(false)
+    } catch {
+      setResult({ error: 'Could not estimate. Try describing the meal in more detail — include portion sizes.' })
     }
-    reader.readAsDataURL(file)
+    setLoading(false)
   }
 
   const confColor = { high: C.green, medium: C.amber, low: C.red }
 
   return (
     <div>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, marginBottom: 6 }}>AI Food Scanner</div>
-      <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 20 }}>Describe your meal or upload a photo to estimate calories</div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, marginBottom: 6 }}>AI Calorie Estimator</div>
+      <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 20 }}>Describe your meal and AI will estimate the calories and macros</div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {['describe','photo'].map(m => (
-          <button key={m} onClick={() => { setMode(m); setResult(null); setImgSrc(null) }}
-            style={{ flex: 1, padding: 10, borderRadius: 12, border: `1px solid ${mode === m ? C.gold : C.border}`, background: mode === m ? C.goldLight : 'transparent', color: mode === m ? C.gold : C.textMuted, fontSize: 13 }}>
-            {m === 'describe' ? '✍️ Describe meal' : '📷 Upload photo'}
-          </button>
-        ))}
-      </div>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Describe your meal</div>
+        <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={4}
+          placeholder="e.g. A large plate of spaghetti bolognese with ground beef, tomato sauce and parmesan. About 300g of pasta total..."
+          style={{ width: '100%', padding: '12px 14px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, resize: 'none', outline: 'none', lineHeight: 1.6, marginBottom: 12 }} />
+        <button onClick={analyze} disabled={loading || !desc.trim()}
+          style={{ width: '100%', padding: 13, borderRadius: 24, background: loading || !desc.trim() ? C.surfaceLight : C.gold, color: loading || !desc.trim() ? C.textMuted : C.dark, border: 'none', fontSize: 13, fontWeight: 500, cursor: desc.trim() && !loading ? 'pointer' : 'default' }}>
+          {loading ? 'Estimating...' : 'Estimate calories ✨'}
+        </button>
+      </Card>
 
-      {mode === 'describe' ? (
-        <Card style={{ marginBottom: 16 }}>
-          <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={4}
-            placeholder="e.g. A plate of spaghetti bolognese with ground beef and parmesan, around 300g of pasta total..."
-            style={{ width: '100%', padding: '12px 14px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, resize: 'none', outline: 'none', lineHeight: 1.6, marginBottom: 12 }} />
-          <GoldBtn onClick={() => analyze(desc)} disabled={loading || !desc.trim()} style={{ width: '100%', padding: 13 }}>
-            {loading ? 'Analyzing...' : 'Estimate calories ✨'}
-          </GoldBtn>
-        </Card>
-      ) : (
-        <Card style={{ marginBottom: 16, textAlign: 'center' }}>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && analyzePhoto(e.target.files[0])} />
-          {imgSrc
-            ? <img src={imgSrc} alt="food" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 10, marginBottom: 12 }} />
-            : <div onClick={() => fileRef.current.click()} style={{ padding: '40px 20px', border: `2px dashed ${C.border}`, borderRadius: 12, cursor: 'pointer', marginBottom: 12 }}>
-                <div style={{ fontSize: 36, marginBottom: 8 }}>📷</div>
-                <div style={{ fontSize: 14, color: C.textMuted }}>Tap to upload a food photo</div>
-              </div>
-          }
-          {imgSrc && !loading && !result && <GoldBtn onClick={() => fileRef.current.click()} style={{ width: '100%' }}>Choose different photo</GoldBtn>}
+      {loading && (
+        <Card style={{ textAlign: 'center', padding: 28 }}>
+          <Spinner />
+          <div style={{ fontSize: 13, color: C.textMuted, marginTop: 12 }}>AI is analyzing your meal...</div>
         </Card>
       )}
 
-      {loading && <Card style={{ textAlign: 'center', padding: 28 }}><Spinner /><div style={{ fontSize: 13, color: C.textMuted, marginTop: 12 }}>AI is analyzing your meal...</div></Card>}
-
-      {result && !loading && (result.error
-        ? <Card style={{ borderColor: C.red }}><div style={{ fontSize: 13, color: C.red }}>{result.error}</div></Card>
-        : <Card style={{ borderColor: C.borderStrong }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 17 }}>{result.meal}</div>
-              <Badge color={confColor[result.confidence]} bg={`${confColor[result.confidence]}22`}>{result.confidence}</Badge>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 14 }}>
-              {[['Calories', result.calories, 'kcal', C.gold],['Protein', result.protein, 'g', C.blue],['Carbs', result.carbs, 'g', C.amber],['Fat', result.fat, 'g', C.green]].map(([l,v,u,col]) => (
-                <div key={l} style={{ background: C.surfaceLight, borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: col }}>{v}</div>
-                  <div style={{ fontSize: 10, color: C.textMuted }}>{u} {l}</div>
-                </div>
-              ))}
-            </div>
-            {result.items?.length > 0 && result.items.map((item, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${C.border}`, fontSize: 13 }}>
-                <span style={{ color: C.text }}>{item.name}</span>
-                <span style={{ color: C.gold, fontWeight: 500 }}>{item.calories} kcal</span>
+      {result && !loading && (
+        result.error
+          ? <Card style={{ borderColor: C.red }}><div style={{ fontSize: 13, color: C.red }}>{result.error}</div></Card>
+          : <Card style={{ borderColor: C.borderStrong }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, flex: 1 }}>{result.meal}</div>
+                <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: `${confColor[result.confidence]}22`, color: confColor[result.confidence], fontWeight: 500, marginLeft: 8 }}>{result.confidence} confidence</span>
               </div>
-            ))}
-            {result.note && <div style={{ fontSize: 12, color: C.textMuted, fontStyle: 'italic', marginTop: 10, lineHeight: 1.6 }}>{result.note}</div>}
-            <GoldBtn onClick={() => onLog({ name: result.meal, cal: result.calories, p: result.protein, c: result.carbs, f: result.fat })} style={{ width: '100%', padding: 13, marginTop: 14 }}>+ Log this meal</GoldBtn>
-          </Card>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 14 }}>
+                {[['Calories',result.calories,'kcal',C.gold],['Protein',result.protein,'g',C.blue],['Carbs',result.carbs,'g',C.amber],['Fat',result.fat,'g',C.green]].map(([l,v,u,col]) => (
+                  <div key={l} style={{ background: C.surfaceLight, borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: col }}>{v}</div>
+                    <div style={{ fontSize: 10, color: C.textMuted }}>{u} {l}</div>
+                  </div>
+                ))}
+              </div>
+              {result.items?.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  {result.items.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${C.border}`, fontSize: 13 }}>
+                      <span style={{ color: C.text }}>{item.name}</span>
+                      <span style={{ color: C.gold, fontWeight: 500 }}>{item.calories} kcal</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {result.note && <div style={{ fontSize: 12, color: C.textMuted, fontStyle: 'italic', marginBottom: 14, lineHeight: 1.6 }}>{result.note}</div>}
+              <button onClick={() => onLog({ name: result.meal, cal: result.calories, p: result.protein, c: result.carbs, f: result.fat })}
+                style={{ width: '100%', padding: 13, borderRadius: 24, background: C.gold, color: C.dark, border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                + Log this meal
+              </button>
+            </Card>
       )}
     </div>
   )
@@ -432,13 +408,8 @@ function CaloriesTab({ userId, profile, updateProfile }) {
     setModal(false); setQuery('')
   }
 
-  const handleScannerLog = async (food) => {
+  const handleDescribeLog = async (food) => {
     await addFood(food, selectedMeal)
-    setSubTab('log')
-  }
-
-  const handleApplyGoal = async (result) => {
-    await updateProfile({ calorie_goal: result.target, protein_goal: result.protein, carbs_goal: result.carbs, fat_goal: result.fat })
     setSubTab('log')
   }
 
@@ -451,35 +422,29 @@ function CaloriesTab({ userId, profile, updateProfile }) {
     setAiSuggestion(tip); setAiLoading(false)
   }
 
-  if (subTab === 'scanner') return (
+  if (subTab === 'describe') return (
     <div>
-      <button onClick={() => setSubTab('log')} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 13, marginBottom: 20 }}>← Back</button>
+      <button onClick={() => setSubTab('log')} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 13, marginBottom: 20, cursor: 'pointer' }}>← Back</button>
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Log scanned food to:</div>
+        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Log estimated food to:</div>
         <div style={{ display: 'flex', gap: 6 }}>
           {MEAL_SLOTS.map(s => (
-            <button key={s.id} onClick={() => setSelectedMeal(s.id)} style={{ flex: 1, padding: '8px 4px', borderRadius: 10, border: `1px solid ${selectedMeal===s.id?C.gold:C.border}`, background: selectedMeal===s.id?C.goldLight:'transparent', color: selectedMeal===s.id?C.gold:C.textMuted, fontSize: 11, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+            <button key={s.id} onClick={() => setSelectedMeal(s.id)} style={{ flex: 1, padding: '8px 4px', borderRadius: 10, border: `1px solid ${selectedMeal===s.id?C.gold:C.border}`, background: selectedMeal===s.id?C.goldLight:'transparent', color: selectedMeal===s.id?C.gold:C.textMuted, fontSize: 11, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
               <span style={{ fontSize: 16 }}>{s.icon}</span>{s.label}
             </button>
           ))}
         </div>
       </div>
-      <AIScanner onLog={handleScannerLog} />
-    </div>
-  )
-
-  if (subTab === 'calc') return (
-    <div>
-      <button onClick={() => setSubTab('log')} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 13, marginBottom: 20 }}>← Back</button>
-      <CalorieCalculator onApply={handleApplyGoal} />
+      <AIDescribe onLog={handleDescribeLog} />
     </div>
   )
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <button onClick={() => setSubTab('scanner')} style={{ flex: 1, padding: 10, borderRadius: 12, border: `1px solid ${C.border}`, background: 'transparent', color: C.text, fontSize: 13 }}>📷 AI Scanner</button>
-        <button onClick={() => setSubTab('calc')} style={{ flex: 1, padding: 10, borderRadius: 12, border: `1px solid ${C.border}`, background: 'transparent', color: C.text, fontSize: 13 }}>🧮 Calculator</button>
+      <div style={{ marginBottom: 20 }}>
+        <button onClick={() => setSubTab('describe')} style={{ width: '100%', padding: 11, borderRadius: 12, border: `1px solid ${C.border}`, background: C.surfaceLight, color: C.text, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+          ✨ <span>Describe a meal — AI estimates calories</span>
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
@@ -769,6 +734,14 @@ function ProfileTab({ user, profile, updateProfile }) {
         {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save profile'}
       </GoldBtn>
 
+      {/* Calorie Calculator in Profile */}
+      <div style={{ height: 1, background: C.border, margin: '4px 0 20px' }} />
+      <CalorieCalculator onApply={async (result) => {
+        await updateProfile({ calorie_goal: result.target, protein_goal: result.protein, carbs_goal: result.carbs, fat_goal: result.fat })
+      }} />
+
+      <div style={{ height: 1, background: C.border, margin: '20px 0' }} />
+
       <Card>
         <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Connected services</div>
         {[['❤️ Apple Health', true],['⌚ Apple Watch', true],['🏃 Strava', false]].map(([s, c]) => (
@@ -795,9 +768,8 @@ const TABS = [
 ]
 
 export default function App() {
-  const [session, setSession] = useState(undefined) // undefined = loading
+  const [session, setSession] = useState(undefined)
   const [tab, setTab] = useState('dashboard')
-  const [waterCups, setWaterCups] = useState(0)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -807,13 +779,6 @@ export default function App() {
 
   const { profile, updateProfile } = useProfile(session?.user?.id)
   const { logs } = useFoodLog(session?.user?.id)
-
-  // Load today's water
-  useEffect(() => {
-    if (!session?.user?.id) return
-    const today = new Date().toISOString().split('T')[0]
-    supabase.from('water_logs').select('cups').eq('user_id', session.user.id).eq('log_date', today).single().then(({ data }) => { if (data) setWaterCups(data.cups) })
-  }, [session?.user?.id])
 
   if (session === undefined) return (
     <div style={{ minHeight: '100vh', background: C.dark, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
