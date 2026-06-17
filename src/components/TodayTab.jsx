@@ -314,28 +314,53 @@ function MealsSection({ foodLogs, isToday }) {
 function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
   const dayName = DAYS[new Date(selectedDate + 'T00:00:00').getDay()]
 
-  // Try to find today's plan entry
-  const todayPlanEntries = savedPlans.flatMap(plan => {
+  // Find plan lines that mention this day name (e.g. "Monday", "Mon", "Day 1")
+  const dayIndex = DAYS.indexOf(dayName) // 0=Sun … 6=Sat
+  const plannedEntries = savedPlans.flatMap(plan => {
     if (!plan.content) return []
-    const lines = plan.content.split('\n')
-    const match = lines.find(l =>
-      l.toLowerCase().includes(dayName.toLowerCase()) ||
-      l.match(new RegExp(`day\\s*${DAYS.indexOf(dayName) + 1}`, 'i'))
-    )
-    return match ? [{ planTitle: plan.title, entry: match.trim() }] : []
+    const lines = plan.content.split('\n').map(l => l.trim()).filter(Boolean)
+    const match = lines.find(line => {
+      const lower = line.toLowerCase()
+      return (
+        lower.includes(dayName.toLowerCase()) ||
+        lower.includes(dayName.slice(0, 3).toLowerCase()) ||
+        new RegExp(`day\\s*${dayIndex + 1}\\b`, 'i').test(line)
+      )
+    })
+    return match ? [{ planTitle: plan.title, entry: match }] : []
   })
+
+  const totalCalBurned = workoutLogs.reduce((s, w) => s + (w.calories_burned || 0), 0)
+  const totalMinutes   = workoutLogs.reduce((s, w) => s + (w.duration_minutes || 0), 0)
 
   return (
     <div style={{ marginBottom: 20 }}>
-      <Label>Workouts</Label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <Label style={{ marginBottom: 0 }}>Workouts</Label>
+        {workoutLogs.length > 1 && (
+          <div style={{ fontSize: 11, color: C.textMuted }}>
+            {totalMinutes}min · {totalCalBurned} kcal total
+          </div>
+        )}
+      </div>
 
-      {/* Today's planned workout from active plans */}
-      {todayPlanEntries.length > 0 && (
+      {/* Planned workout from active plans */}
+      {plannedEntries.length > 0 && (
         <div style={{ marginBottom: 10 }}>
-          {todayPlanEntries.map((p, i) => (
-            <div key={i} style={{ background: C.purpleLight, border: `1px solid ${C.purple}33`, borderRadius: 14, padding: '12px 16px', marginBottom: 8 }}>
-              <div style={{ fontSize: 11, color: C.purple, fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Planned · {p.planTitle}</div>
-              <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{p.entry}</div>
+          {plannedEntries.map((p, i) => (
+            <div key={i} style={{
+              background: C.purpleLight,
+              border: `1px solid ${C.purple}44`,
+              borderRadius: 14, padding: '12px 16px', marginBottom: 8,
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+            }}>
+              <div style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>📋</div>
+              <div>
+                <div style={{ fontSize: 11, color: C.purple, fontWeight: 600, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Planned · {p.planTitle}
+                </div>
+                <div style={{ fontSize: 13, color: C.text, lineHeight: 1.55 }}>{p.entry}</div>
+              </div>
             </div>
           ))}
         </div>
@@ -345,12 +370,24 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
       {workoutLogs.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {workoutLogs.map(w => (
-            <div key={w.id} style={{ background: C.surface, border: `1px solid ${C.green}33`, borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 11, background: C.greenLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>💪</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{w.workout_name}</div>
-                <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>
-                  {w.duration_minutes}min · {w.calories_burned} kcal · {w.workout_type}
+            <div key={w.id} style={{
+              background: C.surface,
+              border: `1px solid ${C.green}33`,
+              borderRadius: 14, padding: '13px 16px',
+              display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <div style={{
+                width: 42, height: 42, borderRadius: 12,
+                background: C.greenLight,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 20, flexShrink: 0,
+              }}>💪</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{w.workout_name}</div>
+                <div style={{ fontSize: 12, color: C.textMuted, marginTop: 3 }}>
+                  {w.duration_minutes ? `${w.duration_minutes}min` : ''}
+                  {w.calories_burned ? ` · ${w.calories_burned} kcal` : ''}
+                  {w.workout_type ? ` · ${w.workout_type}` : ''}
                 </div>
               </div>
               <Pill color={C.green} bg={C.greenLight}>Done ✓</Pill>
@@ -358,12 +395,20 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
           ))}
         </div>
       ) : (
-        <div style={{ background: C.surfaceLight, borderRadius: 14, padding: '20px 16px', textAlign: 'center', border: `1px dashed ${C.border}` }}>
-          <div style={{ fontSize: 22, marginBottom: 6 }}>🏃</div>
-          <div style={{ fontSize: 13, color: C.textMuted }}>
-            {isToday ? 'No workout logged yet today' : 'No workouts logged this day'}
+        <div style={{
+          background: C.surfaceLight, borderRadius: 14,
+          padding: '24px 16px', textAlign: 'center',
+          border: `1px dashed ${C.border}`,
+        }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>🏃</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: 4 }}>
+            {isToday ? 'No workout logged today' : 'No workouts this day'}
           </div>
-          {isToday && <div style={{ fontSize: 11, color: C.textDim, marginTop: 4 }}>Head to the Workouts tab to start one</div>}
+          {isToday && (
+            <div style={{ fontSize: 12, color: C.textDim }}>
+              Go to the Workouts tab to log one
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -772,9 +817,8 @@ export default function TodayTab({ userId, profile, updateProfile }) {
 
       {/* ── Daily Stats ── */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ marginBottom: 12 }}>
           <Label style={{ marginBottom: 0 }}>Daily stats</Label>
-          
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
           <StatCard icon="👟" label="Steps" value={dailyStats.steps} onChange={v => handleStatChange('steps', v)} unit="steps" color={C.blue} placeholder="0" isToday={isToday} />
