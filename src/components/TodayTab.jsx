@@ -310,51 +310,75 @@ function MealsSection({ foodLogs, isToday }) {
 }
 
 // ─────────────────────────────────────────────
-// Workout Section
+// Exercise Detail Modal — AI explains how to do it
 // ─────────────────────────────────────────────
+function ExerciseModal({ exercise, onClose }) {
+  const [explanation, setExplanation] = useState('')
+  const [loading, setLoading] = useState(true)
 
-// Parse an AI-generated plan block into a structured object
-// Looks for the day header line, then collects the lines beneath it as exercises
-function parsePlanDay(content, dayName) {
-  if (!content) return null
-  const lines = content.split('\n').map(l => l.trim()).filter(Boolean)
-  const dayIndex = DAYS.indexOf(dayName)
+  useEffect(() => {
+    askClaude(
+      'You are a certified personal trainer. Explain how to perform the exercise in 3–4 short paragraphs. Cover: starting position, movement execution, common mistakes, and one pro tip. Plain text only, no markdown, no bullet points.',
+      `Explain how to do: ${exercise.name}${exercise.sets ? `. Target: ${exercise.sets} sets × ${exercise.reps || exercise.duration}.` : ''}`
+    ).then(text => { setExplanation(text); setLoading(false) })
+  }, [exercise.name])
 
-  // Find the line that matches this day
-  const headerIdx = lines.findIndex(line => {
-    const lower = line.toLowerCase()
-    return (
-      lower.includes(dayName.toLowerCase()) ||
-      lower.includes(dayName.slice(0, 3).toLowerCase()) ||
-      new RegExp(`day\\s*${dayIndex + 1}\\b`, 'i').test(line)
-    )
-  })
-  if (headerIdx === -1) return null
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 300, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+      onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: C.surface, borderRadius: '22px 22px 0 0',
+        padding: '24px 20px 40px', width: '100%', maxWidth: 480,
+        maxHeight: '80vh', overflowY: 'auto',
+        border: `1px solid ${C.borderStrong}`, borderBottom: 'none',
+      }}>
+        {/* Handle bar */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: '0 auto 20px' }} />
 
-  const headerLine = lines[headerIdx]
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <div style={{ width: 46, height: 46, borderRadius: 13, background: C.purple + '28', border: `1px solid ${C.purple}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>💪</div>
+          <div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: C.text }}>{exercise.name}</div>
+            {(exercise.sets || exercise.duration) && (
+              <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>
+                {exercise.sets && exercise.reps ? `${exercise.sets} sets × ${exercise.reps} reps` : ''}
+                {exercise.sets && exercise.duration ? `${exercise.sets} sets × ${exercise.duration}` : ''}
+                {exercise.rest ? ` · Rest ${exercise.rest}` : ''}
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: C.textMuted, fontSize: 24, cursor: 'pointer', lineHeight: 1, flexShrink: 0 }}>×</button>
+        </div>
 
-  // Collect the next lines as exercise items until we hit the next day header or end
-  const exercises = []
-  for (let i = headerIdx + 1; i < lines.length && i < headerIdx + 8; i++) {
-    const line = lines[i]
-    // Stop if we hit another day heading
-    if (DAYS.some(d => line.toLowerCase().startsWith(d.toLowerCase())) || /^day\s*\d/i.test(line)) break
-    if (line.length > 2) exercises.push(line.replace(/^[-•*]\s*/, ''))
-  }
+        {exercise.tip && (
+          <div style={{ background: C.goldLight, border: `1px solid ${C.gold}44`, borderRadius: 12, padding: '10px 14px', marginBottom: 16 }}>
+            <div style={{ fontSize: 11, color: C.gold, fontWeight: 700, marginBottom: 3 }}>💡 Coach tip</div>
+            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{exercise.tip}</div>
+          </div>
+        )}
 
-  // Try to extract a workout name from the header line itself
-  // e.g. "Monday - Upper Body Strength" → "Upper Body Strength"
-  const namePart = headerLine.replace(/^(day\s*\d+[:.\s-]*|monday|tuesday|wednesday|thursday|friday|saturday|sunday)[\s\-:–]*/i, '').trim()
-
-  return { header: headerLine, name: namePart || headerLine, exercises }
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 0' }}>
+            <div style={{ width: 16, height: 16, border: `2px solid ${C.border}`, borderTopColor: C.gold, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+            <span style={{ fontSize: 13, color: C.textMuted }}>Loading instructions...</span>
+          </div>
+        ) : (
+          <div style={{ fontSize: 14, color: C.text, lineHeight: 1.75 }}>{explanation}</div>
+        )}
+      </div>
+    </div>
+  )
 }
 
+// ─────────────────────────────────────────────
+// Workout Section
+// ─────────────────────────────────────────────
 const WORKOUT_TYPE_ICONS = {
   rest: '🛌', run: '🏃', cardio: '🏃', strength: '💪', hiit: '⚡', yoga: '🧘',
   swim: '🏊', cycle: '🚴', mobility: '🤸', upper: '💪', lower: '🦵', full: '🏋️',
   push: '🤜', pull: '🤛', leg: '🦵', core: '🎯',
 }
-function guessIcon(text) {
+function guessIcon(text = '') {
   const lower = text.toLowerCase()
   for (const [key, icon] of Object.entries(WORKOUT_TYPE_ICONS)) {
     if (lower.includes(key)) return icon
@@ -362,15 +386,143 @@ function guessIcon(text) {
   return '🏋️'
 }
 
-function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
-  const dayName = DAYS[new Date(selectedDate + 'T00:00:00').getDay()]
+function PlannedWorkoutCard({ plan, workout, planTitle }) {
+  const [expanded, setExpanded] = useState(false)
+  const [activeExercise, setActiveExercise] = useState(null)
+  const isRest = workout.name?.toLowerCase().includes('rest')
 
-  const plannedEntries = savedPlans
-    .map(plan => {
-      const parsed = parsePlanDay(plan.content, dayName)
-      return parsed ? { planTitle: plan.title, ...parsed } : null
+  return (
+    <>
+      <div style={{
+        borderRadius: 16, marginBottom: 10, overflow: 'hidden',
+        border: `1px solid ${isRest ? C.border : C.purple + '55'}`,
+        background: isRest
+          ? C.surfaceLight
+          : `linear-gradient(135deg, ${C.purple}18 0%, ${C.surface} 100%)`,
+      }}>
+        {/* Header */}
+        <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 46, height: 46, borderRadius: 13, flexShrink: 0,
+            background: isRest ? C.surfaceLight : C.purple + '28',
+            border: `1px solid ${isRest ? C.border : C.purple + '44'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+          }}>
+            {isRest ? '🛌' : guessIcon(workout.name)}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, color: C.purple, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
+              Today's plan · {planTitle}
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: C.text, lineHeight: 1.2 }}>{workout.name}</div>
+            {!isRest && (
+              <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
+                {workout.duration ? `${workout.duration}min` : ''}
+                {workout.exercises?.length ? ` · ${workout.exercises.length} exercises` : ''}
+              </div>
+            )}
+          </div>
+          {!isRest && workout.exercises?.length > 0 && (
+            <button onClick={() => setExpanded(e => !e)} style={{
+              background: 'none', border: `1px solid ${C.purple}44`,
+              borderRadius: 20, padding: '5px 12px',
+              color: C.purple, fontSize: 12, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
+            }}>
+              {expanded ? '▴ Hide' : '▾ Show'}
+            </button>
+          )}
+          {isRest && (
+            <span style={{ fontSize: 11, padding: '4px 12px', borderRadius: 20, background: C.surfaceLight, color: C.textMuted, border: `1px solid ${C.border}`, whiteSpace: 'nowrap' }}>Rest day</span>
+          )}
+        </div>
+
+        {/* Warmup */}
+        {expanded && workout.warmup && (
+          <div style={{ padding: '0 16px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14 }}>🔥</span>
+            <span style={{ fontSize: 12, color: C.amber }}>Warmup: {workout.warmup}</span>
+          </div>
+        )}
+
+        {/* Exercise list */}
+        {expanded && workout.exercises?.length > 0 && (
+          <div style={{ borderTop: `1px solid ${C.purple}22` }}>
+            {workout.exercises.map((ex, j) => (
+              <div key={j} onClick={() => setActiveExercise(ex)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '11px 16px',
+                  borderBottom: j < workout.exercises.length - 1 ? `1px solid ${C.border}` : 'none',
+                  cursor: 'pointer', background: 'transparent',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = C.purple + '0A'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div style={{
+                  width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                  background: C.purple + '28', border: `1px solid ${C.purple}33`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 700, color: C.purple,
+                }}>{j + 1}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{ex.name}</div>
+                  <div style={{ fontSize: 11, color: C.textMuted, marginTop: 1 }}>
+                    {ex.sets && ex.reps ? `${ex.sets} sets × ${ex.reps} reps` : ''}
+                    {ex.sets && ex.duration && !ex.reps ? `${ex.sets} sets × ${ex.duration}` : ''}
+                    {!ex.sets && ex.duration ? ex.duration : ''}
+                    {ex.rest ? ` · Rest ${ex.rest}` : ''}
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: C.purple, flexShrink: 0 }}>How to →</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Cooldown */}
+        {expanded && workout.cooldown && (
+          <div style={{ padding: '10px 16px 14px', display: 'flex', alignItems: 'center', gap: 8, borderTop: `1px solid ${C.border}` }}>
+            <span style={{ fontSize: 14 }}>❄️</span>
+            <span style={{ fontSize: 12, color: C.blue }}>Cooldown: {workout.cooldown}</span>
+          </div>
+        )}
+
+        {/* Rest day message */}
+        {isRest && (
+          <div style={{ padding: '0 16px 14px' }}>
+            <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.55 }}>
+              Recovery is part of the plan. Take it easy — light walking or stretching is fine.
+            </div>
+          </div>
+        )}
+      </div>
+
+      {activeExercise && <ExerciseModal exercise={activeExercise} onClose={() => setActiveExercise(null)} />}
+    </>
+  )
+}
+
+function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
+  const todayDayIndex = new Date(selectedDate + 'T00:00:00').getDay() // 0=Sun…6=Sat
+
+  // Only show plans where:
+  // 1. is_active = true
+  // 2. chosen_days includes today's day index
+  // 3. schedule has an entry for today's day index
+  const todayPlans = savedPlans
+    .filter(plan => {
+      if (!plan.is_active) return false
+      const chosenDays = plan.chosen_days || []
+      const schedule = plan.schedule || {}
+      // Must be a chosen day AND have a schedule entry
+      return chosenDays.includes(todayDayIndex) && schedule[todayDayIndex]
     })
-    .filter(Boolean)
+    .map(plan => ({
+      planTitle: plan.title,
+      workout: plan.schedule[todayDayIndex],
+    }))
 
   const totalCalBurned = workoutLogs.reduce((s, w) => s + (w.calories_burned || 0), 0)
   const totalMinutes   = workoutLogs.reduce((s, w) => s + (w.duration_minutes || 0), 0)
@@ -380,99 +532,24 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <Label style={{ marginBottom: 0 }}>Workouts</Label>
         {workoutLogs.length > 1 && (
-          <div style={{ fontSize: 11, color: C.textMuted }}>
-            {totalMinutes}min · {totalCalBurned} kcal total
-          </div>
+          <div style={{ fontSize: 11, color: C.textMuted }}>{totalMinutes}min · {totalCalBurned} kcal total</div>
         )}
       </div>
 
-      {/* Structured planned workout cards */}
-      {plannedEntries.map((p, i) => {
-        const isRestDay = p.name.toLowerCase().includes('rest')
-        return (
-          <div key={i} style={{
-            borderRadius: 16, marginBottom: 10, overflow: 'hidden',
-            border: `1px solid ${isRestDay ? C.border : C.purple + '55'}`,
-            background: isRestDay
-              ? C.surfaceLight
-              : `linear-gradient(135deg, ${C.purple}18 0%, ${C.surface} 100%)`,
-          }}>
-            {/* Header row */}
-            <div style={{ padding: '14px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 13, flexShrink: 0,
-                background: isRestDay ? C.surfaceLight : C.purple + '28',
-                border: `1px solid ${isRestDay ? C.border : C.purple + '44'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-              }}>
-                {isRestDay ? '🛌' : guessIcon(p.name)}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 10, color: C.purple, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
-                  Today's plan · {p.planTitle}
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, lineHeight: 1.25 }}>
-                  {p.name || dayName}
-                </div>
-              </div>
-              {isRestDay ? (
-                <span style={{ fontSize: 11, padding: '4px 12px', borderRadius: 20, background: C.surfaceLight, color: C.textMuted, border: `1px solid ${C.border}`, whiteSpace: 'nowrap' }}>Rest day</span>
-              ) : p.exercises.length > 0 && (
-                <span style={{ fontSize: 11, padding: '4px 12px', borderRadius: 20, background: C.purple + '22', color: C.purple, border: `1px solid ${C.purple}44`, whiteSpace: 'nowrap' }}>
-                  {p.exercises.length} exercise{p.exercises.length !== 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-
-            {/* Exercise list */}
-            {p.exercises.length > 0 && !isRestDay && (
-              <div style={{ borderTop: `1px solid ${C.purple}22`, padding: '10px 16px 14px' }}>
-                {p.exercises.map((ex, j) => (
-                  <div key={j} style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '7px 0',
-                    borderBottom: j < p.exercises.length - 1 ? `1px solid ${C.border}` : 'none',
-                  }}>
-                    <div style={{
-                      width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                      background: C.purple + '28',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, fontWeight: 700, color: C.purple,
-                    }}>{j + 1}</div>
-                    <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4, flex: 1 }}>{ex}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Rest day message */}
-            {isRestDay && (
-              <div style={{ padding: '0 16px 14px' }}>
-                <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.5 }}>
-                  Take it easy today — recovery is part of the plan. Light stretching or a walk is fine.
-                </div>
-              </div>
-            )}
-          </div>
-        )
-      })}
+      {/* Today's planned workouts — only if this day is chosen */}
+      {todayPlans.map((p, i) => (
+        <PlannedWorkoutCard key={i} planTitle={p.planTitle} workout={p.workout} />
+      ))}
 
       {/* Logged workouts */}
       {workoutLogs.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {workoutLogs.map(w => (
             <div key={w.id} style={{
-              background: C.surface,
-              border: `1px solid ${C.green}33`,
-              borderRadius: 14, padding: '13px 16px',
-              display: 'flex', alignItems: 'center', gap: 12,
+              background: C.surface, border: `1px solid ${C.green}33`,
+              borderRadius: 14, padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12,
             }}>
-              <div style={{
-                width: 42, height: 42, borderRadius: 12,
-                background: C.greenLight,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 20, flexShrink: 0,
-              }}>💪</div>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: C.greenLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>💪</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{w.workout_name}</div>
                 <div style={{ fontSize: 12, color: C.textMuted, marginTop: 3 }}>
@@ -485,24 +562,14 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
             </div>
           ))}
         </div>
-      ) : (
-        plannedEntries.length === 0 && (
-          <div style={{
-            background: C.surfaceLight, borderRadius: 14,
-            padding: '24px 16px', textAlign: 'center',
-            border: `1px dashed ${C.border}`,
-          }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>🏃</div>
-            <div style={{ fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: 4 }}>
-              {isToday ? 'No workout logged today' : 'No workouts this day'}
-            </div>
-            {isToday && (
-              <div style={{ fontSize: 12, color: C.textDim }}>
-                Go to the Workouts tab to log one
-              </div>
-            )}
+      ) : todayPlans.length === 0 && (
+        <div style={{ background: C.surfaceLight, borderRadius: 14, padding: '24px 16px', textAlign: 'center', border: `1px dashed ${C.border}` }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>🏃</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: 4 }}>
+            {isToday ? 'No workout logged today' : 'No workouts this day'}
           </div>
-        )
+          {isToday && <div style={{ fontSize: 12, color: C.textDim }}>Go to the Workouts tab to log one</div>}
+        </div>
       )}
     </div>
   )
