@@ -8,14 +8,15 @@ import WorkoutsTab from './components/WorkoutsTab'
 import TodayTab from './components/TodayTab'
 
 const C = {
-  gold: '#C9A84C', goldLight: 'rgba(201,168,76,0.12)', goldDark: '#8B6914',
-  dark: '#0F0F0F', surface: '#1A1A1A', surfaceLight: '#242424',
-  border: 'rgba(201,168,76,0.2)', borderStrong: 'rgba(201,168,76,0.4)',
-  text: '#F0EDE6', textMuted: '#888880',
+  gold: '#C9A84C', goldLight: 'rgba(201,168,76,0.14)', goldDark: '#8B6914',
+  dark: '#0D0E12', surface: '#16181F', surfaceLight: '#1E2029',
+  border: 'rgba(201,168,76,0.18)', borderStrong: 'rgba(201,168,76,0.38)',
+  text: '#F0EDE6', textMuted: '#8A8A90',
   green: '#4CAF72', greenLight: 'rgba(76,175,114,0.15)',
   red: '#E05252', redLight: 'rgba(224,82,82,0.12)',
   blue: '#5B9BD5', blueLight: 'rgba(91,155,213,0.12)',
   amber: '#D4924A',
+  teal: '#2DD4BF', tealLight: 'rgba(45,212,191,0.12)',
 }
 
 const MEAL_SLOTS = [
@@ -62,12 +63,19 @@ const WORKOUTS = [
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@500;600&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0F0F0F; color: #F0EDE6; font-family: 'Inter', sans-serif; }
+  body {
+    background: #0D0E12;
+    background-image: radial-gradient(ellipse at 20% 0%, rgba(201,168,76,0.06) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 100%, rgba(91,155,213,0.04) 0%, transparent 50%);
+    color: #F0EDE6;
+    font-family: 'Inter', sans-serif;
+  }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.2); border-radius: 2px; }
   input, button, select, textarea { font-family: inherit; }
   button { cursor: pointer; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 `
 
 function Spinner() {
@@ -812,12 +820,6 @@ export default function App() {
             <div>
               <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 2, letterSpacing: '0.06em' }}>{today.toUpperCase()}</div>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, color: C.gold }}>Auron</div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <div style={{ fontSize: 12, color: C.textMuted, display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.green }} />Synced
-              </div>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', background: C.surfaceLight, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🔔</div>
             </div>
           </div>
 
