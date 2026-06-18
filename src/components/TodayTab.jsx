@@ -6,14 +6,15 @@ import { askClaude } from '../lib/claude'
 // Design tokens
 // ─────────────────────────────────────────────
 const C = {
-  gold: '#C9A84C', goldLight: 'rgba(201,168,76,0.13)', goldDark: '#8B6914',
-  dark: '#0F0F0F', surface: '#1A1A1A', surfaceLight: '#242424', surfaceMid: '#1E1E1E',
+  gold: '#C9A84C', goldLight: 'rgba(201,168,76,0.14)', goldDark: '#8B6914',
+  dark: '#0D0E12', surface: '#16181F', surfaceLight: '#1E2029', surfaceMid: '#1A1C24',
   border: 'rgba(201,168,76,0.18)', borderStrong: 'rgba(201,168,76,0.38)',
-  text: '#F0EDE6', textMuted: '#888880', textDim: '#555550',
+  text: '#F0EDE6', textMuted: '#8A8A90', textDim: '#52525A',
   green: '#4CAF72', greenLight: 'rgba(76,175,114,0.14)',
   red: '#E05252', redLight: 'rgba(224,82,82,0.12)',
   blue: '#5B9BD5', blueLight: 'rgba(91,155,213,0.13)',
   amber: '#D4924A', amberLight: 'rgba(212,146,74,0.13)',
+  teal: '#2DD4BF', tealLight: 'rgba(45,212,191,0.12)',
   purple: '#9B72D0', purpleLight: 'rgba(155,114,208,0.13)',
 }
 
@@ -311,24 +312,65 @@ function MealsSection({ foodLogs, isToday }) {
 // ─────────────────────────────────────────────
 // Workout Section
 // ─────────────────────────────────────────────
+
+// Parse an AI-generated plan block into a structured object
+// Looks for the day header line, then collects the lines beneath it as exercises
+function parsePlanDay(content, dayName) {
+  if (!content) return null
+  const lines = content.split('\n').map(l => l.trim()).filter(Boolean)
+  const dayIndex = DAYS.indexOf(dayName)
+
+  // Find the line that matches this day
+  const headerIdx = lines.findIndex(line => {
+    const lower = line.toLowerCase()
+    return (
+      lower.includes(dayName.toLowerCase()) ||
+      lower.includes(dayName.slice(0, 3).toLowerCase()) ||
+      new RegExp(`day\\s*${dayIndex + 1}\\b`, 'i').test(line)
+    )
+  })
+  if (headerIdx === -1) return null
+
+  const headerLine = lines[headerIdx]
+
+  // Collect the next lines as exercise items until we hit the next day header or end
+  const exercises = []
+  for (let i = headerIdx + 1; i < lines.length && i < headerIdx + 8; i++) {
+    const line = lines[i]
+    // Stop if we hit another day heading
+    if (DAYS.some(d => line.toLowerCase().startsWith(d.toLowerCase())) || /^day\s*\d/i.test(line)) break
+    if (line.length > 2) exercises.push(line.replace(/^[-•*]\s*/, ''))
+  }
+
+  // Try to extract a workout name from the header line itself
+  // e.g. "Monday - Upper Body Strength" → "Upper Body Strength"
+  const namePart = headerLine.replace(/^(day\s*\d+[:.\s-]*|monday|tuesday|wednesday|thursday|friday|saturday|sunday)[\s\-:–]*/i, '').trim()
+
+  return { header: headerLine, name: namePart || headerLine, exercises }
+}
+
+const WORKOUT_TYPE_ICONS = {
+  rest: '🛌', run: '🏃', cardio: '🏃', strength: '💪', hiit: '⚡', yoga: '🧘',
+  swim: '🏊', cycle: '🚴', mobility: '🤸', upper: '💪', lower: '🦵', full: '🏋️',
+  push: '🤜', pull: '🤛', leg: '🦵', core: '🎯',
+}
+function guessIcon(text) {
+  const lower = text.toLowerCase()
+  for (const [key, icon] of Object.entries(WORKOUT_TYPE_ICONS)) {
+    if (lower.includes(key)) return icon
+  }
+  return '🏋️'
+}
+
 function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
   const dayName = DAYS[new Date(selectedDate + 'T00:00:00').getDay()]
 
-  // Find plan lines that mention this day name (e.g. "Monday", "Mon", "Day 1")
-  const dayIndex = DAYS.indexOf(dayName) // 0=Sun … 6=Sat
-  const plannedEntries = savedPlans.flatMap(plan => {
-    if (!plan.content) return []
-    const lines = plan.content.split('\n').map(l => l.trim()).filter(Boolean)
-    const match = lines.find(line => {
-      const lower = line.toLowerCase()
-      return (
-        lower.includes(dayName.toLowerCase()) ||
-        lower.includes(dayName.slice(0, 3).toLowerCase()) ||
-        new RegExp(`day\\s*${dayIndex + 1}\\b`, 'i').test(line)
-      )
+  const plannedEntries = savedPlans
+    .map(plan => {
+      const parsed = parsePlanDay(plan.content, dayName)
+      return parsed ? { planTitle: plan.title, ...parsed } : null
     })
-    return match ? [{ planTitle: plan.title, entry: match }] : []
-  })
+    .filter(Boolean)
 
   const totalCalBurned = workoutLogs.reduce((s, w) => s + (w.calories_burned || 0), 0)
   const totalMinutes   = workoutLogs.reduce((s, w) => s + (w.duration_minutes || 0), 0)
@@ -344,27 +386,76 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
         )}
       </div>
 
-      {/* Planned workout from active plans */}
-      {plannedEntries.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
-          {plannedEntries.map((p, i) => (
-            <div key={i} style={{
-              background: C.purpleLight,
-              border: `1px solid ${C.purple}44`,
-              borderRadius: 14, padding: '12px 16px', marginBottom: 8,
-              display: 'flex', alignItems: 'flex-start', gap: 10,
-            }}>
-              <div style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>📋</div>
-              <div>
-                <div style={{ fontSize: 11, color: C.purple, fontWeight: 600, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  Planned · {p.planTitle}
-                </div>
-                <div style={{ fontSize: 13, color: C.text, lineHeight: 1.55 }}>{p.entry}</div>
+      {/* Structured planned workout cards */}
+      {plannedEntries.map((p, i) => {
+        const isRestDay = p.name.toLowerCase().includes('rest')
+        return (
+          <div key={i} style={{
+            borderRadius: 16, marginBottom: 10, overflow: 'hidden',
+            border: `1px solid ${isRestDay ? C.border : C.purple + '55'}`,
+            background: isRestDay
+              ? C.surfaceLight
+              : `linear-gradient(135deg, ${C.purple}18 0%, ${C.surface} 100%)`,
+          }}>
+            {/* Header row */}
+            <div style={{ padding: '14px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 13, flexShrink: 0,
+                background: isRestDay ? C.surfaceLight : C.purple + '28',
+                border: `1px solid ${isRestDay ? C.border : C.purple + '44'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+              }}>
+                {isRestDay ? '🛌' : guessIcon(p.name)}
               </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: C.purple, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
+                  Today's plan · {p.planTitle}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, lineHeight: 1.25 }}>
+                  {p.name || dayName}
+                </div>
+              </div>
+              {isRestDay ? (
+                <span style={{ fontSize: 11, padding: '4px 12px', borderRadius: 20, background: C.surfaceLight, color: C.textMuted, border: `1px solid ${C.border}`, whiteSpace: 'nowrap' }}>Rest day</span>
+              ) : p.exercises.length > 0 && (
+                <span style={{ fontSize: 11, padding: '4px 12px', borderRadius: 20, background: C.purple + '22', color: C.purple, border: `1px solid ${C.purple}44`, whiteSpace: 'nowrap' }}>
+                  {p.exercises.length} exercise{p.exercises.length !== 1 ? 's' : ''}
+                </span>
+              )}
             </div>
-          ))}
-        </div>
-      )}
+
+            {/* Exercise list */}
+            {p.exercises.length > 0 && !isRestDay && (
+              <div style={{ borderTop: `1px solid ${C.purple}22`, padding: '10px 16px 14px' }}>
+                {p.exercises.map((ex, j) => (
+                  <div key={j} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '7px 0',
+                    borderBottom: j < p.exercises.length - 1 ? `1px solid ${C.border}` : 'none',
+                  }}>
+                    <div style={{
+                      width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                      background: C.purple + '28',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, fontWeight: 700, color: C.purple,
+                    }}>{j + 1}</div>
+                    <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4, flex: 1 }}>{ex}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Rest day message */}
+            {isRestDay && (
+              <div style={{ padding: '0 16px 14px' }}>
+                <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.5 }}>
+                  Take it easy today — recovery is part of the plan. Light stretching or a walk is fine.
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
 
       {/* Logged workouts */}
       {workoutLogs.length > 0 ? (
@@ -395,21 +486,23 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
           ))}
         </div>
       ) : (
-        <div style={{
-          background: C.surfaceLight, borderRadius: 14,
-          padding: '24px 16px', textAlign: 'center',
-          border: `1px dashed ${C.border}`,
-        }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>🏃</div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: 4 }}>
-            {isToday ? 'No workout logged today' : 'No workouts this day'}
-          </div>
-          {isToday && (
-            <div style={{ fontSize: 12, color: C.textDim }}>
-              Go to the Workouts tab to log one
+        plannedEntries.length === 0 && (
+          <div style={{
+            background: C.surfaceLight, borderRadius: 14,
+            padding: '24px 16px', textAlign: 'center',
+            border: `1px dashed ${C.border}`,
+          }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>🏃</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: 4 }}>
+              {isToday ? 'No workout logged today' : 'No workouts this day'}
             </div>
-          )}
-        </div>
+            {isToday && (
+              <div style={{ fontSize: 12, color: C.textDim }}>
+                Go to the Workouts tab to log one
+              </div>
+            )}
+          </div>
+        )
       )}
     </div>
   )
@@ -502,84 +595,180 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
   const [amount, setAmount] = useState(0)
   const [showSettings, setShowSettings] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   const isToday = selectedDate === new Date().toISOString().split('T')[0]
   const unit = profile?.water_unit || 'cups'
   const goal = unit === 'ml' ? (profile?.water_goal_ml || 2000) : (profile?.water_goal || 8)
   const cupSize = profile?.cup_size_ml || 250
   const pct = Math.min((amount / goal) * 100, 100)
+  const goalReached = pct >= 100
 
   useEffect(() => {
     if (!userId) return
     setLoading(true)
-    supabase.from('water_logs').select('cups, amount_ml').eq('user_id', userId).eq('log_date', selectedDate).single()
+    supabase
+      .from('water_logs')
+      .select('cups, amount_ml')
+      .eq('user_id', userId)
+      .eq('log_date', selectedDate)
+      .single()
       .then(({ data }) => {
-        if (data) setAmount(unit === 'ml' ? (data.amount_ml || data.cups * cupSize) : (data.cups || 0))
-        else setAmount(0)
+        if (data) {
+          setAmount(unit === 'ml'
+            ? (data.amount_ml || (data.cups || 0) * cupSize)
+            : (data.cups || 0))
+        } else {
+          setAmount(0)
+        }
       })
       .catch(() => setAmount(0))
       .finally(() => setLoading(false))
   }, [userId, selectedDate, unit, cupSize])
 
   const save = async (newAmount) => {
-    const clamped = Math.max(0, newAmount)
+    const clamped = Math.max(0, Math.round(newAmount))
     setAmount(clamped)
+    setSaving(true)
     const cups = unit === 'cups' ? clamped : Math.round(clamped / cupSize)
     const amount_ml = unit === 'ml' ? clamped : clamped * cupSize
-    await supabase.from('water_logs').upsert({ user_id: userId, log_date: selectedDate, cups, amount_ml, updated_at: new Date().toISOString() })
+    await supabase
+      .from('water_logs')
+      .upsert({ user_id: userId, log_date: selectedDate, cups, amount_ml, updated_at: new Date().toISOString() })
+    setSaving(false)
   }
 
-  const displayLabel = unit === 'ml' ? `${amount} / ${goal} ml` : `${amount} / ${goal} cups`
-  const mlTotal = unit === 'ml' ? amount : amount * cupSize
+  // Fix: tap filled cup → set amount to exactly that index (removes that cup and all after)
+  // tap empty cup → set amount to index + 1 (fills up to and including that cup)
+  const handleCupTap = (i) => {
+    if (!isToday) return
+    const newAmount = i < amount ? i : i + 1
+    save(newAmount)
+  }
+
+  const displayLabel = unit === 'ml'
+    ? `${amount} / ${goal} ml`
+    : `${amount} / ${goal} cups`
+  const mlEquiv = unit === 'cups' ? amount * cupSize : amount
+  const activeColor = goalReached ? C.teal : C.blue
 
   return (
     <Card style={{ marginBottom: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>💧 Water</div>
-          <div style={{ fontSize: 12, color: C.blue }}>{loading ? '...' : displayLabel}{unit === 'cups' && amount > 0 ? ` · ${mlTotal}ml` : ''}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>
+            💧 Water
+            {saving && <span style={{ fontSize: 10, color: C.textMuted, marginLeft: 8 }}>saving…</span>}
+          </div>
+          <div style={{ fontSize: 12, color: activeColor }}>
+            {loading ? '…' : displayLabel}
+            {unit === 'cups' && amount > 0 && ` · ${mlEquiv} ml`}
+          </div>
         </div>
-        <button onClick={() => setShowSettings(true)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 10, padding: '5px 10px', color: C.textMuted, fontSize: 11, cursor: 'pointer' }}>⚙ Settings</button>
+        <button
+          onClick={() => setShowSettings(true)}
+          style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 10, padding: '5px 10px', color: C.textMuted, fontSize: 11, cursor: 'pointer' }}>
+          ⚙ Settings
+        </button>
       </div>
 
       {/* Progress bar */}
       <div style={{ height: 7, background: C.surfaceLight, borderRadius: 4, marginBottom: 16, overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: pct >= 100 ? C.green : C.blue, borderRadius: 4, transition: 'width 0.4s ease, background 0.3s' }} />
+        <div style={{
+          width: `${pct}%`, height: '100%',
+          background: goalReached
+            ? `linear-gradient(90deg, ${C.blue}, ${C.teal})`
+            : C.blue,
+          borderRadius: 4,
+          transition: 'width 0.4s ease',
+        }} />
       </div>
 
       {unit === 'cups' ? (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {Array.from({ length: Math.min(goal, 12) }, (_, i) => (
-            <div key={i} onClick={() => isToday && save(i < amount ? i : i + 1)}
-              style={{ width: 38, height: 38, borderRadius: 11, cursor: isToday ? 'pointer' : 'default', background: i < amount ? C.blueLight : C.surfaceLight, border: `1px solid ${i < amount ? C.blue : C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, transition: 'all 0.15s', transform: i < amount ? 'scale(1.05)' : 'scale(1)' }}>
-              💧
-            </div>
-          ))}
+          {Array.from({ length: Math.min(goal, 12) }, (_, i) => {
+            const filled = i < amount
+            return (
+              <div
+                key={i}
+                onClick={() => handleCupTap(i)}
+                style={{
+                  width: 38, height: 38, borderRadius: 11,
+                  cursor: isToday ? 'pointer' : 'default',
+                  background: filled ? C.blueLight : C.surfaceLight,
+                  border: `1px solid ${filled ? activeColor : C.border}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 17,
+                  transition: 'all 0.15s',
+                  transform: filled ? 'scale(1.06)' : 'scale(1)',
+                  opacity: !isToday ? 0.6 : 1,
+                }}>
+                💧
+              </div>
+            )
+          })}
         </div>
       ) : (
         <div>
+          {/* Quick-add buttons */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
             {[250, 330, 500, 750, 1000].map(ml => (
-              <button key={ml} onClick={() => isToday && save(amount + ml)} disabled={!isToday}
-                style={{ flex: 1, padding: '8px 4px', borderRadius: 10, border: `1px solid ${C.border}`, background: C.surfaceLight, color: isToday ? C.text : C.textMuted, fontSize: 12, cursor: isToday ? 'pointer' : 'default', minWidth: 50 }}>
+              <button
+                key={ml}
+                onClick={() => isToday && save(amount + ml)}
+                disabled={!isToday}
+                style={{
+                  flex: 1, padding: '8px 4px', borderRadius: 10,
+                  border: `1px solid ${C.border}`,
+                  background: C.surfaceLight,
+                  color: isToday ? C.text : C.textMuted,
+                  fontSize: 12,
+                  cursor: isToday ? 'pointer' : 'default',
+                  minWidth: 50,
+                }}>
                 +{ml}ml
               </button>
             ))}
           </div>
+          {/* Manual adjust */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button onClick={() => isToday && save(amount - 250)} disabled={!isToday || amount === 0}
-              style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${C.border}`, background: 'transparent', color: C.textMuted, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
-            <div style={{ flex: 1, textAlign: 'center', fontSize: 24, fontWeight: 700, color: C.blue }}>{amount}ml</div>
-            <button onClick={() => isToday && save(amount + 250)} disabled={!isToday}
-              style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${C.gold}`, background: C.goldLight, color: C.gold, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+            <button
+              onClick={() => isToday && amount > 0 && save(amount - 250)}
+              disabled={!isToday || amount === 0}
+              style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${C.border}`, background: 'transparent', color: C.textMuted, fontSize: 20, cursor: amount > 0 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              −
+            </button>
+            <div style={{ flex: 1, textAlign: 'center', fontSize: 24, fontWeight: 700, color: activeColor }}>
+              {amount}ml
+            </div>
+            <button
+              onClick={() => isToday && save(amount + 250)}
+              disabled={!isToday}
+              style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${C.gold}`, background: C.goldLight, color: C.gold, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              +
+            </button>
           </div>
         </div>
       )}
 
-      {!isToday && <div style={{ fontSize: 11, color: C.textDim, marginTop: 12, textAlign: 'center' }}>View only — switch to today to log water</div>}
-      {pct >= 100 && isToday && <div style={{ fontSize: 12, color: C.green, marginTop: 10, textAlign: 'center', fontWeight: 500 }}>🎉 Daily water goal reached!</div>}
+      {!isToday && (
+        <div style={{ fontSize: 11, color: C.textDim, marginTop: 12, textAlign: 'center' }}>
+          View only — switch to today to log water
+        </div>
+      )}
+      {goalReached && isToday && (
+        <div style={{ fontSize: 12, color: C.teal, marginTop: 10, textAlign: 'center', fontWeight: 600 }}>
+          🎉 Daily water goal reached!
+        </div>
+      )}
 
-      {showSettings && <WaterSettingsModal profile={profile} onSave={updateProfile} onClose={() => setShowSettings(false)} />}
+      {showSettings && (
+        <WaterSettingsModal
+          profile={profile}
+          onSave={updateProfile}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
     </Card>
   )
 }
