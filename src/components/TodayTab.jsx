@@ -125,26 +125,109 @@ function CalRing({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
 // expression (glow intensity + color) based on mood.
 // moods: 'neutral' | 'hyped' | 'proud' | 'concerned' | 'celebrate'
 // ─────────────────────────────────────────────
-function CoachAvatar({ mood = 'neutral', size = 34 }) {
-  const moodStyles = {
-    neutral:   { grad: `${C.gold}, ${C.amber}`,     glow: C.gold + '22',  symbol: '✦' },
-    hyped:     { grad: `${C.amber}, ${C.red}`,      glow: C.amber + '33', symbol: '🔥' },
-    proud:     { grad: `${C.gold}, #E8C766`,        glow: C.gold + '40',  symbol: '✦' },
-    concerned: { grad: `${C.textMuted}, ${C.gold}`, glow: C.gold + '18',  symbol: '✦' },
-    celebrate: { grad: `${C.amber}, ${C.gold}`,     glow: C.amber + '44', symbol: '🏆' },
+// ─────────────────────────────────────────────
+// Coach Auron — animated flame-spirit mascot
+// Real SVG character: body shape, eyes, brows, mouth —
+// expressions change by mood, idle bob/blink animation,
+// celebration burst on milestones.
+// moods: 'neutral' | 'hyped' | 'proud' | 'concerned' | 'celebrate' | 'sleepy'
+// ─────────────────────────────────────────────
+let coachAnimInjected = false
+function injectCoachAnimations() {
+  if (coachAnimInjected) return
+  coachAnimInjected = true
+  const style = document.createElement('style')
+  style.textContent = `
+    @keyframes coachBob { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(-2deg); } }
+    @keyframes coachBobHyped { 0%,100% { transform: translateY(0) rotate(0deg) scale(1); } 50% { transform: translateY(-5px) rotate(3deg) scale(1.04); } }
+    @keyframes coachBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+    @keyframes coachFlicker { 0%,100% { opacity: 1; } 50% { opacity: 0.85; } }
+    @keyframes coachPop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes coachSparkle { 0% { transform: translate(0,0) scale(0); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(1); opacity: 0; } }
+    @keyframes coachDroop { 0%,100% { transform: translateY(0); } 50% { transform: translateY(1px); } }
+  `
+  document.head.appendChild(style)
+}
+
+function CoachAvatar({ mood = 'neutral', size = 34, animated = true }) {
+  useEffect(() => { injectCoachAnimations() }, [])
+
+  const palettes = {
+    neutral:   { body: [C.gold, C.amber],         glow: C.gold + '26',  brow: 0,  mouth: 'smile',  bob: 'coachBob' },
+    hyped:     { body: [C.amber, '#FF8A4C'],       glow: C.amber + '38', brow: -4, mouth: 'grin',   bob: 'coachBobHyped' },
+    proud:     { body: [C.gold, '#F0D27A'],        glow: C.gold + '44',  brow: -2, mouth: 'smile',  bob: 'coachBob' },
+    concerned: { body: ['#9B948A', C.gold],        glow: C.gold + '14',  brow: 6,  mouth: 'flat',   bob: 'coachDroop' },
+    celebrate: { body: ['#FFB84C', C.gold],        glow: C.amber + '4D', brow: -5, mouth: 'grin',   bob: 'coachBobHyped' },
+    sleepy:    { body: [C.textDim, '#7A766C'],     glow: 'transparent',  brow: 2,  mouth: 'flat',   bob: 'coachBob' },
   }
-  const m = moodStyles[mood] || moodStyles.neutral
+  const p = palettes[mood] || palettes.neutral
+  const eyeH = mood === 'sleepy' ? 1.2 : 3.4
+
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      <div style={{ position: 'absolute', inset: -6, borderRadius: '50%', background: `radial-gradient(circle, ${m.glow} 0%, transparent 70%)` }} />
+      {/* Ambient glow */}
+      {p.glow !== 'transparent' && (
+        <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', background: `radial-gradient(circle, ${p.glow} 0%, transparent 72%)`, pointerEvents: 'none' }} />
+      )}
+
+      {/* Celebration sparkle burst */}
+      {mood === 'celebrate' && animated && (
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          {[[-14,-10],[14,-10],[-16,6],[16,6],[0,-18]].map(([tx,ty], i) => (
+            <div key={i} style={{
+              position: 'absolute', top: '50%', left: '50%', width: 4, height: 4, borderRadius: '50%',
+              background: C.gold, '--tx': `${tx}px`, '--ty': `${ty}px`,
+              animation: `coachSparkle 1.1s ease-out ${i * 0.12}s infinite`,
+            }} />
+          ))}
+        </div>
+      )}
+
       <div style={{
-        width: size, height: size, borderRadius: '50%',
-        background: `linear-gradient(135deg, ${m.grad})`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: size * 0.46, position: 'relative',
-        boxShadow: `0 0 0 1px rgba(255,255,255,0.08) inset`,
+        width: '100%', height: '100%',
+        animation: animated ? `${p.bob} ${mood === 'hyped' || mood === 'celebrate' ? '1.1s' : '2.6s'} ease-in-out infinite` : 'none',
       }}>
-        {m.symbol}
+        <svg viewBox="0 0 40 40" width={size} height={size} style={{ overflow: 'visible' }}>
+          <defs>
+            <linearGradient id={`coachGrad-${mood}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={p.body[0]} />
+              <stop offset="100%" stopColor={p.body[1]} />
+            </linearGradient>
+          </defs>
+
+          {/* Flame body — teardrop shape */}
+          <path
+            d="M20 4 C 28 12, 33 18, 33 25 C 33 32.5, 27 37, 20 37 C 13 37, 7 32.5, 7 25 C 7 18, 12 12, 20 4 Z"
+            fill={`url(#coachGrad-${mood})`}
+            style={{ animation: animated ? 'coachFlicker 2.4s ease-in-out infinite' : 'none' }}
+          />
+
+          {/* Inner highlight */}
+          <ellipse cx="16" cy="20" rx="4.5" ry="6" fill="rgba(255,255,255,0.18)" />
+
+          {/* Eyebrows — expression driver */}
+          <g stroke={C.dark} strokeWidth="1.6" strokeLinecap="round" opacity="0.55">
+            <line x1="13.5" y1={16 + p.brow * 0.3} x2="17" y2={16 - p.brow * 0.5} />
+            <line x1="23" y1={16 - p.brow * 0.5} x2="26.5" y2={16 + p.brow * 0.3} />
+          </g>
+
+          {/* Eyes */}
+          <g fill={C.dark} opacity="0.85">
+            <rect x="14" y="19.5" width="3.2" height={eyeH} rx="1.6" style={{ animation: animated && mood !== 'sleepy' ? 'coachBlink 4.5s ease-in-out infinite' : 'none', transformOrigin: '15.6px 21px' }} />
+            <rect x="22.8" y="19.5" width="3.2" height={eyeH} rx="1.6" style={{ animation: animated && mood !== 'sleepy' ? 'coachBlink 4.5s ease-in-out infinite' : 'none', transformOrigin: '24.4px 21px', animationDelay: '0.05s' }} />
+          </g>
+
+          {/* Mouth */}
+          {p.mouth === 'grin' && (
+            <path d="M15 26 Q20 31 25 26" stroke={C.dark} strokeWidth="1.8" strokeLinecap="round" fill="none" opacity="0.75" />
+          )}
+          {p.mouth === 'smile' && (
+            <path d="M16 26.5 Q20 29.5 24 26.5" stroke={C.dark} strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.7" />
+          )}
+          {p.mouth === 'flat' && (
+            <line x1="16.5" y1="27" x2="23.5" y2="27" stroke={C.dark} strokeWidth="1.6" strokeLinecap="round" opacity="0.65" />
+          )}
+        </svg>
       </div>
     </div>
   )
@@ -1054,8 +1137,28 @@ export default function TodayTab({ userId, profile, updateProfile }) {
     return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`
   }
 
+  // Greeting line — Coach Auron's hello, varies by time of day + state
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    const timeGreeting = hour < 5 ? "Up late?" : hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 22 ? "Good evening" : "Up late?"
+    if (!isToday) return { mood: 'neutral', text: "Looking back, are we?" }
+    if (streakDays >= 7) return { mood: 'proud', text: `${timeGreeting}. ${streakDays} days running — let's keep it that way.` }
+    if (totalCal === 0 && hour >= 10) return { mood: 'concerned', text: `${timeGreeting}. Nothing logged yet today — let's fix that.` }
+    if (totalCal === 0) return { mood: 'neutral', text: `${timeGreeting}. Ready when you are.` }
+    return { mood: 'hyped', text: `${timeGreeting}. You're already moving today.` }
+  }
+  const greeting = getGreeting()
+
   return (
     <div style={{ paddingBottom: 8 }}>
+
+      {/* ── Coach Auron greeting ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+        <CoachAvatar mood={greeting.mood} size={42} />
+        <div style={{ fontSize: 14, color: C.text, lineHeight: 1.4, fontWeight: 500 }}>
+          {greeting.text}
+        </div>
+      </div>
 
       {/* ── Combined Week Navigator + Streak ── */}
       <div style={{
