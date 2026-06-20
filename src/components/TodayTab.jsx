@@ -888,82 +888,6 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
 }
 
 // ─────────────────────────────────────────────
-// Streak Section
-// ─────────────────────────────────────────────
-function StreakSection({ weekDays, selectedDate, todayStr, setSelectedDate, loggedDates }) {
-  const today = new Date()
-  // Count consecutive days logged up to today
-  let streak = 0
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(today)
-    d.setDate(today.getDate() - i)
-    const ds = d.toISOString().split('T')[0]
-    if (loggedDates.has(ds)) streak++
-    else break
-  }
-
-  return (
-    <div style={{
-      background: streak > 0 ? `linear-gradient(135deg, ${C.amber}14 0%, ${C.surface} 100%)` : C.surface,
-      borderRadius: 18,
-      border: `1px solid ${streak > 0 ? C.amber + '44' : C.border}`,
-      padding: '16px 18px',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <Label style={{ marginBottom: 0 }}>Streak</Label>
-        {streak > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontSize: 16 }}>🔥</span>
-            <span style={{ fontSize: 15, fontWeight: 700, color: C.amber }}>{streak} day{streak !== 1 ? 's' : ''}</span>
-          </div>
-        )}
-      </div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        {weekDays.map((d, i) => {
-          const dateStr = d.toISOString().split('T')[0]
-          const isSelected = dateStr === selectedDate
-          const isFuture = d > today
-          const isCurrentDay = dateStr === todayStr
-          const isLogged = loggedDates.has(dateStr)
-
-          let bg = C.surfaceLight
-          let border = C.border
-          let color = C.textMuted
-          let icon = ''
-
-          if (isSelected) { bg = C.gold; border = 'transparent'; color = C.dark; icon = isLogged ? '✓' : '' }
-          else if (isFuture) { bg = 'transparent'; border = C.border; color = C.border; icon = '' }
-          else if (isLogged) { bg = C.greenLight; border = C.green; color = C.green; icon = '✓' }
-          else if (isCurrentDay) { bg = C.goldLight; border = C.gold; color = C.gold; icon = '' }
-
-          return (
-            <div key={i} onClick={() => !isFuture && setSelectedDate(dateStr)}
-              style={{ flex: 1, textAlign: 'center', cursor: isFuture ? 'default' : 'pointer' }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', margin: '0 auto 5px', background: bg, border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color, fontWeight: 600, transition: 'all 0.15s' }}>
-                {icon}
-              </div>
-              <div style={{ fontSize: 10, color: isSelected ? C.gold : C.textMuted, fontWeight: isSelected ? 600 : 400 }}>
-                {DAYS[d.getDay()].slice(0,1)}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-      {streak === 0 && (
-        <div style={{ marginTop: 12, fontSize: 12, color: C.textDim, textAlign: 'center' }}>
-          Log a meal today to start your streak
-        </div>
-      )}
-      {streak >= 3 && (
-        <div style={{ marginTop: 12, fontSize: 12, color: C.amber, textAlign: 'center', fontWeight: 500 }}>
-          {streak >= 7 ? "🏆 A full week strong — don't break it now" : "Keep it going — you're building momentum"}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────
 // Main TodayTab
 // ─────────────────────────────────────────────
 export default function TodayTab({ userId, profile, updateProfile }) {
@@ -1075,50 +999,88 @@ export default function TodayTab({ userId, profile, updateProfile }) {
   return (
     <div style={{ paddingBottom: 8 }}>
 
-      {/* ── Date Navigator ── */}
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+      {/* ── Combined Week Navigator + Streak ── */}
+      <div style={{
+        marginBottom: 20, borderRadius: 18, padding: '16px 18px',
+        background: streakDays > 0 ? `linear-gradient(135deg, ${C.amber}14 0%, ${C.surface} 100%)` : C.surface,
+        border: `1px solid ${streakDays > 0 ? C.amber + '44' : C.border}`,
+      }}>
+        {/* Week offset row + streak badge */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <button onClick={() => setWeekOffset(w => w - 1)}
-            style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 22, cursor: 'pointer', padding: '4px 8px', lineHeight: 1 }}>‹</button>
-          <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 500, letterSpacing: '0.04em' }}>
-            {weekOffset === 0 ? 'This week' : weekOffset === -1 ? 'Last week' : `${Math.abs(weekOffset)} weeks ago`}
+            style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 18, cursor: 'pointer', padding: '2px 6px', lineHeight: 1 }}>‹</button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: C.textMuted, fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              {weekOffset === 0 ? 'This week' : weekOffset === -1 ? 'Last week' : `${Math.abs(weekOffset)} weeks ago`}
+            </span>
+            {streakDays > 0 && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 20, background: C.amber + '22' }}>
+                <span style={{ fontSize: 12 }}>🔥</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: C.amber }}>{streakDays}</span>
+              </span>
+            )}
           </div>
+
           <button onClick={() => setWeekOffset(w => Math.min(0, w + 1))}
-            style={{ background: 'none', border: 'none', color: weekOffset === 0 ? C.border : C.textMuted, fontSize: 22, cursor: weekOffset === 0 ? 'default' : 'pointer', padding: '4px 8px', lineHeight: 1 }}>›</button>
+            style={{ background: 'none', border: 'none', color: weekOffset === 0 ? C.border : C.textMuted, fontSize: 18, cursor: weekOffset === 0 ? 'default' : 'pointer', padding: '2px 6px', lineHeight: 1 }}>›</button>
         </div>
-        <div style={{ display: 'flex', gap: 4 }}>
+
+        {/* Day strip — date + streak in one */}
+        <div style={{ display: 'flex', gap: 5 }}>
           {weekDays.map((d, i) => {
             const ds = d.toISOString().split('T')[0]
             const isSel = ds === selectedDate
             const isFuture = d > today
             const isCurrentDay = ds === todayStr
-            const hasLog = loggedDates.has(ds)
+            const isLogged = loggedDates.has(ds)
+
+            let bg = 'transparent'
+            let border = C.border
+            let numColor = isFuture ? C.border : C.textMuted
+
+            if (isSel) { bg = C.gold; border = 'transparent'; numColor = C.dark }
+            else if (isLogged) { bg = C.greenLight; border = C.green + '66' }
+            else if (isCurrentDay) { bg = C.goldLight; border = C.gold + '66'; numColor = C.gold }
+
             return (
               <button key={i} onClick={() => !isFuture && setSelectedDate(ds)} disabled={isFuture}
-                style={{ flex: 1, padding: '8px 4px', borderRadius: 12, border: `1px solid ${isSel ? C.gold : isCurrentDay && !isSel ? C.gold + '55' : C.border}`, background: isSel ? C.gold : isCurrentDay && !isSel ? C.goldLight : 'transparent', color: isSel ? C.dark : isFuture ? C.border : isCurrentDay ? C.gold : C.textMuted, cursor: isFuture ? 'default' : 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, transition: 'all 0.15s' }}>
-                <div style={{ fontSize: 10, fontWeight: 500 }}>{DAYS[d.getDay()].slice(0,1)}</div>
-                <div style={{ fontSize: 15, fontWeight: isSel ? 700 : 400 }}>{d.getDate()}</div>
-                {hasLog && !isSel && <div style={{ width: 4, height: 4, borderRadius: '50%', background: C.green }} />}
+                style={{
+                  flex: 1, padding: '8px 4px 7px', borderRadius: 13,
+                  border: `1px solid ${border}`, background: bg,
+                  cursor: isFuture ? 'default' : 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                  transition: 'all 0.15s',
+                }}>
+                <div style={{ fontSize: 9.5, fontWeight: 600, color: isSel ? C.dark : C.textMuted, opacity: isSel ? 0.7 : 1 }}>
+                  {DAYS[d.getDay()].slice(0,1)}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: isSel ? 700 : 500, color: numColor }}>
+                  {d.getDate()}
+                </div>
+                <div style={{ height: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {isLogged && <div style={{ width: 5, height: 5, borderRadius: '50%', background: isSel ? C.dark : C.green }} />}
+                </div>
               </button>
             )
           })}
         </div>
+
+        {/* Streak status line */}
+        {streakDays === 0 ? (
+          <div style={{ marginTop: 12, fontSize: 11.5, color: C.textDim, textAlign: 'center' }}>
+            Log a meal today to start your streak
+          </div>
+        ) : streakDays >= 3 && (
+          <div style={{ marginTop: 12, fontSize: 11.5, color: C.amber, textAlign: 'center', fontWeight: 500 }}>
+            {streakDays >= 7 ? "🏆 A full week strong — don't break it now" : "Keep it going — you're building momentum"}
+          </div>
+        )}
       </div>
 
       {/* ── Page title ── */}
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: C.text, marginBottom: 18 }}>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: C.text, marginBottom: 22 }}>
         {formatDate(selectedDate)}
-      </div>
-
-      {/* ── Streak (moved up for motivation) ── */}
-      <div style={{ marginBottom: 22 }}>
-        <StreakSection
-          weekDays={weekDays}
-          selectedDate={selectedDate}
-          todayStr={todayStr}
-          setSelectedDate={setSelectedDate}
-          loggedDates={loggedDates}
-        />
       </div>
 
       {/* ── Calorie Ring (hero) ── */}
