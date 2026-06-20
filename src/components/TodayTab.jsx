@@ -120,6 +120,60 @@ function CalRing({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
 }
 
 // ─────────────────────────────────────────────
+// Coach Auron — mascot avatar
+// Visual identity: a glowing torch/flame mark that shifts
+// expression (glow intensity + color) based on mood.
+// moods: 'neutral' | 'hyped' | 'proud' | 'concerned' | 'celebrate'
+// ─────────────────────────────────────────────
+function CoachAvatar({ mood = 'neutral', size = 34 }) {
+  const moodStyles = {
+    neutral:   { grad: `${C.gold}, ${C.amber}`,     glow: C.gold + '22',  symbol: '✦' },
+    hyped:     { grad: `${C.amber}, ${C.red}`,      glow: C.amber + '33', symbol: '🔥' },
+    proud:     { grad: `${C.gold}, #E8C766`,        glow: C.gold + '40',  symbol: '✦' },
+    concerned: { grad: `${C.textMuted}, ${C.gold}`, glow: C.gold + '18',  symbol: '✦' },
+    celebrate: { grad: `${C.amber}, ${C.gold}`,     glow: C.amber + '44', symbol: '🏆' },
+  }
+  const m = moodStyles[mood] || moodStyles.neutral
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <div style={{ position: 'absolute', inset: -6, borderRadius: '50%', background: `radial-gradient(circle, ${m.glow} 0%, transparent 70%)` }} />
+      <div style={{
+        width: size, height: size, borderRadius: '50%',
+        background: `linear-gradient(135deg, ${m.grad})`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: size * 0.46, position: 'relative',
+        boxShadow: `0 0 0 1px rgba(255,255,255,0.08) inset`,
+      }}>
+        {m.symbol}
+      </div>
+    </div>
+  )
+}
+
+// Streak copy system — Coach Auron's personality by tier
+function getStreakMessage(streak) {
+  if (streak === 0)
+    return { mood: 'neutral', line: "No streak yet — log a meal today and I'll start counting." }
+  if (streak === 1)
+    return { mood: 'hyped', line: "Day one is done. Show up again tomorrow and we've got something started." }
+  if (streak === 2)
+    return { mood: 'hyped', line: "Two days running. Don't stop now — momentum is the whole game." }
+  if (streak >= 3 && streak <= 6)
+    return { mood: 'hyped', line: `${streak} days strong. You're past the hardest part — starting.` }
+  if (streak === 7)
+    return { mood: 'celebrate', line: "A full week! That's not luck, that's a habit forming. Proud of you." }
+  if (streak >= 8 && streak <= 13)
+    return { mood: 'proud', line: `${streak} days in a row. This is who you are now, not just what you're doing.` }
+  if (streak === 14)
+    return { mood: 'celebrate', line: "Two full weeks. Most people quit by now — you didn't." }
+  if (streak >= 15 && streak <= 29)
+    return { mood: 'proud', line: `${streak} days. I've stopped being surprised — this is just consistency now.` }
+  if (streak === 30)
+    return { mood: 'celebrate', line: "30 days. A full month of showing up. That's genuinely rare — well done." }
+  return { mood: 'proud', line: `${streak} days and counting. Honestly? I'm just here cheering at this point.` }
+}
+
+// ─────────────────────────────────────────────
 // AI Coach Card
 // ─────────────────────────────────────────────
 function AICoachCard({ consumed, goal, proteinG, proteinGoal, waterAmt, waterGoal, workoutCount, streakDays, userGoal, isToday }) {
@@ -159,15 +213,19 @@ Give one specific insight or encouragement based on the most important thing the
 
   if (!isToday) return null
 
+  // Determine mood from context for the avatar
+  const calLeft = goal - consumed
+  const cardMood = calLeft < 0 ? 'concerned' : streakDays >= 7 ? 'proud' : streakDays >= 1 ? 'hyped' : 'neutral'
+
   return (
     <div style={{ marginBottom: 20, borderRadius: 18, background: `linear-gradient(135deg, #1C1A12 0%, #1A1A1A 100%)`, border: `1px solid ${C.borderStrong}`, padding: '16px 18px', position: 'relative', overflow: 'hidden' }}>
       {/* Subtle gold shimmer */}
       <div style={{ position: 'absolute', top: 0, right: 0, width: 120, height: 120, background: `radial-gradient(circle at 100% 0%, ${C.gold}0A 0%, transparent 60%)`, pointerEvents: 'none' }} />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(135deg, ${C.gold}, ${C.amber})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>✦</div>
+        <CoachAvatar mood={cardMood} size={32} />
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.gold }}>Auron Coach</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.gold }}>Coach Auron</div>
           <div style={{ fontSize: 11, color: C.textMuted }}>Your AI fitness coach</div>
         </div>
         <button onClick={generate} disabled={loading} style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${C.border}`, borderRadius: 20, padding: '4px 10px', color: C.textMuted, fontSize: 11, cursor: loading ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -1066,16 +1124,33 @@ export default function TodayTab({ userId, profile, updateProfile }) {
           })}
         </div>
 
-        {/* Streak status line */}
-        {streakDays === 0 ? (
-          <div style={{ marginTop: 12, fontSize: 11.5, color: C.textDim, textAlign: 'center' }}>
-            Log a meal today to start your streak
-          </div>
-        ) : streakDays >= 3 && (
-          <div style={{ marginTop: 12, fontSize: 11.5, color: C.amber, textAlign: 'center', fontWeight: 500 }}>
-            {streakDays >= 7 ? "🏆 A full week strong — don't break it now" : "Keep it going — you're building momentum"}
-          </div>
-        )}
+        {/* Coach Auron speaks — streak motivation */}
+        {(() => {
+          const { mood, line } = getStreakMessage(streakDays)
+          const isMilestone = [7, 14, 30].includes(streakDays)
+          const milestones = [7, 14, 30, 60, 100]
+          const nextMilestone = milestones.find(m => m > streakDays)
+          const daysToGo = nextMilestone ? nextMilestone - streakDays : null
+
+          return (
+            <div style={{
+              marginTop: 14, paddingTop: 14, borderTop: `1px solid ${streakDays > 0 ? C.amber + '22' : C.border}`,
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+            }}>
+              <CoachAvatar mood={mood} size={30} />
+              <div style={{ flex: 1, paddingTop: 1 }}>
+                <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5, fontWeight: isMilestone ? 600 : 400 }}>
+                  {line}
+                </div>
+                {streakDays > 0 && !isMilestone && daysToGo && (
+                  <div style={{ fontSize: 11, color: C.textDim, marginTop: 5 }}>
+                    {daysToGo} more day{daysToGo !== 1 ? 's' : ''} to your {nextMilestone}-day milestone
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
       {/* ── Page title ── */}
