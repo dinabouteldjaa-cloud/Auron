@@ -310,18 +310,54 @@ function MealsSection({ foodLogs, isToday }) {
 }
 
 // ─────────────────────────────────────────────
-// Exercise Detail Modal — AI explains how to do it
+// Exercise Detail Modal — AI explains how to do it (structured)
 // ─────────────────────────────────────────────
 function ExerciseModal({ exercise, onClose }) {
-  const [explanation, setExplanation] = useState('')
+  const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+    setLoading(true); setError(false); setData(null)
+
     askClaude(
-      'You are a certified personal trainer. Explain how to perform the exercise in 3–4 short paragraphs. Cover: starting position, movement execution, common mistakes, and one pro tip. Plain text only, no markdown, no bullet points.',
-      `Explain how to do: ${exercise.name}${exercise.sets ? `. Target: ${exercise.sets} sets × ${exercise.reps || exercise.duration}.` : ''}`
-    ).then(text => { setExplanation(text); setLoading(false) })
+      `You are a certified personal trainer. Respond ONLY with valid JSON, no markdown, no explanation, in this exact shape:
+{"setup":["short step 1","short step 2"],"execution":["short step 1","short step 2","short step 3"],"mistakes":["common mistake 1","common mistake 2"],"tip":"one short pro tip sentence"}
+Rules: each array item must be ONE short sentence (under 14 words). 2-3 items per array max. No fluff, no intros.`,
+      `Exercise: ${exercise.name}${exercise.sets ? `. Target: ${exercise.sets} sets × ${exercise.reps || exercise.duration}.` : ''}`
+    ).then(raw => {
+      if (cancelled) return
+      try {
+        const clean = raw.replace(/```json|```/g, '').trim()
+        const parsed = JSON.parse(clean)
+        setData(parsed)
+      } catch {
+        setError(true)
+      }
+      setLoading(false)
+    })
+    return () => { cancelled = true }
   }, [exercise.name])
+
+  const Section = ({ icon, label, color, items }) => {
+    if (!items || items.length === 0) return null
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span>{icon}</span> {label}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {items.map((item, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: color, marginTop: 7, flexShrink: 0 }} />
+              <div style={{ fontSize: 13.5, color: C.text, lineHeight: 1.5 }}>{item}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 300, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
@@ -329,7 +365,7 @@ function ExerciseModal({ exercise, onClose }) {
       <div onClick={e => e.stopPropagation()} style={{
         background: C.surface, borderRadius: '22px 22px 0 0',
         padding: '24px 20px 40px', width: '100%', maxWidth: 480,
-        maxHeight: '80vh', overflowY: 'auto',
+        maxHeight: '82vh', overflowY: 'auto',
         border: `1px solid ${C.borderStrong}`, borderBottom: 'none',
       }}>
         {/* Handle bar */}
@@ -342,7 +378,7 @@ function ExerciseModal({ exercise, onClose }) {
             {(exercise.sets || exercise.duration) && (
               <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>
                 {exercise.sets && exercise.reps ? `${exercise.sets} sets × ${exercise.reps} reps` : ''}
-                {exercise.sets && exercise.duration ? `${exercise.sets} sets × ${exercise.duration}` : ''}
+                {exercise.sets && exercise.duration && !exercise.reps ? `${exercise.sets} sets × ${exercise.duration}` : ''}
                 {exercise.rest ? ` · Rest ${exercise.rest}` : ''}
               </div>
             )}
@@ -350,20 +386,31 @@ function ExerciseModal({ exercise, onClose }) {
           <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: C.textMuted, fontSize: 24, cursor: 'pointer', lineHeight: 1, flexShrink: 0 }}>×</button>
         </div>
 
-        {exercise.tip && (
-          <div style={{ background: C.goldLight, border: `1px solid ${C.gold}44`, borderRadius: 12, padding: '10px 14px', marginBottom: 16 }}>
-            <div style={{ fontSize: 11, color: C.gold, fontWeight: 700, marginBottom: 3 }}>💡 Coach tip</div>
-            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{exercise.tip}</div>
-          </div>
-        )}
-
-        {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 0' }}>
+        {loading && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 0' }}>
             <div style={{ width: 16, height: 16, border: `2px solid ${C.border}`, borderTopColor: C.gold, borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
             <span style={{ fontSize: 13, color: C.textMuted }}>Loading instructions...</span>
           </div>
-        ) : (
-          <div style={{ fontSize: 14, color: C.text, lineHeight: 1.75 }}>{explanation}</div>
+        )}
+
+        {error && !loading && (
+          <div style={{ fontSize: 13, color: C.textMuted, padding: '8px 0' }}>
+            Couldn't load instructions right now. Try again in a moment.
+          </div>
+        )}
+
+        {data && !loading && (
+          <>
+            <Section icon="📍" label="Setup" color={C.blue} items={data.setup} />
+            <Section icon="▶" label="Execution" color={C.purple} items={data.execution} />
+            <Section icon="⚠" label="Avoid" color={C.amber} items={data.mistakes} />
+            {data.tip && (
+              <div style={{ background: C.goldLight, border: `1px solid ${C.gold}44`, borderRadius: 12, padding: '12px 14px', marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: C.gold, fontWeight: 700, marginBottom: 4 }}>💡 Coach tip</div>
+                <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{data.tip}</div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -856,13 +903,18 @@ function StreakSection({ weekDays, selectedDate, todayStr, setSelectedDate, logg
   }
 
   return (
-    <Card>
+    <div style={{
+      background: streak > 0 ? `linear-gradient(135deg, ${C.amber}14 0%, ${C.surface} 100%)` : C.surface,
+      borderRadius: 18,
+      border: `1px solid ${streak > 0 ? C.amber + '44' : C.border}`,
+      padding: '16px 18px',
+    }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <Label style={{ marginBottom: 0 }}>Weekly streak</Label>
+        <Label style={{ marginBottom: 0 }}>Streak</Label>
         {streak > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontSize: 15 }}>🔥</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: C.amber }}>{streak} day{streak !== 1 ? 's' : ''}</span>
+            <span style={{ fontSize: 16 }}>🔥</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: C.amber }}>{streak} day{streak !== 1 ? 's' : ''}</span>
           </div>
         )}
       </div>
@@ -887,7 +939,7 @@ function StreakSection({ weekDays, selectedDate, todayStr, setSelectedDate, logg
           return (
             <div key={i} onClick={() => !isFuture && setSelectedDate(dateStr)}
               style={{ flex: 1, textAlign: 'center', cursor: isFuture ? 'default' : 'pointer' }}>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', margin: '0 auto 5px', background: bg, border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color, fontWeight: 600, transition: 'all 0.15s' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', margin: '0 auto 5px', background: bg, border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color, fontWeight: 600, transition: 'all 0.15s' }}>
                 {icon}
               </div>
               <div style={{ fontSize: 10, color: isSelected ? C.gold : C.textMuted, fontWeight: isSelected ? 600 : 400 }}>
@@ -902,7 +954,12 @@ function StreakSection({ weekDays, selectedDate, todayStr, setSelectedDate, logg
           Log a meal today to start your streak
         </div>
       )}
-    </Card>
+      {streak >= 3 && (
+        <div style={{ marginTop: 12, fontSize: 12, color: C.amber, textAlign: 'center', fontWeight: 500 }}>
+          {streak >= 7 ? "🏆 A full week strong — don't break it now" : "Keep it going — you're building momentum"}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -1049,8 +1106,19 @@ export default function TodayTab({ userId, profile, updateProfile }) {
       </div>
 
       {/* ── Page title ── */}
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: C.text, marginBottom: 22 }}>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: C.text, marginBottom: 18 }}>
         {formatDate(selectedDate)}
+      </div>
+
+      {/* ── Streak (moved up for motivation) ── */}
+      <div style={{ marginBottom: 22 }}>
+        <StreakSection
+          weekDays={weekDays}
+          selectedDate={selectedDate}
+          todayStr={todayStr}
+          setSelectedDate={setSelectedDate}
+          loggedDates={loggedDates}
+        />
       </div>
 
       {/* ── Calorie Ring (hero) ── */}
@@ -1094,15 +1162,6 @@ export default function TodayTab({ userId, profile, updateProfile }) {
         userId={userId} profile={profile}
         updateProfile={updateProfile}
         selectedDate={selectedDate}
-      />
-
-      {/* ── Streak ── */}
-      <StreakSection
-        weekDays={weekDays}
-        selectedDate={selectedDate}
-        todayStr={todayStr}
-        setSelectedDate={setSelectedDate}
-        loggedDates={loggedDates}
       />
     </div>
   )
