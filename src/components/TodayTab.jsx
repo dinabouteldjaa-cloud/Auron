@@ -132,52 +132,73 @@ function CalRing({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
 // celebration burst on milestones.
 // moods: 'neutral' | 'hyped' | 'proud' | 'concerned' | 'celebrate' | 'sleepy'
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// Coach Auron — chibi cartoon fitness coach
+// Proper character: big head, cap, coach jacket,
+// real facial expressions per mood, CSS animations.
+// gender: 'male' | 'female'
+// moods: 'neutral' | 'hyped' | 'proud' | 'concerned' | 'celebrate'
+// ─────────────────────────────────────────────
 let coachAnimInjected = false
 function injectCoachAnimations() {
   if (coachAnimInjected) return
   coachAnimInjected = true
   const style = document.createElement('style')
   style.textContent = `
-    @keyframes coachBob { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(-2deg); } }
-    @keyframes coachBobHyped { 0%,100% { transform: translateY(0) rotate(0deg) scale(1); } 50% { transform: translateY(-5px) rotate(3deg) scale(1.04); } }
-    @keyframes coachBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
-    @keyframes coachFlicker { 0%,100% { opacity: 1; } 50% { opacity: 0.85; } }
-    @keyframes coachPop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
-    @keyframes coachSparkle { 0% { transform: translate(0,0) scale(0); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(1); opacity: 0; } }
-    @keyframes coachDroop { 0%,100% { transform: translateY(0); } 50% { transform: translateY(1px); } }
+    @keyframes coachIdle    { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-3px) rotate(-1.5deg)} }
+    @keyframes coachHyped   { 0%,100%{transform:translateY(0) rotate(0deg) scale(1)} 25%{transform:translateY(-6px) rotate(3deg) scale(1.06)} 75%{transform:translateY(-4px) rotate(-2deg) scale(1.04)} }
+    @keyframes coachCelebrate { 0%,100%{transform:translateY(0) scale(1)} 20%{transform:translateY(-8px) scale(1.08)} 60%{transform:translateY(-5px) scale(1.05)} }
+    @keyframes coachDroop   { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(2px) rotate(1deg)} }
+    @keyframes coachBlink   { 0%,88%,100%{transform:scaleY(1)} 92%{transform:scaleY(0.08)} }
+    @keyframes coachPunch   { 0%,100%{transform:translateX(0)} 30%{transform:translateX(5px) rotate(4deg)} 60%{transform:translateX(-2px) rotate(-1deg)} }
+    @keyframes coachSpark   { 0%{transform:translate(var(--sx),var(--sy)) scale(0);opacity:1} 100%{transform:translate(calc(var(--sx)*2.5),calc(var(--sy)*2.5)) scale(1.2);opacity:0} }
+    @keyframes coachPop     { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+    @keyframes coachSweat   { 0%,100%{transform:translateY(0);opacity:0.7} 50%{transform:translateY(3px);opacity:1} }
   `
   document.head.appendChild(style)
 }
 
-function CoachAvatar({ mood = 'neutral', size = 34, animated = true }) {
+function CoachAvatar({ mood = 'neutral', gender = 'male', size = 56, animated = true }) {
   useEffect(() => { injectCoachAnimations() }, [])
 
-  const palettes = {
-    neutral:   { body: [C.gold, C.amber],         glow: C.gold + '26',  brow: 0,  mouth: 'smile',  bob: 'coachBob' },
-    hyped:     { body: [C.amber, '#FF8A4C'],       glow: C.amber + '38', brow: -4, mouth: 'grin',   bob: 'coachBobHyped' },
-    proud:     { body: [C.gold, '#F0D27A'],        glow: C.gold + '44',  brow: -2, mouth: 'smile',  bob: 'coachBob' },
-    concerned: { body: ['#9B948A', C.gold],        glow: C.gold + '14',  brow: 6,  mouth: 'flat',   bob: 'coachDroop' },
-    celebrate: { body: ['#FFB84C', C.gold],        glow: C.amber + '4D', brow: -5, mouth: 'grin',   bob: 'coachBobHyped' },
-    sleepy:    { body: [C.textDim, '#7A766C'],     glow: 'transparent',  brow: 2,  mouth: 'flat',   bob: 'coachBob' },
+  // Mood → animation + expression config
+  const moodCfg = {
+    neutral:   { anim: 'coachIdle 2.8s ease-in-out infinite',     brow: 'flat',   eye: 'open',    mouth: 'slight' },
+    hyped:     { anim: 'coachHyped 1s ease-in-out infinite',       brow: 'raised', eye: 'wide',    mouth: 'grin'   },
+    proud:     { anim: 'coachIdle 2.2s ease-in-out infinite',      brow: 'up',     eye: 'open',    mouth: 'smile'  },
+    concerned: { anim: 'coachDroop 2.4s ease-in-out infinite',     brow: 'worry',  eye: 'open',    mouth: 'frown'  },
+    celebrate: { anim: 'coachCelebrate 1.2s ease-in-out infinite', brow: 'raised', eye: 'happy',   mouth: 'laugh'  },
   }
-  const p = palettes[mood] || palettes.neutral
-  const eyeH = mood === 'sleepy' ? 1.2 : 3.4
+  const cfg = moodCfg[mood] || moodCfg.neutral
+
+  // Colors — male: blue jacket, female: teal/coral jacket
+  const skin = '#F0C89A'
+  const skinShade = '#D9A87A'
+  const hair = gender === 'female' ? '#5C3D1E' : '#3D2810'
+  const jacket = gender === 'female' ? '#E07A85' : '#3A6FC4'
+  const jacketShade = gender === 'female' ? '#C45E6A' : '#2A5098'
+  const capColor = gender === 'female' ? '#C45E6A' : '#1E2A4A'
+  const pantColor = '#1E2030'
+  const shoeColor = gender === 'female' ? '#C45E6A' : '#2A5098'
+  const whistle = '#E8C84A'
+
+  // Eyebrow paths by expression
+  const browLeft  = { flat: 'M13 20 Q16 19.5 19 20', raised: 'M13 18.5 Q16 17.5 19 18.5', up: 'M13 18 Q16 17 19 18', worry: 'M13 19 Q16 20.5 19 18.5' }
+  const browRight = { flat: 'M21 20 Q24 19.5 27 20', raised: 'M21 18.5 Q24 17.5 27 18.5', up: 'M21 18 Q24 17 27 18', worry: 'M21 18.5 Q24 20.5 27 19' }
 
   return (
-    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      {/* Ambient glow */}
-      {p.glow !== 'transparent' && (
-        <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', background: `radial-gradient(circle, ${p.glow} 0%, transparent 72%)`, pointerEvents: 'none' }} />
-      )}
+    <div style={{ position: 'relative', width: size, height: Math.round(size * 1.45), flexShrink: 0 }}>
 
-      {/* Celebration sparkle burst */}
+      {/* Celebrate sparkles */}
       {mood === 'celebrate' && animated && (
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          {[[-14,-10],[14,-10],[-16,6],[16,6],[0,-18]].map(([tx,ty], i) => (
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}>
+          {[[-1,-1],[1,-1],[-1,0],[1,0],[0,-1],[0.5,-0.5],[-0.5,-0.7]].map(([sx, sy], i) => (
             <div key={i} style={{
-              position: 'absolute', top: '50%', left: '50%', width: 4, height: 4, borderRadius: '50%',
-              background: C.gold, '--tx': `${tx}px`, '--ty': `${ty}px`,
-              animation: `coachSparkle 1.1s ease-out ${i * 0.12}s infinite`,
+              position: 'absolute', top: '18%', left: '50%',
+              width: Math.max(3, size * 0.07), height: Math.max(3, size * 0.07),
+              borderRadius: '50%', background: [C.gold, C.amber, '#fff', C.blue][i % 4],
+              '--sx': `${sx * size * 0.38}px`, '--sy': `${sy * size * 0.38}px`,
+              animation: `coachSpark 1s ease-out ${i * 0.13}s infinite`,
             }} />
           ))}
         </div>
@@ -185,48 +206,155 @@ function CoachAvatar({ mood = 'neutral', size = 34, animated = true }) {
 
       <div style={{
         width: '100%', height: '100%',
-        animation: animated ? `${p.bob} ${mood === 'hyped' || mood === 'celebrate' ? '1.1s' : '2.6s'} ease-in-out infinite` : 'none',
+        animation: animated ? cfg.anim : 'none',
+        transformOrigin: 'center bottom',
       }}>
-        <svg viewBox="0 0 40 40" width={size} height={size} style={{ overflow: 'visible' }}>
-          <defs>
-            <linearGradient id={`coachGrad-${mood}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={p.body[0]} />
-              <stop offset="100%" stopColor={p.body[1]} />
-            </linearGradient>
-          </defs>
+        <svg viewBox="0 0 40 58" width={size} height={Math.round(size * 1.45)} style={{ overflow: 'visible' }}>
 
-          {/* Flame body — teardrop shape */}
-          <path
-            d="M20 4 C 28 12, 33 18, 33 25 C 33 32.5, 27 37, 20 37 C 13 37, 7 32.5, 7 25 C 7 18, 12 12, 20 4 Z"
-            fill={`url(#coachGrad-${mood})`}
-            style={{ animation: animated ? 'coachFlicker 2.4s ease-in-out infinite' : 'none' }}
-          />
+          {/* ── Shadow under feet ── */}
+          <ellipse cx="20" cy="57" rx="9" ry="1.8" fill="rgba(0,0,0,0.15)" />
 
-          {/* Inner highlight */}
-          <ellipse cx="16" cy="20" rx="4.5" ry="6" fill="rgba(255,255,255,0.18)" />
+          {/* ── Legs ── */}
+          <rect x="13" y="43" width="6" height="10" rx="3" fill={pantColor} />
+          <rect x="21" y="43" width="6" height="10" rx="3" fill={pantColor} />
 
-          {/* Eyebrows — expression driver */}
-          <g stroke={C.dark} strokeWidth="1.6" strokeLinecap="round" opacity="0.55">
-            <line x1="13.5" y1={16 + p.brow * 0.3} x2="17" y2={16 - p.brow * 0.5} />
-            <line x1="23" y1={16 - p.brow * 0.5} x2="26.5" y2={16 + p.brow * 0.3} />
+          {/* ── Shoes ── */}
+          <ellipse cx="16" cy="53.5" rx="5" ry="2.5" fill={shoeColor} />
+          <ellipse cx="24" cy="53.5" rx="5" ry="2.5" fill={shoeColor} />
+          <ellipse cx="15.5" cy="53" rx="3.5" ry="1.6" fill="rgba(255,255,255,0.2)" />
+          <ellipse cx="23.5" cy="53" rx="3.5" ry="1.6" fill="rgba(255,255,255,0.2)" />
+
+          {/* ── Body / jacket ── */}
+          <rect x="11" y="30" width="18" height="15" rx="4" fill={jacket} />
+          <rect x="11" y="30" width="18" height="15" rx="4" fill="rgba(0,0,0,0.06)" />
+          {/* Jacket zipper line */}
+          <line x1="20" y1="31" x2="20" y2="44" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+          {/* Jacket shading */}
+          <rect x="11" y="30" width="5" height="15" rx="2" fill={jacketShade} opacity="0.4" />
+
+          {/* ── Arms ── */}
+          {/* Left arm */}
+          <rect x="5" y="30" width="7" height="5.5" rx="2.8" fill={jacket} transform="rotate(10 8.5 32.5)" />
+          {/* Right arm — fist pump on hyped/celebrate */}
+          <g style={{ animation: (mood === 'hyped' || mood === 'celebrate') && animated ? 'coachPunch 1s ease-in-out infinite' : 'none', transformOrigin: '31px 32px' }}>
+            <rect x="28" y="30" width="7" height="5.5" rx="2.8" fill={jacket} transform="rotate(-10 31.5 32.5)" />
+            {/* Fist */}
+            <circle cx="34.5" cy="31" r="3" fill={skin} />
+            <ellipse cx="34.5" cy="31" rx="3" ry="2.2" fill={skinShade} opacity="0.3" />
           </g>
+          {/* Left hand */}
+          <circle cx="5.5" cy="34.5" r="2.8" fill={skin} />
 
-          {/* Eyes */}
-          <g fill={C.dark} opacity="0.85">
-            <rect x="14" y="19.5" width="3.2" height={eyeH} rx="1.6" style={{ animation: animated && mood !== 'sleepy' ? 'coachBlink 4.5s ease-in-out infinite' : 'none', transformOrigin: '15.6px 21px' }} />
-            <rect x="22.8" y="19.5" width="3.2" height={eyeH} rx="1.6" style={{ animation: animated && mood !== 'sleepy' ? 'coachBlink 4.5s ease-in-out infinite' : 'none', transformOrigin: '24.4px 21px', animationDelay: '0.05s' }} />
-          </g>
+          {/* ── Whistle on neck ── */}
+          <circle cx="20" cy="32" r="2" fill={whistle} />
+          <rect x="19.4" y="29" width="1.2" height="3" rx="0.6" fill={whistle} />
 
-          {/* Mouth */}
-          {p.mouth === 'grin' && (
-            <path d="M15 26 Q20 31 25 26" stroke={C.dark} strokeWidth="1.8" strokeLinecap="round" fill="none" opacity="0.75" />
+          {/* ── Neck ── */}
+          <rect x="17" y="27.5" width="6" height="4.5" rx="2" fill={skin} />
+
+          {/* ── Head ── */}
+          <ellipse cx="20" cy="18" rx="12.5" ry="13" fill={skin} />
+          {/* Head shading */}
+          <ellipse cx="26" cy="15" rx="5" ry="6" fill={skinShade} opacity="0.18" />
+
+          {/* ── Hair ── */}
+          {gender === 'female' ? (
+            <g fill={hair}>
+              {/* Ponytail */}
+              <ellipse cx="20" cy="7" rx="11" ry="6.5" />
+              <ellipse cx="31" cy="14" rx="3" ry="7" transform="rotate(15 31 14)" />
+            </g>
+          ) : (
+            <ellipse cx="20" cy="7.5" rx="11" ry="6" fill={hair} />
           )}
-          {p.mouth === 'smile' && (
-            <path d="M16 26.5 Q20 29.5 24 26.5" stroke={C.dark} strokeWidth="1.6" strokeLinecap="round" fill="none" opacity="0.7" />
+
+          {/* ── Cap brim + body ── */}
+          <ellipse cx="20" cy="9" rx="12" ry="5.5" fill={capColor} />
+          <ellipse cx="20" cy="9" rx="12" ry="3" fill={capColor} />
+          {/* Cap brim extending forward */}
+          <ellipse cx="20" cy="12" rx="13.5" ry="2.5" fill={capColor} />
+          <ellipse cx="20" cy="12.5" rx="13.5" ry="1.2" fill="rgba(0,0,0,0.2)" />
+          {/* Cap top button */}
+          <circle cx="20" cy="5" r="1.2" fill={gender === 'female' ? '#E8C84A' : '#4A90D9'} />
+
+          {/* ── Beard (male only) ── */}
+          {gender === 'male' && (
+            <ellipse cx="20" cy="27" rx="5.5" ry="2.5" fill="#5C4030" opacity="0.55" />
           )}
-          {p.mouth === 'flat' && (
-            <line x1="16.5" y1="27" x2="23.5" y2="27" stroke={C.dark} strokeWidth="1.6" strokeLinecap="round" opacity="0.65" />
+
+          {/* ── Ears ── */}
+          <ellipse cx="7.8" cy="19" rx="2.2" ry="2.8" fill={skin} />
+          <ellipse cx="32.2" cy="19" rx="2.2" ry="2.8" fill={skin} />
+          <ellipse cx="7.8" cy="19" rx="1.2" ry="1.8" fill={skinShade} opacity="0.4" />
+
+          {/* ── Eyebrows ── */}
+          <path d={browLeft[cfg.brow] || browLeft.flat} stroke={hair} strokeWidth="1.6" strokeLinecap="round" fill="none" />
+          <path d={browRight[cfg.brow] || browRight.flat} stroke={hair} strokeWidth="1.6" strokeLinecap="round" fill="none" />
+
+          {/* ── Eyes ── */}
+          {cfg.eye === 'happy' ? (
+            /* Happy squint — arc eyes */
+            <g stroke="#2A1A0A" strokeWidth="1.5" fill="none" strokeLinecap="round">
+              <path d="M13.5 22.5 Q16 20.5 18.5 22.5" />
+              <path d="M21.5 22.5 Q24 20.5 26.5 22.5" />
+            </g>
+          ) : cfg.eye === 'wide' ? (
+            /* Wide excited eyes */
+            <g fill="#2A1A0A">
+              <circle cx="16" cy="22.5" r="2.8" />
+              <circle cx="24" cy="22.5" r="2.8" />
+              <circle cx="16.8" cy="21.8" r="0.9" fill="white" />
+              <circle cx="24.8" cy="21.8" r="0.9" fill="white" />
+            </g>
+          ) : (
+            /* Normal eyes with blink */
+            <g fill="#2A1A0A">
+              <ellipse cx="16" cy="22.5" rx="2.4" ry="2.4"
+                style={{ animation: animated ? 'coachBlink 4.2s ease-in-out infinite' : 'none', transformOrigin: '16px 22.5px' }} />
+              <ellipse cx="24" cy="22.5" rx="2.4" ry="2.4"
+                style={{ animation: animated ? 'coachBlink 4.2s ease-in-out infinite 0.07s' : 'none', transformOrigin: '24px 22.5px' }} />
+              <circle cx="16.9" cy="21.7" r="0.8" fill="white" />
+              <circle cx="24.9" cy="21.7" r="0.8" fill="white" />
+            </g>
           )}
+
+          {/* ── Nose ── */}
+          <ellipse cx="20" cy="25" rx="1.5" ry="1" fill={skinShade} opacity="0.5" />
+
+          {/* ── Mouth ── */}
+          {cfg.mouth === 'grin' && <path d="M15.5 27.5 Q20 31.5 24.5 27.5" stroke="#3A1A0A" strokeWidth="1.4" strokeLinecap="round" fill="none" />}
+          {cfg.mouth === 'laugh' && (
+            <>
+              <path d="M14.5 27.5 Q20 33 25.5 27.5" stroke="#3A1A0A" strokeWidth="1.4" strokeLinecap="round" fill="#D4827A" />
+              <path d="M14.5 27.5 Q20 33 25.5 27.5" fill="#D4827A" opacity="0.6" />
+            </>
+          )}
+          {cfg.mouth === 'smile' && <path d="M16.5 27.5 Q20 30 23.5 27.5" stroke="#3A1A0A" strokeWidth="1.4" strokeLinecap="round" fill="none" />}
+          {cfg.mouth === 'slight' && <path d="M17 27.5 Q20 29 23 27.5" stroke="#3A1A0A" strokeWidth="1.3" strokeLinecap="round" fill="none" />}
+          {cfg.mouth === 'frown' && <path d="M16 28.5 Q20 26 24 28.5" stroke="#3A1A0A" strokeWidth="1.4" strokeLinecap="round" fill="none" />}
+
+          {/* ── Sweat drop (concerned) ── */}
+          {mood === 'concerned' && (
+            <ellipse cx="29" cy="17" rx="1.4" ry="2.2" fill="#6ABFE0" opacity="0.8"
+              style={{ animation: animated ? 'coachSweat 2s ease-in-out infinite' : 'none' }} />
+          )}
+
+          {/* ── Energy lines (hyped) ── */}
+          {(mood === 'hyped' || mood === 'celebrate') && (
+            <g stroke={C.amber} strokeWidth="1.8" strokeLinecap="round" opacity="0.85">
+              <line x1="32" y1="10" x2="35" y2="7" />
+              <line x1="34" y1="14" x2="37.5" y2="14" />
+              <line x1="32" y1="18" x2="35" y2="21" />
+            </g>
+          )}
+
+          {/* ── Stars (celebrate) ── */}
+          {mood === 'celebrate' && (
+            <g fill={C.gold} opacity="0.9">
+              <polygon points="5,8 5.8,10.5 8.5,10.5 6.3,12 7.2,14.5 5,13 2.8,14.5 3.7,12 1.5,10.5 4.2,10.5" />
+            </g>
+          )}
+
         </svg>
       </div>
     </div>
@@ -259,7 +387,7 @@ function getStreakMessage(streak) {
 // ─────────────────────────────────────────────
 // AI Coach Card
 // ─────────────────────────────────────────────
-function AICoachCard({ consumed, goal, proteinG, proteinGoal, waterAmt, waterGoal, workoutCount, streakDays, userGoal, isToday }) {
+function AICoachCard({ consumed, goal, proteinG, proteinGoal, waterAmt, waterGoal, workoutCount, streakDays, userGoal, isToday, gender }) {
   const [insight, setInsight] = useState('')
   const [loading, setLoading] = useState(false)
   const [generated, setGenerated] = useState(false)
@@ -306,7 +434,7 @@ Give one specific insight or encouragement based on the most important thing the
       <div style={{ position: 'absolute', top: 0, right: 0, width: 120, height: 120, background: `radial-gradient(circle at 100% 0%, ${C.gold}0A 0%, transparent 60%)`, pointerEvents: 'none' }} />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <CoachAvatar mood={cardMood} size={32} />
+        <CoachAvatar mood={cardMood} gender={gender} size={32} />
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: C.gold }}>Coach Auron</div>
           <div style={{ fontSize: 11, color: C.textMuted }}>Your AI fitness coach</div>
@@ -1118,6 +1246,7 @@ export default function TodayTab({ userId, profile, updateProfile }) {
   const calorieGoal   = profile?.calorie_goal || 2200
   const proteinGoal   = profile?.protein_goal || 150
   const waterUnit     = profile?.water_unit || 'cups'
+  const coachGender   = profile?.coach_gender || 'male'
   const waterGoal     = waterUnit === 'ml' ? (profile?.water_goal_ml || 2000) : (profile?.water_goal || 8)
   const cupSize       = profile?.cup_size_ml || 250
 
@@ -1153,10 +1282,13 @@ export default function TodayTab({ userId, profile, updateProfile }) {
     <div style={{ paddingBottom: 8 }}>
 
       {/* ── Coach Auron greeting ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-        <CoachAvatar mood={greeting.mood} size={42} />
-        <div style={{ fontSize: 14, color: C.text, lineHeight: 1.4, fontWeight: 500 }}>
-          {greeting.text}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+        <CoachAvatar mood={greeting.mood} gender={coachGender} size={64} />
+        <div>
+          <div style={{ fontSize: 11, color: C.gold, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Coach Auron</div>
+          <div style={{ fontSize: 14, color: C.text, lineHeight: 1.45, fontWeight: 500 }}>
+            {greeting.text}
+          </div>
         </div>
       </div>
 
@@ -1240,7 +1372,7 @@ export default function TodayTab({ userId, profile, updateProfile }) {
               marginTop: 14, paddingTop: 14, borderTop: `1px solid ${streakDays > 0 ? C.amber + '22' : C.border}`,
               display: 'flex', alignItems: 'flex-start', gap: 10,
             }}>
-              <CoachAvatar mood={mood} size={30} />
+              <CoachAvatar mood={mood} gender={coachGender} size={30} />
               <div style={{ flex: 1, paddingTop: 1 }}>
                 <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5, fontWeight: isMilestone ? 600 : 400 }}>
                   {line}
@@ -1277,6 +1409,7 @@ export default function TodayTab({ userId, profile, updateProfile }) {
         streakDays={streakDays}
         userGoal={profile?.primary_goal}
         isToday={isToday}
+        gender={coachGender}
       />
 
       {/* ── Daily Stats ── */}
