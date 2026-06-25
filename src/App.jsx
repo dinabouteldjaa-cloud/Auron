@@ -687,12 +687,12 @@ function InsightsTab({ userId }) {
 // ── Profile Tab ────────────────────────────────────────────────────────────
 
 function ProfileTab({ user, profile, updateProfile }) {
-  const [form, setForm] = useState({ full_name: '', age: '', weight_kg: '', height_cm: '', primary_goal: 'Build muscle' })
+  const [form, setForm] = useState({ full_name: '', age: '', weight_kg: '', height_cm: '', primary_goal: 'Build muscle', coach_gender: 'male' })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    if (profile) setForm({ full_name: profile.full_name || '', age: profile.age || '', weight_kg: profile.weight_kg || '', height_cm: profile.height_cm || '', primary_goal: profile.primary_goal || 'Build muscle' })
+    if (profile) setForm({ full_name: profile.full_name || '', age: profile.age || '', weight_kg: profile.weight_kg || '', height_cm: profile.height_cm || '', primary_goal: profile.primary_goal || 'Build muscle', coach_gender: profile.coach_gender || 'male' })
   }, [profile])
 
   const save = async () => {
@@ -734,6 +734,19 @@ function ProfileTab({ user, profile, updateProfile }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {['Lose weight','Build muscle','Improve endurance','General health'].map(g => (
             <button key={g} onClick={() => setForm(p => ({...p,primary_goal:g}))} style={{ padding: '7px 14px', borderRadius: 20, fontSize: 13, border: `1px solid ${form.primary_goal===g?C.gold:C.border}`, background: form.primary_goal===g?C.goldLight:'transparent', color: form.primary_goal===g?C.gold:C.textMuted }}>{g}</button>
+          ))}
+        </div>
+      </Card>
+
+      <Card style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Coach Auron</div>
+        <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>Choose your coach's appearance</div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {[['male','👨 Male coach'],['female','👩 Female coach']].map(([val, label]) => (
+            <button key={val} onClick={() => setForm(p => ({...p, coach_gender: val}))} style={{ flex: 1, padding: '12px 8px', borderRadius: 14, border: `1px solid ${form.coach_gender===val ? C.gold : C.border}`, background: form.coach_gender===val ? C.goldLight : 'transparent', color: form.coach_gender===val ? C.gold : C.textMuted, fontSize: 13, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 28 }}>{val === 'male' ? '👨' : '👩'}</span>
+              <span>{val === 'male' ? 'Male' : 'Female'}</span>
+            </button>
           ))}
         </div>
       </Card>
