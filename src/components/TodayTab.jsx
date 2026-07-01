@@ -1,31 +1,31 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { T } from '../lib/theme'
 
-// ─────────────────────────────────────────────────────────────
-// Design tokens — single source of truth for TodayTab
-// ─────────────────────────────────────────────────────────────
+// Map new theme tokens to the local C alias so all existing
+// component logic below works without any other changes.
 const C = {
-  gold:         '#C9A84C',
-  goldLight:    'rgba(201,168,76,0.12)',
-  goldMid:      'rgba(201,168,76,0.28)',
-  goldDark:     '#8B6914',
-  dark:         '#0D0E12',
-  surface:      '#16181F',
-  surfaceLight: '#1E2029',
-  surfaceMid:   '#1A1C24',
-  border:       'rgba(201,168,76,0.16)',
-  borderStrong: 'rgba(201,168,76,0.36)',
-  text:         '#F0EDE6',
-  textMuted:    '#8A8A90',
-  textDim:      '#52525A',
-  green:        '#4CAF72',
-  greenLight:   'rgba(76,175,114,0.14)',
-  red:          '#E05252',
-  blue:         '#5B9BD5',
-  blueLight:    'rgba(91,155,213,0.13)',
-  amber:        '#D4924A',
-  purple:       '#9B72D0',
-  purpleLight:  'rgba(155,114,208,0.13)',
+  gold:         T.purple,
+  goldLight:    T.purpleLight,
+  goldMid:      T.purpleMid,
+  goldDark:     T.purpleDark,
+  dark:         T.pageBg,
+  surface:      T.surface,
+  surfaceLight: T.surfaceMid,
+  surfaceMid:   T.surfaceMid,
+  border:       T.border,
+  borderStrong: T.borderStrong,
+  text:         T.text,
+  textMuted:    T.textMuted,
+  textDim:      T.textDim,
+  green:        T.green,
+  greenLight:   T.greenLight,
+  red:          T.red,
+  blue:         T.blue,
+  blueLight:    T.blueLight,
+  amber:        T.amber,
+  purple:       T.purple,
+  purpleLight:  T.purpleLight,
 }
 
 const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
@@ -46,14 +46,13 @@ function Card({ children, style = {}, onClick }) {
     <div
       onClick={onClick}
       style={{
-        background: C.surface, borderRadius: 18,
-        border: `1px solid ${C.border}`, padding: '16px 18px',
+        background: T.surface, borderRadius: 18,
+        border: `1px solid ${T.divider}`,
+        boxShadow: T.shadowCard,
+        padding: '16px 18px',
         cursor: onClick ? 'pointer' : 'default',
-        transition: onClick ? 'border-color 0.15s' : undefined,
         ...style,
       }}
-      onMouseEnter={e => onClick && (e.currentTarget.style.borderColor = C.borderStrong)}
-      onMouseLeave={e => onClick && (e.currentTarget.style.borderColor = C.border)}
     >
       {children}
     </div>
@@ -133,104 +132,74 @@ export function CoachHero({
           marginBottom: 0,
           position: 'relative',
           overflow: 'hidden',
-          background: `linear-gradient(155deg, #1A1C24 0%, #16181F 60%, #13141A 100%)`,
-          border: `1px solid ${C.borderStrong}`,
+          background: `linear-gradient(135deg, ${T.heroGrad1} 0%, ${T.heroGrad2} 100%)`,
+          boxShadow: T.shadowStrong,
         }}
       >
-        {/* Mood-driven gold glow — top left */}
+        {/* Decorative radial light */}
         <div style={{
-          position: 'absolute', top: -40, left: -40,
+          position: 'absolute', top: -40, right: -20,
           width: 200, height: 200, borderRadius: '50%',
-          background: `radial-gradient(circle, ${moodAccent}18 0%, transparent 65%)`,
+          background: 'radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 65%)',
           pointerEvents: 'none',
         }} />
-
-        {/* Static blue accent — bottom right */}
         <div style={{
-          position: 'absolute', bottom: -30, right: -30,
+          position: 'absolute', bottom: -30, left: -30,
           width: 160, height: 160, borderRadius: '50%',
-          background: `radial-gradient(circle, ${C.blue}0C 0%, transparent 65%)`,
+          background: 'radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 65%)',
           pointerEvents: 'none',
         }} />
 
-        {/* Subtle top border highlight */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-          background: `linear-gradient(90deg, transparent, ${C.gold}30, transparent)`,
-          pointerEvents: 'none',
-        }} />
+        {/* Decorative light effects already in place above */}
 
         {showAnimation ? (
-          /* Live character mounts here */
           <div style={{ width: '100%', height: '100%' }} />
         ) : (
-          /* Placeholder — remove this block entirely when character is ready */
           <div style={{
             position: 'absolute', inset: 0,
             display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            gap: 8,
+            alignItems: 'center', justifyContent: 'center', gap: 8,
           }}>
-            {/* Minimal geometric mark — not a mascot */}
             <div style={{
-              width: 40, height: 40,
-              border: `1px solid ${C.gold}40`,
-              borderRadius: 12,
-              background: `linear-gradient(135deg, ${C.gold}0E 0%, transparent 100%)`,
+              width: 40, height: 40, borderRadius: 12,
+              border: '1.5px solid rgba(255,255,255,0.3)',
+              background: 'rgba(255,255,255,0.1)',
             }} />
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.gold, letterSpacing: '0.06em' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', letterSpacing: '0.06em' }}>
               Auron Coach
             </div>
-            <div style={{ fontSize: 11, color: C.textDim, letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.04em' }}>
               Animated coach coming soon
             </div>
           </div>
         )}
       </div>
 
-      {/* ── Text row sits below the visual ── */}
+      {/* Text row beneath the hero visual */}
       <div style={{
-        background: C.surface,
+        background: T.surface,
         borderRadius: '0 0 20px 20px',
-        border: `1px solid ${C.borderStrong}`,
+        border: `1px solid ${T.divider}`,
         borderTop: 'none',
         padding: '14px 18px 16px',
+        boxShadow: T.shadowCard,
       }}>
         {greeting && (
-          <div style={{
-            fontSize: 10, fontWeight: 700, color: C.gold,
-            textTransform: 'uppercase', letterSpacing: '0.1em',
-            marginBottom: 6,
-          }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.purple, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>
             {greeting}
           </div>
         )}
-
         {message && (
-          <div style={{
-            fontSize: 14, color: C.text, lineHeight: 1.55, fontWeight: 400,
-            marginBottom: actionLabel && onAction ? 14 : 0,
-          }}>
+          <div style={{ fontSize: 14, color: T.text, lineHeight: 1.55, fontWeight: 400, marginBottom: actionLabel && onAction ? 14 : 0 }}>
             {message}
           </div>
         )}
-
         {actionLabel && onAction && (
-          <button
-            onClick={onAction}
-            style={{
-              marginTop: 2,
-              padding: '8px 20px', borderRadius: 20,
-              background: C.gold, color: C.dark,
-              border: 'none', fontSize: 13, fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
+          <button onClick={onAction} style={{ marginTop: 2, padding: '8px 20px', borderRadius: 20, background: T.purple, color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             {actionLabel}
           </button>
         )}
       </div>
-
     </div>
   )
 }
@@ -244,7 +213,7 @@ function CalRing({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
   const circ  = 2 * Math.PI * r
   const pct   = Math.min(consumed / goal, 1)
   const over  = consumed > goal
-  const ring  = over ? C.red : pct > 0.9 ? C.amber : C.gold
+  const ring  = over ? T.red : pct > 0.9 ? T.amber : T.purple
 
   return (
     <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -275,7 +244,7 @@ function CalRing({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
           <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>
             of {goal.toLocaleString()} kcal
           </div>
-          <div style={{ fontSize: 12, fontWeight: 600, marginTop: 5, color: over ? C.red : C.gold }}>
+          <div style={{ fontSize: 12, fontWeight: 600, marginTop: 5, color: over ? C.red : T.purple }}>
             {over
               ? `${(consumed - goal).toLocaleString()} over`
               : `${(goal - consumed).toLocaleString()} left`}
@@ -630,8 +599,8 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ background: C.surface, borderRadius: 22, padding: 24, width: '100%', maxWidth: 380, border: `1px solid ${C.borderStrong}` }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: T.surface, borderRadius: 22, padding: 24, width: '100%', maxWidth: 380, boxShadow: T.shadowStrong, border: `1px solid ${T.divider}` }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18 }}>Water settings</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>

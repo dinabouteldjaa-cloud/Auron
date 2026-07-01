@@ -1,29 +1,27 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { T } from '../lib/theme'
 import HealthPreferences from './HealthPreferences'
 
-// ─────────────────────────────────────────────
-// Design tokens — match Auron palette
-// ─────────────────────────────────────────────
 const C = {
-  gold:         '#C9A84C',
-  goldLight:    'rgba(201,168,76,0.12)',
-  goldDark:     '#8B6914',
-  dark:         '#0D0E12',
-  surface:      '#16181F',
-  surfaceLight: '#1E2029',
-  surfaceMid:   '#1A1C24',
-  border:       'rgba(201,168,76,0.16)',
-  borderStrong: 'rgba(201,168,76,0.36)',
-  text:         '#F0EDE6',
-  textMuted:    '#8A8A90',
-  textDim:      '#52525A',
-  green:        '#4CAF72',
-  greenLight:   'rgba(76,175,114,0.14)',
-  red:          '#E05252',
-  blue:         '#5B9BD5',
-  amber:        '#D4924A',
-  purple:       '#9B72D0',
+  gold:         T.purple,
+  goldLight:    T.purpleLight,
+  goldDark:     T.purpleDark,
+  dark:         T.pageBg,
+  surface:      T.surface,
+  surfaceLight: T.surfaceMid,
+  surfaceMid:   T.surfaceMid,
+  border:       T.border,
+  borderStrong: T.borderStrong,
+  text:         T.text,
+  textMuted:    T.textMuted,
+  textDim:      T.textDim,
+  green:        T.green,
+  greenLight:   T.greenLight,
+  red:          T.red,
+  blue:         T.blue,
+  amber:        T.amber,
+  purple:       T.purple,
 }
 
 // ─────────────────────────────────────────────
@@ -32,8 +30,10 @@ const C = {
 function Card({ children, style = {} }) {
   return (
     <div style={{
-      background: C.surface, borderRadius: 16,
-      border: `1px solid ${C.border}`, padding: '16px 18px',
+      background: T.surface, borderRadius: 16,
+      border: `1px solid ${T.divider}`,
+      boxShadow: T.shadowCard,
+      padding: '16px 18px',
       ...style,
     }}>
       {children}
@@ -133,15 +133,15 @@ function Avatar({ name, email, size = 72 }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: '50%',
-      background: `linear-gradient(135deg, ${C.goldDark}, ${C.gold})`,
-      border: `2px solid ${C.gold}`,
+      background: `linear-gradient(135deg, ${T.heroGrad1}, ${T.heroGrad2})`,
+      border: `2px solid ${T.purpleLight}`,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontFamily: "'Playfair Display', serif",
-      fontSize: size * 0.36, fontWeight: 600, color: C.dark,
+      fontSize: size * 0.36, fontWeight: 600, color: '#fff',
       flexShrink: 0, position: 'relative',
+      boxShadow: T.shadow,
     }}>
       {initials}
-      {/* Future: replace inner content with <img src={photoUrl} /> */}
     </div>
   )
 }

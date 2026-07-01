@@ -1,20 +1,21 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { T } from '../lib/theme'
 
 const C = {
-  gold:         '#C9A84C',
-  goldLight:    'rgba(201,168,76,0.12)',
-  dark:         '#0D0E12',
-  surface:      '#16181F',
-  surfaceLight: '#1E2029',
-  border:       'rgba(201,168,76,0.16)',
-  borderStrong: 'rgba(201,168,76,0.36)',
-  text:         '#F0EDE6',
-  textMuted:    '#8A8A90',
-  textDim:      '#52525A',
-  red:          '#E05252',
-  green:        '#4CAF72',
-  greenLight:   'rgba(76,175,114,0.14)',
+  gold:         T.purple,
+  goldLight:    T.purpleLight,
+  dark:         T.pageBg,
+  surface:      T.surface,
+  surfaceLight: T.surfaceMid,
+  border:       T.border,
+  borderStrong: T.borderStrong,
+  text:         T.text,
+  textMuted:    T.textMuted,
+  textDim:      T.textDim,
+  red:          T.red,
+  green:        T.green,
+  greenLight:   T.greenLight,
 }
 
 function TextInput({ type = 'text', value, onChange, placeholder, onKeyDown }) {
@@ -90,7 +91,7 @@ export default function Auth() {
 
   return (
     <div style={{
-      minHeight: '100vh', background: C.dark,
+      minHeight: '100vh', background: T.pageBg,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 20,
     }}>
@@ -99,20 +100,28 @@ export default function Auth() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
-            fontFamily: 'Georgia, serif', fontSize: 44,
-            color: C.gold, letterSpacing: '-0.02em', marginBottom: 8,
+            width: 64, height: 64, borderRadius: 18,
+            background: `linear-gradient(135deg, ${T.heroGrad1}, ${T.heroGrad2})`,
+            margin: '0 auto 16px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: T.shadowStrong,
           }}>
+            <span style={{ fontFamily: 'Georgia, serif', fontSize: 26, color: '#fff', fontWeight: 700 }}>A</span>
+          </div>
+          <div style={{ fontFamily: 'Georgia, serif', fontSize: 30, color: T.purple, marginBottom: 6, fontWeight: 700, letterSpacing: '-0.01em' }}>
             Auron
           </div>
-          <div style={{ fontSize: 14, color: C.textMuted }}>
+          <div style={{ fontSize: 14, color: T.textMuted }}>
             Your premium fitness companion
           </div>
         </div>
 
         {/* Card */}
         <div style={{
-          background: C.surface, borderRadius: 22,
-          border: `1px solid ${C.border}`, padding: '28px 26px',
+          background: T.surface, borderRadius: 24,
+          border: `1px solid ${T.divider}`,
+          boxShadow: T.shadowStrong,
+          padding: '28px 26px',
         }}>
           <div style={{
             fontFamily: "'Playfair Display', serif",
@@ -177,12 +186,13 @@ export default function Auth() {
             disabled={loading}
             style={{
               width: '100%', padding: '13px', borderRadius: 24,
-              background: loading ? C.surfaceLight : C.gold,
-              color: loading ? C.textMuted : C.dark,
+              background: loading ? T.surfaceMid : T.purple,
+              color: loading ? T.textMuted : '#fff',
               border: 'none', fontSize: 15, fontWeight: 600,
               cursor: loading ? 'default' : 'pointer',
               opacity: loading ? 0.7 : 1, marginBottom: 20,
               transition: 'opacity 0.15s',
+              boxShadow: loading ? 'none' : T.shadow,
             }}
           >
             {loading ? 'Please wait...' : modeCTA[mode]}
@@ -192,21 +202,21 @@ export default function Auth() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
             {mode === 'login' && (
               <>
-                <button onClick={() => switchMode('signup')} style={{ background: 'none', border: 'none', color: C.gold, fontSize: 13, cursor: 'pointer' }}>
+                <button onClick={() => switchMode('signup')} style={{ background: 'none', border: 'none', color: T.purple, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
                   Don't have an account? Sign up
                 </button>
-                <button onClick={() => switchMode('reset')} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 13, cursor: 'pointer' }}>
+                <button onClick={() => switchMode('reset')} style={{ background: 'none', border: 'none', color: T.textMuted, fontSize: 13, cursor: 'pointer' }}>
                   Forgot your password?
                 </button>
               </>
             )}
             {mode === 'signup' && (
-              <button onClick={() => switchMode('login')} style={{ background: 'none', border: 'none', color: C.gold, fontSize: 13, cursor: 'pointer' }}>
+              <button onClick={() => switchMode('login')} style={{ background: 'none', border: 'none', color: T.purple, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
                 Already have an account? Sign in
               </button>
             )}
             {mode === 'reset' && (
-              <button onClick={() => switchMode('login')} style={{ background: 'none', border: 'none', color: C.gold, fontSize: 13, cursor: 'pointer' }}>
+              <button onClick={() => switchMode('login')} style={{ background: 'none', border: 'none', color: T.purple, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
                 Back to sign in
               </button>
             )}

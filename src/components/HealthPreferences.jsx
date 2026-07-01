@@ -1,24 +1,22 @@
 import { useState, useEffect } from 'react'
+import { T } from '../lib/theme'
 
-// ─────────────────────────────────────────────
-// Design tokens — match existing Auron palette
-// ─────────────────────────────────────────────
 const C = {
-  gold:         '#C9A84C',
-  goldLight:    'rgba(201,168,76,0.12)',
-  goldDark:     '#8B6914',
-  dark:         '#0D0E12',
-  surface:      '#16181F',
-  surfaceLight: '#1E2029',
-  border:       'rgba(201,168,76,0.16)',
-  borderStrong: 'rgba(201,168,76,0.36)',
-  text:         '#F0EDE6',
-  textMuted:    '#8A8A90',
-  textDim:      '#52525A',
-  green:        '#4CAF72',
-  greenLight:   'rgba(76,175,114,0.14)',
-  red:          '#E05252',
-  amber:        '#D4924A',
+  gold:         T.purple,
+  goldLight:    T.purpleLight,
+  goldDark:     T.purpleDark,
+  dark:         T.pageBg,
+  surface:      T.surface,
+  surfaceLight: T.surfaceMid,
+  border:       T.border,
+  borderStrong: T.borderStrong,
+  text:         T.text,
+  textMuted:    T.textMuted,
+  textDim:      T.textDim,
+  green:        T.green,
+  greenLight:   T.greenLight,
+  red:          T.red,
+  amber:        T.amber,
 }
 
 // ─────────────────────────────────────────────

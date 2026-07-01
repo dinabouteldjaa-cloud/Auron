@@ -1,28 +1,27 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { askMealSuggestion, estimateMealFromDescription } from '../lib/claude'
+import { T } from '../lib/theme'
 
-// ─────────────────────────────────────────────
-// Design tokens
-// ─────────────────────────────────────────────
+// Map theme tokens to local alias
 const C = {
-  gold:         '#C9A84C',
-  goldLight:    'rgba(201,168,76,0.12)',
-  goldDark:     '#8B6914',
-  dark:         '#0D0E12',
-  surface:      '#16181F',
-  surfaceLight: '#1E2029',
-  border:       'rgba(201,168,76,0.16)',
-  borderStrong: 'rgba(201,168,76,0.36)',
-  text:         '#F0EDE6',
-  textMuted:    '#8A8A90',
-  textDim:      '#52525A',
-  green:        '#4CAF72',
-  greenLight:   'rgba(76,175,114,0.14)',
-  red:          '#E05252',
-  redLight:     'rgba(224,82,82,0.12)',
-  blue:         '#5B9BD5',
-  amber:        '#D4924A',
+  gold:         T.purple,
+  goldLight:    T.purpleLight,
+  goldDark:     T.purpleDark,
+  dark:         T.pageBg,
+  surface:      T.surface,
+  surfaceLight: T.surfaceMid,
+  border:       T.border,
+  borderStrong: T.borderStrong,
+  text:         T.text,
+  textMuted:    T.textMuted,
+  textDim:      T.textDim,
+  green:        T.green,
+  greenLight:   T.greenLight,
+  red:          T.red,
+  redLight:     T.redLight,
+  blue:         T.blue,
+  amber:        T.amber,
 }
 
 const MEAL_SLOTS = [
@@ -61,8 +60,10 @@ const FOOD_DB = [
 function Card({ children, style = {} }) {
   return (
     <div style={{
-      background: C.surface, borderRadius: 16,
-      border: `1px solid ${C.border}`, padding: '16px 18px',
+      background: T.surface, borderRadius: 16,
+      border: `1px solid ${T.divider}`,
+      boxShadow: T.shadowCard,
+      padding: '16px 18px',
       ...style,
     }}>
       {children}
@@ -327,12 +328,12 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose }) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.55)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
       onClick={onClose}
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ background: C.surface, borderRadius: '20px 20px 0 0', padding: 24, width: '100%', maxWidth: 480, maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        style={{ background: T.surface, borderRadius: '20px 20px 0 0', padding: 24, width: '100%', maxWidth: 480, maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: T.shadowStrong }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18 }}>Add food</div>
