@@ -4,6 +4,7 @@ import { useProfile } from './hooks/useProfile'
 import { usePreferences } from './hooks/usePreferences'
 import TodayTab from './components/TodayTab'
 import ProfileTab from './components/ProfileTab'
+import Auth from './components/Auth'
 
 const C = {
   gold: '#C9A84C', dark: '#0D0E12', surface: '#16181F',
@@ -34,11 +35,12 @@ const TABS = [
 
 export default function App() {
   const [tab,     setTab]     = useState('today')
-  const [session, setSession] = useState(null)
+  // undefined = still loading, null = not logged in, object = logged in
+  const [session, setSession] = useState(undefined)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
+    supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s ?? null))
     return () => subscription.unsubscribe()
   }, [])
 
@@ -48,25 +50,49 @@ export default function App() {
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 
-  const notLoggedIn = (
-    <div style={{ padding: 40, color: C.textMuted, textAlign: 'center' }}>
-      Please log in to continue
-    </div>
-  )
+  // ── Still checking session ──────────────────
+  if (session === undefined) {
+    return (
+      <>
+        <style>{css}</style>
+        <div style={{ minHeight: '100vh', background: C.dark, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontFamily: 'Georgia, serif', fontSize: 42, color: C.gold, marginBottom: 20 }}>Auron</div>
+            <div style={{ width: 24, height: 24, border: `2px solid rgba(201,168,76,0.2)`, borderTopColor: C.gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
+          </div>
+        </div>
+      </>
+    )
+  }
 
+  // ── Not logged in — show Auth screen ───────
+  if (!session) {
+    return (
+      <>
+        <style>{css}</style>
+        <Auth />
+      </>
+    )
+  }
+
+  // ── Logged in — show main app ───────────────
   const screens = {
-    today: uid
-      ? <TodayTab userId={uid} profile={profile} updateProfile={updateProfile} />
-      : notLoggedIn,
-    profile: uid
-      ? <ProfileTab
-          user={session.user}
-          profile={profile}
-          updateProfile={updateProfile}
-          preferences={preferences}
-          updatePreferences={updatePreferences}
-        />
-      : notLoggedIn,
+    today: (
+      <TodayTab
+        userId={uid}
+        profile={profile}
+        updateProfile={updateProfile}
+      />
+    ),
+    profile: (
+      <ProfileTab
+        user={session.user}
+        profile={profile}
+        updateProfile={updateProfile}
+        preferences={preferences}
+        updatePreferences={updatePreferences}
+      />
+    ),
   }
 
   return (
@@ -87,7 +113,7 @@ export default function App() {
 
           {/* Content */}
           <div style={{ flex: 1, padding: '20px 20px 100px', overflowY: 'auto' }}>
-            {screens[tab] || (
+            {screens[tab] ?? (
               <div style={{ padding: 40, color: C.textMuted, textAlign: 'center' }}>
                 Coming soon
               </div>
