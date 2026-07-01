@@ -580,6 +580,7 @@ function WorkoutPreferencesSection() {
 // Wrapper that passes through to existing component
 // ─────────────────────────────────────────────
 function HealthPreferencesSection({ preferences, onSave }) {
+  const [open,   setOpen]   = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved,  setSaved]  = useState(false)
 
@@ -590,15 +591,60 @@ function HealthPreferencesSection({ preferences, onSave }) {
     setTimeout(() => setSaved(false), 2500)
   }
 
+  // Count active preferences for the summary badge
+  const activeCount = [
+    ...(preferences?.dietary_preferences  || []),
+    ...(preferences?.allergies            || []),
+    ...(preferences?.food_restrictions    || []),
+    ...(preferences?.avoided_foods        || []),
+  ].length
+
   return (
     <div style={{ marginBottom: 28 }}>
-      <SectionTitle>Health &amp; food preferences</SectionTitle>
-      <HealthPreferences
-        preferences={preferences || {}}
-        onSave={handleSave}
-        saving={saving}
-        saved={saved}
-      />
+      {/* Tappable header row */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between',
+          background: C.surface, border: `1px solid ${open ? C.borderStrong : C.border}`,
+          borderRadius: open ? '16px 16px 0 0' : 16,
+          padding: '14px 18px', cursor: 'pointer',
+          transition: 'border-color 0.15s, border-radius 0.15s',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Health &amp; food preferences
+          </span>
+          {activeCount > 0 && (
+            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: C.goldLight, color: C.gold, fontWeight: 600 }}>
+              {activeCount} active
+            </span>
+          )}
+        </div>
+        <span style={{ fontSize: 16, color: C.textMuted, transition: 'transform 0.2s', display: 'inline-block', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          ▾
+        </span>
+      </button>
+
+      {/* Collapsible content */}
+      {open && (
+        <div style={{
+          background: C.surface,
+          border: `1px solid ${C.borderStrong}`,
+          borderTop: 'none',
+          borderRadius: '0 0 16px 16px',
+          padding: '16px 18px 18px',
+        }}>
+          <HealthPreferences
+            preferences={preferences || {}}
+            onSave={handleSave}
+            saving={saving}
+            saved={saved}
+          />
+        </div>
+      )}
     </div>
   )
 }
