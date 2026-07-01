@@ -4,6 +4,7 @@ import { useProfile } from './hooks/useProfile'
 import { usePreferences } from './hooks/usePreferences'
 import TodayTab from './components/TodayTab'
 import ProfileTab from './components/ProfileTab'
+import CaloriesTab from './components/CaloriesTab'
 import Auth from './components/Auth'
 
 const C = {
@@ -82,6 +83,13 @@ export default function App() {
         userId={uid}
         profile={profile}
         updateProfile={updateProfile}
+      />
+    ),
+    calories: (
+      <CaloriesTab
+        userId={uid}
+        profile={profile}
+        preferences={preferences}
       />
     ),
     profile: (
