@@ -773,6 +773,7 @@ export default function TodayTab({ userId, profile, updateProfile }) {
     if (welcomeKey) localStorage.setItem(welcomeKey, 'seen')
     setShowWelcome(false)
   }
+  const isToday = selectedDate === todayStr
 
   // Build week array
   const getWeekDays = (offset) => {
@@ -905,8 +906,6 @@ export default function TodayTab({ userId, profile, updateProfile }) {
     : hour >= 20
     ? 'Evening check-in. How did today go? Log anything you missed.'
     : 'Ready when you are. Log your first meal to get started.'
-
-  const isToday = selectedDate === todayStr
 
   return (
     <div style={{ paddingBottom: 8 }}>
