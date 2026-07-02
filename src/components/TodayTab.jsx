@@ -1019,6 +1019,15 @@ export default function TodayTab({ userId, profile, updateProfile }) {
       {showWelcome && (
         <AuronWelcomeScreen userId={userId} onDismiss={dismissWelcome} />
       )}
+
+      {/* Coach Auron — mood + message above calorie ring */}
+      <CoachHero
+        mood={coachMood}
+        greeting="Coach Auron"
+        message={coachMessage}
+      />
+
+      {/* 1 ── Calorie ring + macros */}
       <HeroCard
         consumed={totalCal}  goal={calorieGoal}
         proteinG={totalP}    proteinGoal={proteinGoal}
