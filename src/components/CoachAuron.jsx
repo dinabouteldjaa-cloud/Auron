@@ -52,7 +52,7 @@ export function AuronCharacter({ mood = 'happy', size = 'hero' }) {
   const dim = size === 'welcome'
     ? { width: 240, height: 300 }
     : size === 'hero'
-    ? { width: 150, height: 200 }
+    ? { width: 110, height: 140 }
     : { width: 68, height: 80 }
 
   return (
@@ -190,17 +190,17 @@ export function CoachHero({ mood = 'neutral', message = '', actionLabel = '', on
       </div>
 
       {/* Body — character fills entire left, message right */}
-      <div style={{ display: 'flex', alignItems: 'stretch', minHeight: 180 }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', minHeight: 120 }}>
 
-        {/* Character — tall, anchored to bottom */}
-        <div style={{ width: 160, flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingLeft: 8 }}>
+        {/* Character — anchored to bottom */}
+        <div style={{ width: 120, flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingLeft: 8 }}>
           <AuronCharacter mood={mood} size="hero" />
         </div>
 
         {/* Message */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '12px 18px 20px 8px' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '10px 16px 14px 8px' }}>
           {message && (
-            <div style={{ fontSize: 16, color: T.text, lineHeight: 1.65, fontWeight: 500 }}>
+            <div style={{ fontSize: 14.5, color: T.text, lineHeight: 1.6, fontWeight: 500 }}>
               {message}
             </div>
           )}
