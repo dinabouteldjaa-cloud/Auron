@@ -330,7 +330,7 @@ function MedicationCard({ onOpenTracker }) {
 // ─────────────────────────────────────────────────────────────
 function CoachInsightCard({ message }) {
   return (
-    <div style={{ background: T.surface, borderRadius: 18, border: `1px solid ${T.divider}`, boxShadow: T.shadowCard, padding: '14px 14px', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ background: T.surface, borderRadius: 18, border: `1px solid ${T.divider}`, boxShadow: T.shadowCard, padding: '14px 14px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: T.purple }}>✦ Auron Insight</span>
         <span style={{ fontSize: 11, color: T.purple }}>›</span>
@@ -842,7 +842,7 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
   const mlTotal = unit === 'ml' ? amount : amount * cupSize
 
   return (
-    <Card style={{ marginBottom: 20 }}>
+    <Card style={{ marginBottom: 0, height: '100%', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>💧 Water</div>
@@ -1175,8 +1175,8 @@ export default function TodayTab({ userId, profile, updateProfile }) {
       {/* 4 ── Medication card (purple-tinted, Phase 3 ready) */}
       <MedicationCard onOpenTracker={() => {}} />
 
-      {/* 5 ── 2-col: Water tracker + Auron Insight (Coach) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+      {/* 5 ── 2-col: Water tracker + Auron Insight — equal height */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
         <WaterTracker
           userId={userId}
           profile={profile}
