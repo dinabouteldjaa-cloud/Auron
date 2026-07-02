@@ -51,7 +51,7 @@ export function AuronCharacter({ mood = 'happy', size = 'hero' }) {
   const dim = size === 'welcome'
     ? { width: 240, height: 300 }
     : size === 'hero'
-    ? { width: 120, height: 144 }
+    ? { width: 150, height: 180 }
     : { width: 68, height: 80 }
 
   return (
@@ -171,44 +171,49 @@ export function AuronWelcomeScreen({ onDismiss }) {
 // ─────────────────────────────────────────────────────────────
 // CoachHero — main coach card shown on Today tab
 // ─────────────────────────────────────────────────────────────
-export function CoachHero({ mood = 'neutral', message = '', greeting = '', actionLabel = '', onAction = null }) {
+export function CoachHero({ mood = 'neutral', message = '', actionLabel = '', onAction = null }) {
   return (
     <div style={{
       background: T.purpleLight,
       border: `1px solid ${T.borderStrong}`,
-      borderRadius: 20, padding: '16px 18px',
+      borderRadius: 20,
       marginBottom: 16,
+      overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 9, background: T.purple, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>✦</span>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: T.purple, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>✦</span>
           </div>
           <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Coach Auron</span>
         </div>
         <span style={{ fontSize: 12, color: T.purple, fontWeight: 600 }}>See all ›</span>
       </div>
 
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-end', marginBottom: 14 }}>
+      {/* Body — large character left, message right */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, padding: '8px 18px 0' }}>
+        {/* Bigger character */}
         <AuronCharacter mood={mood} size="hero" />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 4 }}>
-          {greeting && (
-            <div style={{ fontSize: 10, fontWeight: 700, color: T.purple, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>
-              {greeting}
-            </div>
-          )}
-          {message && (
-            <div style={{ fontSize: 13.5, color: T.text, lineHeight: 1.6 }}>{message}</div>
-          )}
-          {actionLabel && onAction && (
-            <button onClick={onAction} style={{ marginTop: 10, padding: '7px 16px', borderRadius: 18, background: T.purple, color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}>
-              {actionLabel}
-            </button>
-          )}
-        </div>
+
+        {/* Message only — no redundant label */}
+        {message && (
+          <div style={{
+            flex: 1, paddingBottom: 16, paddingLeft: 4,
+            fontSize: 14, color: T.text, lineHeight: 1.65, fontWeight: 400,
+          }}>
+            {message}
+          </div>
+        )}
       </div>
 
-      <div style={{ borderTop: `1px solid ${T.borderStrong}`, paddingTop: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+      {/* Bottom CTA */}
+      <div style={{
+        borderTop: `1px solid ${T.borderStrong}`,
+        margin: '0 18px',
+        padding: '11px 0',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+      }}>
         <span style={{ fontSize: 13 }}>✨</span>
         <span style={{ fontSize: 13, color: T.purple, fontWeight: 600 }}>Open AI Coach ›</span>
       </div>

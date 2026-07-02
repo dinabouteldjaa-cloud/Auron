@@ -952,6 +952,8 @@ export default function TodayTab({ userId, profile, updateProfile }) {
   const totalF     = foodLogs.reduce((s, f) => s + (f.fat      || 0), 0)
 
   const calorieGoal = profile?.calorie_goal || 2200
+  const firstName   = profile?.full_name?.split(' ')[0] || ''
+  const hey         = firstName ? `${firstName}, ` : ''
   const proteinGoal = profile?.protein_goal || 150
   const waterUnit   = profile?.water_unit   || 'cups'
   const waterGoal   = waterUnit === 'ml' ? (profile?.water_goal_ml || 2000) : (profile?.water_goal || 8)
@@ -989,28 +991,28 @@ export default function TodayTab({ userId, profile, updateProfile }) {
     hour,
   })
 
-  // Coach message — concise, matches the mood
+  // Coach message — personal, direct, uses first name
   const coachMessage = !isToday
-    ? 'Looking back at a previous day. Keep the momentum going today.'
+    ? `${hey}you're looking back at a previous day. Keep the momentum going today.`
     : totalCal > calorieGoal
-    ? `You're ${(totalCal - calorieGoal).toLocaleString()} kcal over. Keep dinner light and stay hydrated.`
+    ? `${hey}you're ${(totalCal - calorieGoal).toLocaleString()} kcal over. Keep dinner light and stay hydrated.`
     : streakDays >= 7
-    ? `${streakDays} days in a row — that's a real streak. Don't break it now.`
+    ? `${hey}${streakDays} days in a row — that's a real streak. Don't break it now.`
     : workoutLogs.length > 0 && totalCal > 0
-    ? `Workout done, meals tracked. Today is a great day. Keep it up!`
+    ? `${hey}workout done and meals tracked. Today is a great day — keep it up!`
     : workoutLogs.length > 0
-    ? `Workout logged! Now fuel up — log your meals to stay on target.`
+    ? `Workout logged${firstName ? `, ${firstName}` : ''}! Now fuel up — log your meals to stay on target.`
     : streakDays >= 3
-    ? `${streakDays}-day streak building. ${(calorieGoal - totalCal) > 0 ? `${(calorieGoal - totalCal).toLocaleString()} kcal left today.` : 'On target!'}`
+    ? `${hey}${streakDays}-day streak and counting. ${(calorieGoal - totalCal) > 0 ? `${(calorieGoal - totalCal).toLocaleString()} kcal left today.` : "You're right on target."}`
     : streakDays >= 1
-    ? `Day ${streakDays} — you're building something. Keep showing up.`
+    ? `Day ${streakDays}${firstName ? `, ${firstName}` : ''} — you're building something real. Keep showing up.`
     : totalCal === 0 && hour < 10
-    ? `Good morning! Ready for a great day? Let's start by logging breakfast.`
+    ? `Good morning${firstName ? `, ${firstName}` : ''}! Ready for a great day? Start by logging breakfast.`
     : totalCal === 0 && hour >= 10
-    ? 'Nothing logged yet today. Start small — even one meal gets the streak going.'
+    ? `${hey}nothing logged yet. Start small — even one meal keeps the streak alive.`
     : hour >= 20
-    ? 'Evening check-in. How did today go? Log anything you missed.'
-    : 'Ready when you are. Log your first meal to get started.'
+    ? `Evening${firstName ? `, ${firstName}` : ''}. How did today go? Log anything you missed.`
+    : `${hey}ready when you are. Log your first meal to get started.`
 
   return (
     <div style={{ paddingBottom: 8 }}>
@@ -1023,7 +1025,6 @@ export default function TodayTab({ userId, profile, updateProfile }) {
       {/* Coach Auron — mood + message above calorie ring */}
       <CoachHero
         mood={coachMood}
-        greeting="Coach Auron"
         message={coachMessage}
       />
 
