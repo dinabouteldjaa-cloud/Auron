@@ -83,31 +83,97 @@ function Pill({ children, color, bg }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// CoachHero
+// ─────────────────────────────────────────────────────────────
+// AURON CHARACTER IMAGE MAP
 //
-// Reusable, animation-ready coach section.
+// Place your expression images in the /public/auron/ folder:
+//   /public/auron/neutral.png
+//   /public/auron/happy.png
+//   /public/auron/proud.png
+//   /public/auron/concerned.png
+//   /public/auron/celebrate.png
+//
+// Each mood maps to one image. If the file doesn't exist yet,
+// the component shows the placeholder automatically.
+// To add a new expression: drop the file in, done. No code changes.
+// ─────────────────────────────────────────────────────────────
+const AURON_IMAGES = {
+  neutral:   '/auron/neutral.png',
+  hyped:     '/auron/happy.png',
+  proud:     '/auron/proud.png',
+  concerned: '/auron/concerned.png',
+  celebrate: '/auron/celebrate.png',
+}
+
+// AuronCharacter — renders the right expression image.
+// Falls back to placeholder if image hasn't been added yet.
+// size: 'hero' (large card) | 'compact' (insight card)
+function AuronCharacter({ mood = 'neutral', size = 'hero' }) {
+  const [loaded, setLoaded] = useState(false)
+  const [error,  setError]  = useState(false)
+  const src = AURON_IMAGES[mood] || AURON_IMAGES.neutral
+
+  const dim = size === 'hero' ? { width: 110, height: 130 } : { width: 64, height: 72 }
+
+  return (
+    <div style={{ position: 'relative', ...dim, flexShrink: 0 }}>
+      {/* Actual image — hidden until loaded, hides on error */}
+      {!error && (
+        <img
+          key={src}
+          src={src}
+          alt={`Auron — ${mood}`}
+          onLoad={() => { setLoaded(true); setError(false) }}
+          onError={() => { setError(true); setLoaded(false) }}
+          style={{
+            width: '100%', height: '100%',
+            objectFit: 'contain', objectPosition: 'bottom',
+            opacity: loaded ? 1 : 0,
+            transition: 'opacity 0.25s ease',
+            position: 'absolute', inset: 0,
+          }}
+        />
+      )}
+
+      {/* Placeholder — shown when image hasn't loaded or errored */}
+      {(!loaded || error) && (
+        <div style={{
+          width: '100%', height: '100%',
+          borderRadius: size === 'hero' ? 14 : 10,
+          background: `linear-gradient(160deg, ${T.heroGrad1}, ${T.heroGrad2})`,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 4,
+        }}>
+          <div style={{ width: size === 'hero' ? 28 : 18, height: size === 'hero' ? 28 : 18, borderRadius: 7, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.12)' }} />
+          {size === 'hero' && (
+            <>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.9)', fontWeight: 700, textAlign: 'center' }}>Auron</div>
+              <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 1.4 }}>Image coming soon</div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// CoachHero — main coach card with large character
+//
 // Props:
 //   mood          – 'neutral'|'hyped'|'proud'|'concerned'|'celebrate'
-//   message       – string  (max 2 sentences)
-//   actionLabel   – string  (optional CTA)
-//   onAction      – fn      (optional CTA handler)
-//   showAnimation – bool    (false = placeholder, true = live asset)
-//   greeting      – string  (small eyebrow label)
-//
-// Upgrade path (single change point):
-//   When the Auron character is ready, set showAnimation={true}
-//   and place the asset inside <div data-coach-animation>.
-//   PNG:   <img src="/auron.webp" style={{width:'100%',height:'100%',objectFit:'contain'}} />
-//   Rive:  <RiveComponent src="/auron.riv" stateMachines={["Auron"]} />
-//   Nothing outside that div needs to change.
+//   message       – string (max 2 sentences)
+//   greeting      – string (small eyebrow label)
+//   actionLabel   – string (optional CTA button)
+//   onAction      – fn    (optional CTA handler)
 // ─────────────────────────────────────────────────────────────
 export function CoachHero({
-  mood          = 'neutral',
-  message       = '',
-  actionLabel   = '',
-  onAction      = null,
-  showAnimation = false,
-  greeting      = '',
+  mood         = 'neutral',
+  message      = '',
+  actionLabel  = '',
+  onAction     = null,
+  greeting     = '',
 }) {
   return (
     <div style={{
@@ -116,7 +182,7 @@ export function CoachHero({
       borderRadius: 20, padding: '16px 18px',
       marginBottom: 16,
     }}>
-      {/* Header row */}
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 30, height: 30, borderRadius: 9, background: T.purple, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -127,36 +193,20 @@ export function CoachHero({
         <span style={{ fontSize: 12, color: T.purple, fontWeight: 600 }}>See all ›</span>
       </div>
 
-      {/* Body — character placeholder left, message right */}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', marginBottom: 14 }}>
-
-        {/* data-coach-animation — THE ONLY THING TO CHANGE when character is ready */}
-        <div data-coach-animation style={{
-          width: 96, borderRadius: 14, flexShrink: 0,
-          background: `linear-gradient(135deg, ${T.heroGrad1}, ${T.heroGrad2})`,
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', padding: '12px 6px', gap: 6, minHeight: 86,
-        }}>
-          {showAnimation ? (
-            <div style={{ width: '100%', height: '100%' }} />
-          ) : (
-            <>
-              <div style={{ width: 30, height: 30, borderRadius: 8, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.12)' }} />
-              <div style={{ fontSize: 9.5, color: '#fff', fontWeight: 600, textAlign: 'center', lineHeight: 1.3 }}>Auron Coach</div>
-              <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 1.4 }}>Coming soon</div>
-            </>
-          )}
-        </div>
+      {/* Body — character left, message right */}
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-end', marginBottom: 14 }}>
+        {/* Character image — swap mood to change expression */}
+        <AuronCharacter mood={mood} size="hero" />
 
         {/* Message */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 4 }}>
           {greeting && (
             <div style={{ fontSize: 10, fontWeight: 700, color: T.purple, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>
               {greeting}
             </div>
           )}
           {message && (
-            <div style={{ fontSize: 13.5, color: T.text, lineHeight: 1.55 }}>{message}</div>
+            <div style={{ fontSize: 13.5, color: T.text, lineHeight: 1.6 }}>{message}</div>
           )}
           {actionLabel && onAction && (
             <button onClick={onAction} style={{ marginTop: 10, padding: '7px 16px', borderRadius: 18, background: T.purple, color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}>
@@ -166,7 +216,7 @@ export function CoachHero({
         </div>
       </div>
 
-      {/* CTA bottom row */}
+      {/* CTA */}
       <div style={{ borderTop: `1px solid ${T.borderStrong}`, paddingTop: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
         <span style={{ fontSize: 13 }}>✨</span>
         <span style={{ fontSize: 13, color: T.purple, fontWeight: 600 }}>Open AI Coach ›</span>
@@ -174,7 +224,6 @@ export function CoachHero({
     </div>
   )
 }
-
 
 // ─────────────────────────────────────────────────────────────
 // HeroCard — full-width purple card with calorie ring + macros
@@ -328,7 +377,7 @@ function MedicationCard({ onOpenTracker }) {
 // ─────────────────────────────────────────────────────────────
 // Coach Insight — compact card for 2-col beside Water
 // ─────────────────────────────────────────────────────────────
-function CoachInsightCard({ message }) {
+function CoachInsightCard({ message, mood = 'neutral' }) {
   return (
     <div style={{ background: T.surface, borderRadius: 18, border: `1px solid ${T.divider}`, boxShadow: T.shadowCard, padding: '14px 14px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -337,6 +386,10 @@ function CoachInsightCard({ message }) {
       </div>
       <div style={{ fontSize: 12, color: T.text, lineHeight: 1.6, flex: 1 }}>
         {message || 'Log your first meal to get a personalised insight.'}
+      </div>
+      {/* Small character sits at bottom-right of the insight card */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+        <AuronCharacter mood={mood} size="compact" />
       </div>
     </div>
   )
@@ -1184,7 +1237,7 @@ export default function TodayTab({ userId, profile, updateProfile }) {
           selectedDate={selectedDate}
           compact
         />
-        <CoachInsightCard message={coachMessage} />
+        <CoachInsightCard message={coachMessage} mood={coachMood} />
       </div>
 
       {/* 6 ── Meals */}
