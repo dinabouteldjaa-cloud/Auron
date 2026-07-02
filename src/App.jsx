@@ -161,13 +161,8 @@ export default function App() {
           <div style={{ padding: '52px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: 22, fontWeight: 700, color: T.text, lineHeight: 1.2 }}>
-                {tab === 'today' ? `Today` : TABS.find(t => t.id === tab)?.label || 'Auron'}
+                {tab === 'today' ? 'Today' : TABS.find(t => t.id === tab)?.label || 'Auron'}
               </div>
-              {tab === 'today' && firstName && (
-                <div style={{ fontSize: 13, color: T.textMuted, marginTop: 2 }}>
-                  {greeting}, {firstName}!
-                </div>
-              )}
             </div>
 
             {/* Avatar / streak chip */}
