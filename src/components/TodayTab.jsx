@@ -86,38 +86,71 @@ function Pill({ children, color, bg }) {
 // ─────────────────────────────────────────────────────────────
 // AURON CHARACTER IMAGE MAP
 //
-// Place your expression images in the /public/auron/ folder:
-//   /public/auron/neutral.png
-//   /public/auron/happy.png
-//   /public/auron/proud.png
-//   /public/auron/concerned.png
-//   /public/auron/celebrate.png
-//
-// Each mood maps to one image. If the file doesn't exist yet,
-// the component shows the placeholder automatically.
-// To add a new expression: drop the file in, done. No code changes.
+// Add images to /public/auron/ using these exact filenames.
+// Missing images fall back to placeholder automatically.
+// Expression guide (matches the character sheet):
 // ─────────────────────────────────────────────────────────────
 const AURON_IMAGES = {
-  neutral:   '/auron/neutral.png',
-  hyped:     '/auron/happy.png',
-  proud:     '/auron/proud.png',
-  concerned: '/auron/concerned.png',
-  celebrate: '/auron/celebrate.png',
+  greeting:   '/auron/greeting.png',    // waving — new user welcome, first open
+  happy:      '/auron/happy.png',       // big smile — meal logged, on track
+  motivating: '/auron/motivating.png',  // fist pump — push user to act
+  thinking:   '/auron/thinking.png',    // hand on chin — mid-day, AI processing
+  celebrating:'/auron/celebrating.png', // arms raised, confetti — streak milestone
+  concerned:  '/auron/concerned.png',   // worried — over calories, nothing logged
+  resting:    '/auron/resting.png',     // bean bag — evening, everything chill
+  nutrition:  '/auron/nutrition.png',   // holding salad — calories tab / meal context
+  workout:    '/auron/workout.png',     // dumbbells — workout logged
+  habit:      '/auron/habit.png',       // checklist — streak building (3–6 days)
+  mindset:    '/auron/mindset.png',     // calm — past day browsing, general support
 }
 
+// Derive Auron's mood from the current app state.
+// Returns one of the AURON_IMAGES keys.
+function getAuronMood({ isToday, totalCal, calorieGoal, streakDays, workoutCount, hour }) {
+  if (!isToday)                            return 'mindset'
+  if (totalCal > calorieGoal)             return 'concerned'
+  if (streakDays >= 7)                    return 'celebrating'
+  if (workoutCount > 0 && totalCal > 0)  return 'happy'
+  if (workoutCount > 0)                   return 'workout'
+  if (streakDays >= 3)                    return 'habit'
+  if (streakDays >= 1)                    return 'motivating'
+  if (totalCal === 0 && hour < 10)        return 'greeting'   // first open of the day, morning
+  if (totalCal === 0 && hour >= 10)       return 'concerned'
+  if (hour >= 20 && totalCal > 0)         return 'resting'
+  if (hour >= 12 && totalCal === 0)       return 'motivating'
+  return 'happy'
+}
+
+// ─────────────────────────────────────────────────────────────
 // AuronCharacter — renders the right expression image.
-// Falls back to placeholder if image hasn't been added yet.
-// size: 'hero' (large card) | 'compact' (insight card)
-function AuronCharacter({ mood = 'neutral', size = 'hero' }) {
+// Falls back gracefully to placeholder if image missing.
+// size: 'hero' | 'compact' | 'welcome'
+// ─────────────────────────────────────────────────────────────
+function AuronCharacter({ mood = 'happy', size = 'hero' }) {
   const [loaded, setLoaded] = useState(false)
   const [error,  setError]  = useState(false)
-  const src = AURON_IMAGES[mood] || AURON_IMAGES.neutral
 
-  const dim = size === 'hero' ? { width: 110, height: 130 } : { width: 64, height: 72 }
+  // Always try the exact mood first, fall back to greeting
+  const src     = AURON_IMAGES[mood] || AURON_IMAGES.greeting
+  const prevSrc = useRef(src)
+
+  // Reset load state when mood (and thus src) changes
+  useEffect(() => {
+    if (prevSrc.current !== src) {
+      setLoaded(false)
+      setError(false)
+      prevSrc.current = src
+    }
+  }, [src])
+
+  const dim = size === 'welcome'
+    ? { width: 240, height: 300 }
+    : size === 'hero'
+    ? { width: 120, height: 144 }
+    : { width: 68, height: 80 }
 
   return (
     <div style={{ position: 'relative', ...dim, flexShrink: 0 }}>
-      {/* Actual image — hidden until loaded, hides on error */}
       {!error && (
         <img
           key={src}
@@ -129,31 +162,103 @@ function AuronCharacter({ mood = 'neutral', size = 'hero' }) {
             width: '100%', height: '100%',
             objectFit: 'contain', objectPosition: 'bottom',
             opacity: loaded ? 1 : 0,
-            transition: 'opacity 0.25s ease',
+            transition: 'opacity 0.3s ease',
             position: 'absolute', inset: 0,
           }}
         />
       )}
 
-      {/* Placeholder — shown when image hasn't loaded or errored */}
+      {/* Placeholder — shown while loading or if file missing */}
       {(!loaded || error) && (
         <div style={{
           width: '100%', height: '100%',
-          borderRadius: size === 'hero' ? 14 : 10,
+          borderRadius: size === 'compact' ? 10 : 16,
           background: `linear-gradient(160deg, ${T.heroGrad1}, ${T.heroGrad2})`,
           display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          gap: 4,
+          alignItems: 'center', justifyContent: 'center', gap: 6,
         }}>
-          <div style={{ width: size === 'hero' ? 28 : 18, height: size === 'hero' ? 28 : 18, borderRadius: 7, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.12)' }} />
-          {size === 'hero' && (
-            <>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.9)', fontWeight: 700, textAlign: 'center' }}>Auron</div>
-              <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 1.4 }}>Image coming soon</div>
-            </>
+          <div style={{
+            width: size === 'welcome' ? 48 : size === 'hero' ? 32 : 20,
+            height: size === 'welcome' ? 48 : size === 'hero' ? 32 : 20,
+            borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.35)',
+            background: 'rgba(255,255,255,0.12)',
+          }} />
+          {size !== 'compact' && (
+            <div style={{ fontSize: size === 'welcome' ? 13 : 9, color: 'rgba(255,255,255,0.9)', fontWeight: 700, textAlign: 'center' }}>
+              Auron
+            </div>
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// AuronWelcomeScreen — full-screen intro for new users
+// Shown once per userId, dismissed to localStorage
+// ─────────────────────────────────────────────────────────────
+function AuronWelcomeScreen({ userId, onDismiss }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 500,
+      background: `linear-gradient(170deg, ${T.heroGrad1} 0%, ${T.heroGrad2} 50%, #9B8AF8 100%)`,
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      padding: '40px 28px',
+      animation: 'fadeIn 0.4s ease',
+    }}>
+      {/* Decorative radial glow */}
+      <div style={{ position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.13) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      {/* Auron character — greeting pose */}
+      <div style={{ position: 'relative', zIndex: 1, marginBottom: 8 }}>
+        <AuronCharacter mood="greeting" size="welcome" />
+      </div>
+
+      {/* Speech bubble */}
+      <div style={{
+        background: '#fff', borderRadius: 20, padding: '16px 22px',
+        marginBottom: 28, maxWidth: 280, textAlign: 'center',
+        position: 'relative', zIndex: 1,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+      }}>
+        {/* Bubble tail pointing up */}
+        <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '10px solid transparent', borderRight: '10px solid transparent', borderBottom: '10px solid #fff' }} />
+        <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 4 }}>Hi! I'm</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: T.purple, marginBottom: 4 }}>Auron 👋</div>
+        <div style={{ fontSize: 13, color: T.text, lineHeight: 1.55 }}>
+          Your AI health companion. Here to support your fitness, nutrition and wellness — every step of the way.
+        </div>
+      </div>
+
+      {/* Trait pills */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 36, position: 'relative', zIndex: 1 }}>
+        {['Supportive', 'Motivating', 'Smart', 'Reliable'].map(trait => (
+          <div key={trait} style={{ padding: '6px 16px', borderRadius: 20, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.35)', fontSize: 13, color: '#fff', fontWeight: 500 }}>
+            {trait}
+          </div>
+        ))}
+      </div>
+
+      {/* CTA */}
+      <button
+        onClick={onDismiss}
+        style={{
+          padding: '15px 48px', borderRadius: 30,
+          background: '#fff', color: T.purple,
+          border: 'none', fontSize: 16, fontWeight: 700,
+          cursor: 'pointer', position: 'relative', zIndex: 1,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          letterSpacing: '0.01em',
+        }}
+      >
+        Let's get started →
+      </button>
+
+      <div style={{ marginTop: 16, fontSize: 12, color: 'rgba(255,255,255,0.6)', position: 'relative', zIndex: 1 }}>
+        Let's build a healthier, stronger, happier you. Together. 💜
+      </div>
     </div>
   )
 }
@@ -1077,7 +1182,16 @@ export default function TodayTab({ userId, profile, updateProfile }) {
   const [loading,       setLoading]       = useState(true)
   const statsTimer = useRef(null)
 
-  const isToday = selectedDate === todayStr
+  // Welcome screen — shown once per user, dismissed to localStorage
+  const welcomeKey = userId ? `auron_welcomed_${userId}` : null
+  const [showWelcome, setShowWelcome] = useState(() => {
+    if (!welcomeKey) return false
+    return localStorage.getItem(welcomeKey) !== 'seen'
+  })
+  const dismissWelcome = () => {
+    if (welcomeKey) localStorage.setItem(welcomeKey, 'seen')
+    setShowWelcome(false)
+  }
 
   // Build week array
   const getWeekDays = (offset) => {
@@ -1176,33 +1290,50 @@ export default function TodayTab({ userId, profile, updateProfile }) {
     return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`
   }
 
-  // Coach message — max 2 sentences, contextual
+  // Coach mood — maps app state to Auron's expression
   const hour = new Date().getHours()
-  const timeGreet = hour < 5 ? 'Up late' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
-  const coachMood = !isToday               ? 'neutral'
-    : totalCal > calorieGoal               ? 'concerned'
-    : streakDays >= 7                      ? 'celebrate'
-    : streakDays >= 1                      ? 'proud'
-    : totalCal === 0 && hour >= 10         ? 'concerned'
-    : 'neutral'
+  const coachMood = getAuronMood({
+    isToday,
+    totalCal,
+    calorieGoal,
+    streakDays,
+    workoutCount: workoutLogs.length,
+    hour,
+  })
 
+  // Coach message — concise, matches the mood
   const coachMessage = !isToday
-    ? 'You\'re viewing a previous day.'
+    ? 'Looking back at a previous day. Keep the momentum going today.'
     : totalCal > calorieGoal
-    ? `You're ${(totalCal - calorieGoal).toLocaleString()} kcal over today. Keep dinner light.`
+    ? `You're ${(totalCal - calorieGoal).toLocaleString()} kcal over. Keep dinner light and stay hydrated.`
     : streakDays >= 7
-    ? `${streakDays} days in a row. Don't stop now.`
+    ? `${streakDays} days in a row — that's a real streak. Don't break it now.`
+    : workoutLogs.length > 0 && totalCal > 0
+    ? `Workout done, meals tracked. Today is a great day. Keep it up!`
+    : workoutLogs.length > 0
+    ? `Workout logged! Now fuel up — log your meals to stay on target.`
+    : streakDays >= 3
+    ? `${streakDays}-day streak building. ${(calorieGoal - totalCal) > 0 ? `${(calorieGoal - totalCal).toLocaleString()} kcal left today.` : 'On target!'}`
     : streakDays >= 1
-    ? `${streakDays}-day streak. ${(calorieGoal - totalCal) > 0 ? `${(calorieGoal - totalCal).toLocaleString()} kcal left today.` : 'Right on target.'}`
+    ? `Day ${streakDays} — you're building something. Keep showing up.`
+    : totalCal === 0 && hour < 10
+    ? `Good morning! Ready for a great day? Let's start by logging breakfast.`
     : totalCal === 0 && hour >= 10
-    ? 'Nothing logged yet. Log your first meal to get started.'
-    : 'Ready when you are. Log your first meal.'
+    ? 'Nothing logged yet today. Start small — even one meal gets the streak going.'
+    : hour >= 20
+    ? 'Evening check-in. How did today go? Log anything you missed.'
+    : 'Ready when you are. Log your first meal to get started.'
+
+  const isToday = selectedDate === todayStr
 
   return (
     <div style={{ paddingBottom: 8 }}>
 
-      {/* 1 ── Full-width hero: calorie ring (left) + macros (right) */}
+      {/* Welcome screen — full-screen, shown once for new users */}
+      {showWelcome && (
+        <AuronWelcomeScreen userId={userId} onDismiss={dismissWelcome} />
+      )}
       <HeroCard
         consumed={totalCal}  goal={calorieGoal}
         proteinG={totalP}    proteinGoal={proteinGoal}
