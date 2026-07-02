@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
+// v2.1 — fixed AuronCharacter initialization order
 
 // Map new theme tokens to the local C alias so all existing
 // component logic below works without any other changes.
@@ -262,7 +263,7 @@ function AuronWelcomeScreen({ userId, onDismiss }) {
 //   actionLabel   – string (optional CTA button)
 //   onAction      – fn    (optional CTA handler)
 // ─────────────────────────────────────────────────────────────
-export function CoachHero({
+function CoachHero({
   mood         = 'neutral',
   message      = '',
   actionLabel  = '',
