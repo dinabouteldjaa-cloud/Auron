@@ -763,91 +763,72 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Weekly Progress (replaces old streak section)
 // ─────────────────────────────────────────────────────────────
-function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, loggedDates, streakDays, weekOffset, setWeekOffset }) {
+// WeekStrip — compact date navigator for top of page
+// ─────────────────────────────────────────────────────────────
+function WeekStrip({ weekDays, selectedDate, todayStr, setSelectedDate, loggedDates, streakDays, weekOffset, setWeekOffset }) {
   const today = new Date()
 
   return (
-    <Card>
-      {/* Header row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div>
-          <Label style={{ marginBottom: 2 }}>Weekly progress</Label>
-          {streakDays > 0 && (
-            <div style={{ fontSize: 12, color: C.amber, fontWeight: 600 }}>
-              🔥 {streakDays}-day streak
-            </div>
-          )}
+    <div style={{ marginBottom: 14 }}>
+      {/* Week nav row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+        <button onClick={() => setWeekOffset(w => w - 1)} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 18, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>‹</button>
+
+        {/* Day buttons */}
+        <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+          {weekDays.map((d, i) => {
+            const ds           = d.toISOString().split('T')[0]
+            const isSel        = ds === selectedDate
+            const isFuture     = d > today
+            const isCurrentDay = ds === todayStr
+            const isLogged     = loggedDates.has(ds)
+
+            let bg = 'transparent', border = C.border, numColor = isFuture ? C.textDim : C.textMuted
+            if (isSel)             { bg = T.purple;      border = 'transparent'; numColor = '#fff' }
+            else if (isLogged)     { bg = T.greenLight;  border = T.green + '66' }
+            else if (isCurrentDay) { bg = T.purpleLight; border = T.purple + '55'; numColor = T.purple }
+
+            return (
+              <button key={i} onClick={() => !isFuture && setSelectedDate(ds)} disabled={isFuture}
+                style={{
+                  flex: 1, padding: '6px 2px 5px', borderRadius: 10,
+                  border: `1px solid ${border}`, background: bg,
+                  cursor: isFuture ? 'default' : 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                }}>
+                <div style={{ fontSize: 9, fontWeight: 600, color: isSel ? 'rgba(255,255,255,0.75)' : C.textMuted }}>
+                  {DAYS[d.getDay()].slice(0,1)}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: isSel ? 700 : 500, color: numColor, lineHeight: 1 }}>
+                  {d.getDate()}
+                </div>
+                <div style={{ width: 4, height: 4, borderRadius: '50%', background: isLogged ? (isSel ? 'rgba(255,255,255,0.8)' : T.green) : 'transparent' }} />
+              </button>
+            )
+          })}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <button onClick={() => setWeekOffset(w => w - 1)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 8, width: 28, height: 28, color: C.textMuted, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
-          <span style={{ fontSize: 11, color: C.textMuted, minWidth: 56, textAlign: 'center' }}>
-            {weekOffset === 0 ? 'This week' : weekOffset === -1 ? 'Last week' : `${Math.abs(weekOffset)}w ago`}
-          </span>
-          <button onClick={() => setWeekOffset(w => Math.min(0, w + 1))} style={{ background: 'none', border: `1px solid ${weekOffset === 0 ? C.border : C.border}`, borderRadius: 8, width: 28, height: 28, color: weekOffset === 0 ? C.border : C.textMuted, fontSize: 15, cursor: weekOffset === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
-        </div>
+
+        <button onClick={() => setWeekOffset(w => Math.min(0, w + 1))} disabled={weekOffset === 0}
+          style={{ background: 'none', border: 'none', color: weekOffset === 0 ? C.textDim : C.textMuted, fontSize: 18, cursor: weekOffset === 0 ? 'default' : 'pointer', padding: '0 2px', lineHeight: 1 }}>›</button>
+
+        {/* Streak badge inline */}
+        {streakDays > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 9px', borderRadius: 20, background: T.amberLight || 'rgba(245,166,35,0.12)', flexShrink: 0 }}>
+            <span style={{ fontSize: 12 }}>🔥</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.amber }}>{streakDays}</span>
+          </div>
+        )}
       </div>
-
-      {/* Day strip */}
-      <div style={{ display: 'flex', gap: 5 }}>
-        {weekDays.map((d, i) => {
-          const ds          = d.toISOString().split('T')[0]
-          const isSel       = ds === selectedDate
-          const isFuture    = d > today
-          const isCurrentDay = ds === todayStr
-          const isLogged    = loggedDates.has(ds)
-
-          let bg = 'transparent', border = C.border, numColor = isFuture ? C.border : C.textMuted
-          if (isSel)         { bg = C.gold;       border = 'transparent';      numColor = C.dark  }
-          else if (isLogged) { bg = C.greenLight; border = C.green + '66' }
-          else if (isCurrentDay) { bg = C.goldLight; border = C.gold + '66'; numColor = C.gold }
-
-          return (
-            <button
-              key={i}
-              onClick={() => !isFuture && setSelectedDate(ds)}
-              disabled={isFuture}
-              style={{
-                flex: 1, padding: '8px 4px 7px', borderRadius: 13,
-                border: `1px solid ${border}`, background: bg,
-                cursor: isFuture ? 'default' : 'pointer',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-                transition: 'all 0.15s',
-              }}
-            >
-              <div style={{ fontSize: 9.5, fontWeight: 600, color: isSel ? C.dark : C.textMuted, opacity: isSel ? 0.7 : 1 }}>
-                {DAYS[d.getDay()].slice(0,1)}
-              </div>
-              <div style={{ fontSize: 15, fontWeight: isSel ? 700 : 500, color: numColor }}>
-                {d.getDate()}
-              </div>
-              <div style={{ height: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {isLogged && (
-                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: isSel ? C.dark : C.green }} />
-                )}
-              </div>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Coach streak message */}
-      {streakDays === 0 && (
-        <div style={{ marginTop: 14, fontSize: 12, color: C.textDim, textAlign: 'center' }}>
-          Log a meal today to start your streak
-        </div>
-      )}
-      {streakDays >= 3 && (
-        <div style={{ marginTop: 12, fontSize: 12, color: C.amber, fontWeight: 500 }}>
-          {streakDays >= 30 ? '🏆 30-day milestone — that\'s elite consistency.'
-            : streakDays >= 14 ? '14 days in. Most people stopped weeks ago.'
-            : streakDays >= 7 ? 'A full week strong. This is becoming a habit.'
-            : 'Past the hardest part. Keep going.'}
-        </div>
-      )}
-    </Card>
+    </div>
   )
+}
+
+// ─────────────────────────────────────────────────────────────
+// WeeklyProgress — kept for any future reference (unused)
+// ─────────────────────────────────────────────────────────────
+function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, loggedDates, streakDays, weekOffset, setWeekOffset }) {
+  return <WeekStrip weekDays={weekDays} selectedDate={selectedDate} todayStr={todayStr} setSelectedDate={setSelectedDate} loggedDates={loggedDates} streakDays={streakDays} weekOffset={weekOffset} setWeekOffset={setWeekOffset} />
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1017,12 +998,24 @@ export default function TodayTab({ userId, profile, updateProfile }) {
   return (
     <div style={{ paddingBottom: 8 }}>
 
-      {/* Welcome screen — full-screen, shown once for new users */}
+      {/* Welcome screen */}
       {showWelcome && (
         <AuronWelcomeScreen userId={userId} onDismiss={dismissWelcome} />
       )}
 
-      {/* Coach Auron — mood + message above calorie ring */}
+      {/* Week strip — compact, at the very top */}
+      <WeekStrip
+        weekDays={weekDays}
+        selectedDate={selectedDate}
+        todayStr={todayStr}
+        setSelectedDate={setSelectedDate}
+        loggedDates={loggedDates}
+        streakDays={streakDays}
+        weekOffset={weekOffset}
+        setWeekOffset={setWeekOffset}
+      />
+
+      {/* Coach Auron */}
       <CoachHero
         mood={coachMood}
         message={coachMessage}
@@ -1075,18 +1068,6 @@ export default function TodayTab({ userId, profile, updateProfile }) {
         savedPlans={savedPlans}
         selectedDate={selectedDate}
         isToday={isToday}
-      />
-
-      {/* 8 ── Weekly strip + streak */}
-      <WeeklyProgress
-        weekDays={weekDays}
-        selectedDate={selectedDate}
-        todayStr={todayStr}
-        setSelectedDate={setSelectedDate}
-        loggedDates={loggedDates}
-        streakDays={streakDays}
-        weekOffset={weekOffset}
-        setWeekOffset={setWeekOffset}
       />
 
     </div>
