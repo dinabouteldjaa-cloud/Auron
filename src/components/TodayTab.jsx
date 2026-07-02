@@ -114,6 +114,111 @@ function TodaysFocus({ consumed, goal, workoutCount, waterPct, streakDays }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// HeroCard — full-width purple gradient card, calorie ring + macros
+// ─────────────────────────────────────────────────────────────
+function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
+  const r    = 64
+  const circ = 2 * Math.PI * r
+  const pct  = Math.min(consumed / goal, 1)
+  const over = consumed > goal
+  const ring = over ? T.red : pct > 0.9 ? T.amber : '#FFFFFF'
+
+  return (
+    <div style={{
+      borderRadius: 22, marginBottom: 16,
+      background: `linear-gradient(135deg, ${T.heroGrad1} 0%, ${T.heroGrad2} 100%)`,
+      boxShadow: T.shadowStrong, padding: '20px 18px',
+      display: 'grid', gridTemplateColumns: 'auto 1fr',
+      gap: 16, alignItems: 'center',
+    }}>
+      {/* Calorie ring */}
+      <div style={{ position: 'relative', width: 150, height: 150 }}>
+        <svg width={150} height={150} viewBox="0 0 150 150">
+          <circle cx={75} cy={75} r={r} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={12} />
+          <circle cx={75} cy={75} r={r} fill="none" stroke={ring} strokeWidth={12}
+            strokeLinecap="round" strokeDasharray={circ}
+            strokeDashoffset={circ * (1 - pct)}
+            transform="rotate(-90 75 75)"
+            style={{ transition: 'stroke-dashoffset 0.8s ease' }} />
+        </svg>
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>Calories</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{consumed.toLocaleString()}</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>/ {goal.toLocaleString()}</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: over ? T.red : 'rgba(255,255,255,0.9)', marginTop: 2 }}>
+            {over ? `${(consumed-goal).toLocaleString()} over` : `${(goal-consumed).toLocaleString()} left`}
+          </div>
+        </div>
+      </div>
+
+      {/* Macros */}
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginBottom: 12 }}>Macros</div>
+        {[
+          { label: 'Protein', val: proteinG, goal: proteinGoal, color: '#6EE7B7' },
+          { label: 'Carbs',   val: carbsG,   goal: Math.round((goal*0.45)/4), color: T.amber },
+          { label: 'Fats',    val: fatG,     goal: Math.round((goal*0.25)/9), color: '#F87171' },
+        ].map(m => {
+          const mpct = m.goal > 0 ? Math.min(m.val / m.goal, 1) : 0
+          return (
+            <div key={m.label} style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{m.label}</span>
+                <span style={{ fontSize: 12, color: '#fff', fontWeight: 500 }}>{Math.round(m.val)}g / {m.goal}g</span>
+              </div>
+              <div style={{ height: 5, background: 'rgba(255,255,255,0.2)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ width: `${mpct*100}%`, height: '100%', background: m.color, borderRadius: 3, transition: 'width 0.5s ease' }} />
+              </div>
+            </div>
+          )
+        })}
+        <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>View Nutrition</span>
+          <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)' }}>›</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// MedicationCard — purple-tinted placeholder, Phase 3 ready
+// ─────────────────────────────────────────────────────────────
+function MedicationCard({ onOpenTracker }) {
+  return (
+    <div style={{
+      borderRadius: 20, marginBottom: 16,
+      background: `linear-gradient(135deg, ${T.purpleLight} 0%, rgba(108,92,231,0.05) 100%)`,
+      border: `1px solid ${T.border}`, boxShadow: T.shadowCard, padding: '16px 18px',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: T.purpleMid, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>💊</div>
+          <span style={{ fontSize: 15, fontWeight: 600, color: T.text }}>Medication</span>
+        </div>
+        <span style={{ fontSize: 13, color: T.purple, fontWeight: 500 }}>See all ›</span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
+        {[
+          { label: '⏰ Next up', value: '—', sub: 'No meds',  color: T.textMuted },
+          { label: '✓ Taken',   value: '0', sub: 'today',    color: T.green     },
+          { label: '✗ Missed',  value: '0', sub: 'today',    color: T.red       },
+        ].map(item => (
+          <div key={item.label} style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
+            <div style={{ fontSize: 10, color: item.color, marginBottom: 4, fontWeight: 500 }}>{item.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{item.value}</div>
+            <div style={{ fontSize: 10, color: T.textMuted }}>{item.sub}</div>
+          </div>
+        ))}
+      </div>
+      <button onClick={onOpenTracker} style={{ width: '100%', padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${T.border}`, color: T.purple, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        📅 Open Medication Tracker ›
+      </button>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
 // Activity + Steps — 2-column row matching reference layout
 // Each card has: label, big number, sub-goal, mini ring, CTA link
 // ─────────────────────────────────────────────────────────────
