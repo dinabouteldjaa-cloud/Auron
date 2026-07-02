@@ -51,7 +51,7 @@ export function AuronCharacter({ mood = 'happy', size = 'hero' }) {
   const dim = size === 'welcome'
     ? { width: 240, height: 300 }
     : size === 'hero'
-    ? { width: 150, height: 180 }
+    ? { width: 150, height: 200 }
     : { width: 68, height: 80 }
 
   return (
@@ -180,31 +180,30 @@ export function CoachHero({ mood = 'neutral', message = '', actionLabel = '', on
       marginBottom: 16,
       overflow: 'hidden',
     }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, background: T.purple, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>✦</span>
-          </div>
-          <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Coach Auron</span>
+      {/* Header — just the name, no See all */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 18px 0' }}>
+        <div style={{ width: 28, height: 28, borderRadius: 8, background: T.purple, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>✦</span>
         </div>
-        <span style={{ fontSize: 12, color: T.purple, fontWeight: 600 }}>See all ›</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Coach Auron</span>
       </div>
 
-      {/* Body — large character left, message right */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, padding: '8px 18px 0' }}>
-        {/* Bigger character */}
-        <AuronCharacter mood={mood} size="hero" />
+      {/* Body — character fills entire left, message right */}
+      <div style={{ display: 'flex', alignItems: 'stretch', minHeight: 180 }}>
 
-        {/* Message only — no redundant label */}
-        {message && (
-          <div style={{
-            flex: 1, paddingBottom: 16, paddingLeft: 4,
-            fontSize: 14, color: T.text, lineHeight: 1.65, fontWeight: 400,
-          }}>
-            {message}
-          </div>
-        )}
+        {/* Character — tall, anchored to bottom */}
+        <div style={{ width: 160, flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingLeft: 8 }}>
+          <AuronCharacter mood={mood} size="hero" />
+        </div>
+
+        {/* Message */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '12px 18px 20px 8px' }}>
+          {message && (
+            <div style={{ fontSize: 16, color: T.text, lineHeight: 1.65, fontWeight: 500 }}>
+              {message}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Bottom CTA */}
