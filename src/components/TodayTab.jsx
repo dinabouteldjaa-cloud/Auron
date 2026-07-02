@@ -109,175 +109,239 @@ export function CoachHero({
   showAnimation = false,
   greeting      = '',
 }) {
-  const moodAccent = {
-    neutral:   C.gold,
-    hyped:     C.amber,
-    proud:     C.gold,
-    concerned: '#8A8A90',
-    celebrate: C.amber,
-  }[mood] || C.gold
-
   return (
-    <div style={{ marginBottom: 24 }}>
-
-      {/* ── Animation container ──────────────────────────────
-          THE ONLY LINE YOU CHANGE when the character is ready.
-          Replace the inner placeholder div with your asset.
-      ─────────────────────────────────────────────────── */}
-      <div
-        data-coach-animation
-        style={{
-          height: 170,
-          borderRadius: 20,
-          marginBottom: 0,
-          position: 'relative',
-          overflow: 'hidden',
-          background: `linear-gradient(135deg, ${T.heroGrad1} 0%, ${T.heroGrad2} 100%)`,
-          boxShadow: T.shadowStrong,
-        }}
-      >
-        {/* Decorative radial light */}
-        <div style={{
-          position: 'absolute', top: -40, right: -20,
-          width: 200, height: 200, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 65%)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: -30, left: -30,
-          width: 160, height: 160, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 65%)',
-          pointerEvents: 'none',
-        }} />
-
-        {/* Decorative light effects already in place above */}
-
-        {showAnimation ? (
-          <div style={{ width: '100%', height: '100%' }} />
-        ) : (
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: 12,
-              border: '1.5px solid rgba(255,255,255,0.3)',
-              background: 'rgba(255,255,255,0.1)',
-            }} />
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', letterSpacing: '0.06em' }}>
-              Auron Coach
-            </div>
-            <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.04em' }}>
-              Animated coach coming soon
-            </div>
+    <div style={{
+      background: T.purpleLight,
+      border: `1px solid ${T.borderStrong}`,
+      borderRadius: 20, padding: '16px 18px',
+      marginBottom: 16,
+    }}>
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 9, background: T.purple, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>✦</span>
           </div>
-        )}
+          <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Coach Auron</span>
+        </div>
+        <span style={{ fontSize: 12, color: T.purple, fontWeight: 600 }}>See all ›</span>
       </div>
 
-      {/* Text row beneath the hero visual */}
-      <div style={{
-        background: T.surface,
-        borderRadius: '0 0 20px 20px',
-        border: `1px solid ${T.divider}`,
-        borderTop: 'none',
-        padding: '14px 18px 16px',
-        boxShadow: T.shadowCard,
-      }}>
-        {greeting && (
-          <div style={{ fontSize: 10, fontWeight: 700, color: T.purple, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>
-            {greeting}
-          </div>
-        )}
-        {message && (
-          <div style={{ fontSize: 14, color: T.text, lineHeight: 1.55, fontWeight: 400, marginBottom: actionLabel && onAction ? 14 : 0 }}>
-            {message}
-          </div>
-        )}
-        {actionLabel && onAction && (
-          <button onClick={onAction} style={{ marginTop: 2, padding: '8px 20px', borderRadius: 20, background: T.purple, color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            {actionLabel}
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
+      {/* Body — character placeholder left, message right */}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', marginBottom: 14 }}>
 
-
-// ─────────────────────────────────────────────────────────────
-// Calorie Ring — hero data section
-// ─────────────────────────────────────────────────────────────
-function CalRing({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
-  const r     = 72
-  const circ  = 2 * Math.PI * r
-  const pct   = Math.min(consumed / goal, 1)
-  const over  = consumed > goal
-  const ring  = over ? T.red : pct > 0.9 ? T.amber : T.purple
-
-  return (
-    <div style={{ textAlign: 'center', marginBottom: 24 }}>
-      <div style={{ position: 'relative', width: 186, height: 186, margin: '0 auto 16px' }}>
-        <div style={{
-          position: 'absolute', inset: -4, borderRadius: '50%',
-          background: `radial-gradient(circle, ${ring}08 0%, transparent 70%)`,
-          pointerEvents: 'none',
-        }} />
-        <svg width={186} height={186} viewBox="0 0 186 186">
-          <circle cx={93} cy={93} r={r} fill="none" stroke={C.surfaceLight} strokeWidth={13} />
-          <circle
-            cx={93} cy={93} r={r} fill="none" stroke={ring} strokeWidth={13}
-            strokeLinecap="round"
-            strokeDasharray={circ}
-            strokeDashoffset={circ * (1 - pct)}
-            transform="rotate(-90 93 93)"
-            style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1), stroke 0.4s' }}
-          />
-        </svg>
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%,-50%)', textAlign: 'center', width: '100%',
+        {/* data-coach-animation — THE ONLY THING TO CHANGE when character is ready */}
+        <div data-coach-animation style={{
+          width: 96, borderRadius: 14, flexShrink: 0,
+          background: `linear-gradient(135deg, ${T.heroGrad1}, ${T.heroGrad2})`,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', padding: '12px 6px', gap: 6, minHeight: 86,
         }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 34, fontWeight: 600, color: C.text, lineHeight: 1 }}>
-            {consumed.toLocaleString()}
-          </div>
-          <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>
-            of {goal.toLocaleString()} kcal
-          </div>
-          <div style={{ fontSize: 12, fontWeight: 600, marginTop: 5, color: over ? C.red : T.purple }}>
-            {over
-              ? `${(consumed - goal).toLocaleString()} over`
-              : `${(goal - consumed).toLocaleString()} left`}
-          </div>
+          {showAnimation ? (
+            <div style={{ width: '100%', height: '100%' }} />
+          ) : (
+            <>
+              <div style={{ width: 30, height: 30, borderRadius: 8, border: '1.5px solid rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.12)' }} />
+              <div style={{ fontSize: 9.5, color: '#fff', fontWeight: 600, textAlign: 'center', lineHeight: 1.3 }}>Auron Coach</div>
+              <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 1.4 }}>Coming soon</div>
+            </>
+          )}
+        </div>
+
+        {/* Message */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          {greeting && (
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.purple, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>
+              {greeting}
+            </div>
+          )}
+          {message && (
+            <div style={{ fontSize: 13.5, color: T.text, lineHeight: 1.55 }}>{message}</div>
+          )}
+          {actionLabel && onAction && (
+            <button onClick={onAction} style={{ marginTop: 10, padding: '7px 16px', borderRadius: 18, background: T.purple, color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}>
+              {actionLabel}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Macro mini-bars */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
-        {[
-          { label: 'Protein', val: proteinG,  goal: proteinGoal,                      color: C.blue  },
-          { label: 'Carbs',   val: carbsG,    goal: Math.round((goal * 0.45) / 4),    color: C.amber },
-          { label: 'Fat',     val: fatG,      goal: Math.round((goal * 0.25) / 9),    color: C.gold  },
-        ].map(m => {
-          const mpct = m.goal > 0 ? Math.min(m.val / m.goal, 1) : 0
-          return (
-            <div key={m.label} style={{ textAlign: 'center', minWidth: 68 }}>
-              <div style={{ height: 3, background: C.surfaceLight, borderRadius: 2, marginBottom: 5, overflow: 'hidden' }}>
-                <div style={{ width: `${mpct * 100}%`, height: '100%', background: m.color, borderRadius: 2, transition: 'width 0.6s ease' }} />
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: m.color }}>{Math.round(m.val)}g</div>
-              <div style={{ fontSize: 10, color: C.textMuted }}>{m.label}</div>
+      {/* CTA bottom row */}
+      <div style={{ borderTop: `1px solid ${T.borderStrong}`, paddingTop: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+        <span style={{ fontSize: 13 }}>✨</span>
+        <span style={{ fontSize: 13, color: T.purple, fontWeight: 600 }}>Open AI Coach ›</span>
+      </div>
+    </div>
+  )
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// HeroCard — full-width purple card with calorie ring + macros
+// Matches reference: ring on left, macros on right, purple bg
+// ─────────────────────────────────────────────────────────────
+function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
+  const r     = 56
+  const circ  = 2 * Math.PI * r
+  const pct   = Math.min(consumed / goal, 1)
+  const over  = consumed > goal
+  const ring  = over ? '#FF6B6B' : '#FFFFFF'
+  const left  = over ? 0 : goal - consumed
+
+  const macros = [
+    { label: 'Protein', val: proteinG,  goal: proteinGoal,                   color: T.green,  track: 'rgba(255,255,255,0.25)' },
+    { label: 'Carbs',   val: carbsG,    goal: Math.round((goal * 0.45) / 4), color: T.amber,  track: 'rgba(255,255,255,0.25)' },
+    { label: 'Fats',    val: fatG,      goal: Math.round((goal * 0.25) / 9), color: '#FF6B6B', track: 'rgba(255,255,255,0.25)' },
+  ]
+
+  return (
+    <div style={{
+      borderRadius: 22, marginBottom: 16,
+      background: `linear-gradient(135deg, ${T.heroGrad1} 0%, ${T.heroGrad2} 100%)`,
+      boxShadow: T.shadowStrong, padding: '20px 18px',
+      display: 'grid', gridTemplateColumns: 'auto 1fr',
+      gap: 16, alignItems: 'center',
+    }}>
+
+      {/* Left — Calorie ring */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', fontWeight: 500, marginBottom: 10, letterSpacing: '0.03em' }}>
+          Calories
+        </div>
+        <div style={{ position: 'relative', width: 128, height: 128 }}>
+          <svg width={128} height={128} viewBox="0 0 128 128">
+            {/* Track */}
+            <circle cx={64} cy={64} r={r} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={10} />
+            {/* Progress */}
+            <circle cx={64} cy={64} r={r} fill="none" stroke={ring} strokeWidth={10}
+              strokeLinecap="round"
+              strokeDasharray={circ}
+              strokeDashoffset={circ * (1 - pct)}
+              transform="rotate(-90 64 64)"
+              style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1)' }}
+            />
+          </svg>
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%,-50%)', textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 26, fontWeight: 700, color: '#fff', lineHeight: 1 }}>
+              {consumed.toLocaleString()}
             </div>
-          )
-        })}
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+              / {goal.toLocaleString()}
+            </div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>kcal</div>
+          </div>
+        </div>
+        <div style={{ marginTop: 10, textAlign: 'center' }}>
+          <div style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>
+            {over ? `${(consumed - goal).toLocaleString()} over` : `${left.toLocaleString()} kcal left`}
+          </div>
+          {!over && pct > 0.7 && (
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>Great progress!</div>
+          )}
+        </div>
+      </div>
+
+      {/* Right — Macros */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', fontWeight: 500, marginBottom: 14, letterSpacing: '0.03em' }}>
+          Macros
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {macros.map(m => {
+            const mpct = m.goal > 0 ? Math.min(m.val / m.goal, 1) : 0
+            return (
+              <div key={m.label}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <span style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{m.label}</span>
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 400 }}>
+                    {Math.round(m.val)} / {m.goal}g
+                  </span>
+                </div>
+                <div style={{ height: 6, background: m.track, borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ width: `${mpct * 100}%`, height: '100%', background: m.color, borderRadius: 3, transition: 'width 0.6s ease' }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      {/* Bottom — View Nutrition link */}
+      <div style={{
+        gridColumn: '1 / -1',
+        borderTop: '1px solid rgba(255,255,255,0.15)',
+        marginTop: 4, paddingTop: 14,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>View Nutrition</span>
+        <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)' }}>›</span>
       </div>
     </div>
   )
 }
 
 // ─────────────────────────────────────────────────────────────
-// Today's Focus — derived from calories + workout + water state
+// Medication placeholder — purple-tinted, Phase 3 ready
 // ─────────────────────────────────────────────────────────────
+function MedicationCard({ onOpenTracker }) {
+  return (
+    <div style={{
+      borderRadius: 20, marginBottom: 16,
+      background: `linear-gradient(135deg, ${T.purpleLight} 0%, rgba(108,92,231,0.05) 100%)`,
+      border: `1px solid ${T.border}`, boxShadow: T.shadowCard, padding: '16px 18px',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: T.purpleMid, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>💊</div>
+          <span style={{ fontSize: 15, fontWeight: 600, color: T.text }}>Medication</span>
+        </div>
+        <span style={{ fontSize: 13, color: T.purple, fontWeight: 500 }}>See all ›</span>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
+        <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
+          <div style={{ fontSize: 10, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>⏰ Next up</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>—</div>
+          <div style={{ fontSize: 11, color: T.textMuted }}>No meds</div>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
+          <div style={{ fontSize: 10, color: T.green, marginBottom: 4, fontWeight: 500 }}>✓ Taken</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>0</div>
+          <div style={{ fontSize: 10, color: T.textMuted }}>today</div>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
+          <div style={{ fontSize: 10, color: T.red, marginBottom: 4, fontWeight: 500 }}>✗ Missed</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>0</div>
+          <div style={{ fontSize: 10, color: T.textMuted }}>today</div>
+        </div>
+      </div>
+
+      <button onClick={onOpenTracker} style={{ width: '100%', padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${T.border}`, color: T.purple, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        📅 Open Medication Tracker ›
+      </button>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Coach Insight — compact card for 2-col beside Water
+// ─────────────────────────────────────────────────────────────
+function CoachInsightCard({ message }) {
+  return (
+    <div style={{ background: T.surface, borderRadius: 18, border: `1px solid ${T.divider}`, boxShadow: T.shadowCard, padding: '14px 14px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: T.purple }}>✦ Auron Insight</span>
+        <span style={{ fontSize: 11, color: T.purple }}>›</span>
+      </div>
+      <div style={{ fontSize: 12, color: T.text, lineHeight: 1.6, flex: 1 }}>
+        {message || 'Log your first meal to get a personalised insight.'}
+      </div>
+    </div>
+  )
+}
+
 function TodaysFocus({ consumed, goal, workoutCount, waterPct, streakDays }) {
   const items = []
   const calLeft = goal - consumed
@@ -285,6 +349,7 @@ function TodaysFocus({ consumed, goal, workoutCount, waterPct, streakDays }) {
   if (consumed === 0)         items.push({ icon: '🍽️', text: 'Log your first meal to start tracking today', color: C.textMuted })
   else if (calLeft > 0)       items.push({ icon: '🔥', text: `${calLeft.toLocaleString()} kcal remaining — stay on target`, color: C.gold })
   else                        items.push({ icon: '⚠️', text: `${(consumed - goal).toLocaleString()} kcal over goal`, color: C.red })
+
 
   if (workoutCount === 0)     items.push({ icon: '💪', text: 'No workout logged — head to Workouts tab', color: C.textMuted })
   else                        items.push({ icon: '✅', text: `${workoutCount} workout${workoutCount > 1 ? 's' : ''} logged today`, color: C.green })
@@ -310,50 +375,126 @@ function TodaysFocus({ consumed, goal, workoutCount, waterPct, streakDays }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Daily Stats — manual entry, HealthKit-ready architecture
-// source prop: 'manual' | 'healthkit'
-// When HealthKit ships: pass source='healthkit' + value from API
+// Activity + Steps — 2-column row matching reference layout
+// Each card has: label, big number, sub-goal, mini ring, CTA link
 // ─────────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, onChange, unit, color, placeholder, isToday, source = 'manual' }) {
-  const [focused, setFocused] = useState(false)
+function MiniRing({ pct, color, size = 52, icon }) {
+  const r    = (size / 2) - 5
+  const circ = 2 * Math.PI * r
   return (
-    <div style={{
-      background: C.surfaceLight, borderRadius: 14,
-      padding: '13px 14px',
-      border: `1px solid ${focused ? color + '44' : C.border}`,
-      transition: 'border-color 0.2s',
-    }}>
-      <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-        <span>{icon}</span> {label}
-        {source === 'healthkit' && (
-          <span style={{ marginLeft: 'auto', fontSize: 9, color: C.green, fontWeight: 700 }}>AUTO</span>
-        )}
-      </div>
-      {isToday && source === 'manual' ? (
-        <input
-          type="number"
-          value={value || ''}
-          onChange={e => onChange(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          placeholder={placeholder}
-          style={{
-            width: '100%', background: 'transparent', border: 'none',
-            outline: 'none', color: value ? color : C.textDim,
-            fontSize: 20, fontWeight: 600, padding: 0, fontFamily: 'inherit',
-          }}
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={`${color}22`} strokeWidth={4} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={4}
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={circ * (1 - Math.min(pct, 1))}
+          transform={`rotate(-90 ${size/2} ${size/2})`}
+          style={{ transition: 'stroke-dashoffset 0.6s ease' }}
         />
-      ) : (
-        <div style={{ fontSize: 20, fontWeight: 600, color: value ? color : C.border }}>
-          {value || (isToday ? placeholder : '—')}
-        </div>
-      )}
-      <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2 }}>{unit}</div>
-      {isToday && !value && source === 'manual' && (
-        <div style={{ fontSize: 9, color: C.textDim, marginTop: 4 }}>tap to log</div>
-      )}
+      </svg>
+      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: size * 0.3 }}>
+        {icon}
+      </div>
     </div>
   )
+}
+
+function ActivityStepsRow({ workoutLogs, steps, burned, isToday, onStatChange }) {
+  const workoutMin  = workoutLogs.reduce((s, w) => s + (w.duration_minutes || 0), 0)
+  const activityGoal = 60
+  const stepsGoal    = 10000
+  const stepsVal     = parseInt(steps) || 0
+  const actPct       = workoutMin / activityGoal
+  const stepsPct     = stepsVal  / stepsGoal
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+
+      {/* Activity */}
+      <div style={{ background: T.surface, borderRadius: 18, padding: '16px 14px', boxShadow: T.shadowCard, border: `1px solid ${T.divider}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: T.greenLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🏃</div>
+          <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Activity</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+          <div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: T.text, lineHeight: 1 }}>{workoutMin}</div>
+            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>/ {activityGoal} min</div>
+            {workoutMin > 0 && <div style={{ fontSize: 11, color: T.amber, marginTop: 4, fontWeight: 500 }}>⭐ Great job!</div>}
+          </div>
+          <MiniRing pct={actPct} color={T.green} size={52} icon="🏃" />
+        </div>
+        <div style={{ borderTop: `1px solid ${T.divider}`, paddingTop: 10, marginTop: 4 }}>
+          <span style={{ fontSize: 12, color: T.purple, fontWeight: 600 }}>Log Workout →</span>
+        </div>
+      </div>
+
+      {/* Steps */}
+      <div style={{ background: T.surface, borderRadius: 18, padding: '16px 14px', boxShadow: T.shadowCard, border: `1px solid ${T.divider}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: T.blueLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>👟</div>
+          <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Steps</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+          <div>
+            {isToday ? (
+              <input
+                type="number"
+                value={steps || ''}
+                onChange={e => onStatChange('steps', e.target.value)}
+                placeholder="0"
+                style={{ width: 90, background: 'transparent', border: 'none', outline: 'none', fontSize: 28, fontWeight: 700, color: T.text, padding: 0, fontFamily: 'inherit', lineHeight: 1 }}
+              />
+            ) : (
+              <div style={{ fontSize: 28, fontWeight: 700, color: T.text, lineHeight: 1 }}>{stepsVal.toLocaleString() || '—'}</div>
+            )}
+            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>/ {stepsGoal.toLocaleString()} steps</div>
+            {stepsVal > 0 && stepsVal < stepsGoal && <div style={{ fontSize: 11, color: T.textMuted, marginTop: 4 }}>Keep moving!</div>}
+            {stepsVal >= stepsGoal && <div style={{ fontSize: 11, color: T.green, marginTop: 4, fontWeight: 500 }}>Goal reached! 🎉</div>}
+          </div>
+          <MiniRing pct={stepsPct} color={T.blue} size={52} icon="👟" />
+        </div>
+        <div style={{ borderTop: `1px solid ${T.divider}`, paddingTop: 10, marginTop: 4 }}>
+          <span style={{ fontSize: 12, color: T.blue, fontWeight: 600 }}>View Progress →</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Sleep card — full width below activity row
+function SleepCard({ sleep, isToday, onStatChange }) {
+  const sleepVal  = parseFloat(sleep) || 0
+  const sleepGoal = 8
+  const pct       = sleepVal / sleepGoal
+  return (
+    <div style={{ background: T.surface, borderRadius: 18, padding: '14px 16px', boxShadow: T.shadowCard, border: `1px solid ${T.divider}`, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: T.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🌙</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>Sleep</div>
+        <div style={{ height: 5, background: T.surfaceMid, borderRadius: 3, overflow: 'hidden' }}>
+          <div style={{ width: `${Math.min(pct, 1) * 100}%`, height: '100%', background: T.purple, borderRadius: 3, transition: 'width 0.5s' }} />
+        </div>
+      </div>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        {isToday ? (
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+            <input type="number" value={sleep || ''} onChange={e => onStatChange('sleep', e.target.value)} placeholder="0"
+              style={{ width: 40, background: 'transparent', border: 'none', outline: 'none', fontSize: 18, fontWeight: 700, color: T.text, padding: 0, fontFamily: 'inherit', textAlign: 'right' }} />
+            <span style={{ fontSize: 12, color: T.textMuted }}>/ {sleepGoal}h</span>
+          </div>
+        ) : (
+          <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>{sleepVal || '—'}<span style={{ fontSize: 12, color: T.textMuted, fontWeight: 400 }}>h</span></div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Old StatCard kept for any stray references — routes to new components
+function StatCard({ icon, label, value, onChange, unit, color, placeholder, isToday }) {
+  return null
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1008,47 +1149,48 @@ export default function TodayTab({ userId, profile, updateProfile }) {
   return (
     <div style={{ paddingBottom: 8 }}>
 
-      {/* 1 ── Greeting */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: C.text, marginBottom: 2 }}>
-          {isToday ? timeGreet : formatDate(selectedDate)}
-        </div>
-        <div style={{ fontSize: 12, color: C.textMuted }}>
-          {isToday
-            ? new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-            : formatDate(selectedDate)}
-        </div>
-      </div>
-
-      {/* 2 ── Coach Hero */}
-      <CoachHero
-        mood={coachMood}
-        greeting="Coach Auron"
-        message={coachMessage}
-        showAnimation={false}
-      />
-
-      {/* 3 ── Calorie Ring */}
-      <CalRing
+      {/* 1 ── Full-width hero: calorie ring (left) + macros (right) */}
+      <HeroCard
         consumed={totalCal}  goal={calorieGoal}
         proteinG={totalP}    proteinGoal={proteinGoal}
         carbsG={totalC}      fatG={totalF}
       />
 
-      {/* 4 ── Daily Stats */}
-      <div style={{ marginBottom: 20 }}>
-        <Label>Daily stats</Label>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-          <StatCard icon="👟" label="Steps"  value={dailyStats.steps}  onChange={v => handleStatChange('steps',  v)} unit="steps" color={C.blue}   placeholder="0" isToday={isToday} />
-          <StatCard icon="🔥" label="Burned" value={dailyStats.burned} onChange={v => handleStatChange('burned', v)} unit="kcal"  color={C.red}    placeholder="0" isToday={isToday} />
-          <StatCard icon="🌙" label="Sleep"  value={dailyStats.sleep}  onChange={v => handleStatChange('sleep',  v)} unit="hrs"   color={C.purple} placeholder="0" isToday={isToday} />
-        </div>
+      {/* 2 ── 2-col: Activity + Steps */}
+      <ActivityStepsRow
+        workoutLogs={workoutLogs}
+        steps={dailyStats.steps}
+        burned={dailyStats.burned}
+        isToday={isToday}
+        onStatChange={handleStatChange}
+      />
+
+      {/* 3 ── Sleep bar — compact full-width */}
+      <SleepCard
+        sleep={dailyStats.sleep}
+        isToday={isToday}
+        onStatChange={handleStatChange}
+      />
+
+      {/* 4 ── Medication card (purple-tinted, Phase 3 ready) */}
+      <MedicationCard onOpenTracker={() => {}} />
+
+      {/* 5 ── 2-col: Water tracker + Auron Insight (Coach) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+        <WaterTracker
+          userId={userId}
+          profile={profile}
+          updateProfile={updateProfile}
+          selectedDate={selectedDate}
+          compact
+        />
+        <CoachInsightCard message={coachMessage} />
       </div>
 
-      {/* 5 ── Meals */}
+      {/* 6 ── Meals */}
       <MealsSection foodLogs={foodLogs} isToday={isToday} />
 
-      {/* 6 ── Workout */}
+      {/* 7 ── Workout */}
       <WorkoutSection
         workoutLogs={workoutLogs}
         savedPlans={savedPlans}
@@ -1056,15 +1198,7 @@ export default function TodayTab({ userId, profile, updateProfile }) {
         isToday={isToday}
       />
 
-      {/* 7 ── Water */}
-      <WaterTracker
-        userId={userId}
-        profile={profile}
-        updateProfile={updateProfile}
-        selectedDate={selectedDate}
-      />
-
-      {/* 8 ── Weekly Streak */}
+      {/* 8 ── Weekly strip + streak */}
       <WeeklyProgress
         weekDays={weekDays}
         selectedDate={selectedDate}
