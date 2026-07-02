@@ -130,18 +130,7 @@ function AuronCharacter({ mood = 'happy', size = 'hero' }) {
   const [loaded, setLoaded] = useState(false)
   const [error,  setError]  = useState(false)
 
-  // Always try the exact mood first, fall back to greeting
-  const src     = AURON_IMAGES[mood] || AURON_IMAGES.greeting
-  const prevSrc = useRef(src)
-
-  // Reset load state when mood (and thus src) changes
-  useEffect(() => {
-    if (prevSrc.current !== src) {
-      setLoaded(false)
-      setError(false)
-      prevSrc.current = src
-    }
-  }, [src])
+  const src = AURON_IMAGES[mood] || AURON_IMAGES.greeting
 
   const dim = size === 'welcome'
     ? { width: 240, height: 300 }
