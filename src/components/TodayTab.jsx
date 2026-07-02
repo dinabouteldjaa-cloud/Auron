@@ -1044,20 +1044,16 @@ export default function TodayTab({ userId, profile, updateProfile }) {
         onStatChange={handleStatChange}
       />
 
-      {/* 4 ── Medication card (purple-tinted, Phase 3 ready) */}
+      {/* 4 ── Medication card */}
       <MedicationCard onOpenTracker={() => {}} />
 
-      {/* 5 ── 2-col: Water tracker + Auron Insight — equal height */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
-        <WaterTracker
-          userId={userId}
-          profile={profile}
-          updateProfile={updateProfile}
-          selectedDate={selectedDate}
-          compact
-        />
-        <CoachInsightCard message={coachMessage} mood={coachMood} />
-      </div>
+      {/* 5 ── Water tracker — full width now insight is removed */}
+      <WaterTracker
+        userId={userId}
+        profile={profile}
+        updateProfile={updateProfile}
+        selectedDate={selectedDate}
+      />
 
       {/* 6 ── Meals */}
       <MealsSection foodLogs={foodLogs} isToday={isToday} />
