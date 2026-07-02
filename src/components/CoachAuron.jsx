@@ -6,17 +6,18 @@ import { T } from '../lib/theme'
 // Drop images in /public/auron/ — missing ones show placeholder.
 // ─────────────────────────────────────────────────────────────
 export const AURON_IMAGES = {
-  greeting:    '/auron/greeting.png',
-  happy:       '/auron/happy.png',
-  motivating:  '/auron/motivating.png',
-  thinking:    '/auron/thinking.png',
-  celebrating: '/auron/celebrating.png',
-  concerned:   '/auron/concerned.png',
-  resting:     '/auron/resting.png',
-  nutrition:   '/auron/nutrition.png',
-  workout:     '/auron/workout.png',
-  habit:       '/auron/habit.png',
-  mindset:     '/auron/mindset.png',
+  introduction: '/auron/introduction.png', // full body — first time user welcome screen
+  greeting:     '/auron/greeting.png',     // cropped — daily morning greeting in coach card
+  happy:        '/auron/happy.png',
+  motivating:   '/auron/motivating.png',
+  thinking:     '/auron/thinking.png',
+  celebrating:  '/auron/celebrating.png',
+  concerned:    '/auron/concerned.png',
+  resting:      '/auron/resting.png',
+  nutrition:    '/auron/nutrition.png',
+  workout:      '/auron/workout.png',
+  habit:        '/auron/habit.png',
+  mindset:      '/auron/mindset.png',
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -118,7 +119,7 @@ export function AuronWelcomeScreen({ onDismiss }) {
       }} />
 
       <div style={{ position: 'relative', zIndex: 1, marginBottom: 8 }}>
-        <AuronCharacter mood="greeting" size="welcome" />
+        <AuronCharacter mood="introduction" size="welcome" />
       </div>
 
       <div style={{
