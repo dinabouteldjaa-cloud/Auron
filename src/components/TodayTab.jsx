@@ -1,38 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { T } from '../lib/theme'
 import { AuronCharacter, AuronWelcomeScreen, CoachHero, CoachInsightCard, getAuronMood } from './CoachAuron'
-
-// Design tokens — inlined to avoid module-level circular initialization
-// (T from theme.js was causing Rollup TDZ errors in production bundles)
-const T = {
-  pageBg:       '#F0EFF8',
-  surface:      '#FFFFFF',
-  surfaceLight: '#F5F4FC',
-  surfaceMid:   '#ECEAF8',
-  heroGrad1:    '#5548D9',
-  heroGrad2:    '#7B6CF6',
-  purple:       '#6C5CE7',
-  purpleLight:  'rgba(108,92,231,0.12)',
-  purpleMid:    'rgba(108,92,231,0.25)',
-  purpleDark:   '#4B3FC7',
-  green:        '#2ECC71',
-  greenLight:   'rgba(46,204,113,0.12)',
-  amber:        '#F5A623',
-  amberLight:   'rgba(245,166,35,0.12)',
-  red:          '#E05252',
-  redLight:     'rgba(224,82,82,0.12)',
-  blue:         '#4DB6F5',
-  blueLight:    'rgba(77,182,245,0.12)',
-  text:         '#1A1A2E',
-  textMuted:    '#7A7A9A',
-  textDim:      '#ADADC8',
-  border:       'rgba(108,92,231,0.12)',
-  borderStrong: 'rgba(108,92,231,0.28)',
-  divider:      '#EBEBF5',
-  shadow:       '0 2px 16px rgba(108,92,231,0.10)',
-  shadowStrong: '0 4px 24px rgba(108,92,231,0.18)',
-  shadowCard:   '0 1px 8px rgba(26,26,46,0.06)',
-}
 
 const C = {
   gold:         T.purple,

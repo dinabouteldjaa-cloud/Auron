@@ -1,28 +1,5 @@
 import { useState } from 'react'
-
-// Theme tokens inlined — avoids Rollup TDZ circular init in production
-const T = {
-  pageBg:       '#F0EFF8',
-  surface:      '#FFFFFF',
-  surfaceMid:   '#ECEAF8',
-  heroGrad1:    '#5548D9',
-  heroGrad2:    '#7B6CF6',
-  purple:       '#6C5CE7',
-  purpleLight:  'rgba(108,92,231,0.12)',
-  purpleMid:    'rgba(108,92,231,0.25)',
-  purpleDark:   '#4B3FC7',
-  green:        '#2ECC71',
-  red:          '#E05252',
-  blue:         '#4DB6F5',
-  text:         '#1A1A2E',
-  textMuted:    '#7A7A9A',
-  textDim:      '#ADADC8',
-  border:       'rgba(108,92,231,0.12)',
-  borderStrong: 'rgba(108,92,231,0.28)',
-  divider:      '#EBEBF5',
-  shadowCard:   '0 1px 8px rgba(26,26,46,0.06)',
-  shadowStrong: '0 4px 24px rgba(108,92,231,0.18)',
-}
+import { T } from '../lib/theme'
 
 // ─────────────────────────────────────────────────────────────
 // Auron character image map
