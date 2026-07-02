@@ -8,15 +8,6 @@ import ProfileTab from './components/ProfileTab'
 import CaloriesTab from './components/CaloriesTab'
 import Auth from './components/Auth'
 
-// ── Tab definitions ──────────────────────────────────────────
-const TABS = [
-  { id: 'today',    label: 'Home',      icon: HomeIcon    },
-  { id: 'calories', label: 'Nutrition', icon: NutritionIcon },
-  { id: 'workouts', label: 'Progress',  icon: ProgressIcon  },
-  { id: 'plans',    label: 'Plans',     icon: PlansIcon     },
-  { id: 'profile',  label: 'Profile',   icon: ProfileIcon   },
-]
-
 // ── SVG tab icons ────────────────────────────────────────────
 function HomeIcon({ active }) {
   return (
@@ -81,6 +72,15 @@ function ProfileIcon({ active }) {
     </svg>
   )
 }
+
+// ── Tab definitions — must be AFTER icon functions ────────────
+const TABS = [
+  { id: 'today',    label: 'Home',      icon: HomeIcon      },
+  { id: 'calories', label: 'Nutrition', icon: NutritionIcon },
+  { id: 'workouts', label: 'Progress',  icon: ProgressIcon  },
+  { id: 'plans',    label: 'Plans',     icon: PlansIcon     },
+  { id: 'profile',  label: 'Profile',   icon: ProfileIcon   },
+]
 
 export default function App() {
   const [tab,     setTab]     = useState('today')
