@@ -25,11 +25,11 @@ const C = {
   amber:        T.amber,
 }
 
-const MEAL_SLOTS = [
-  { id: 'breakfast', label: 'Breakfast', icon: '🌅', hint: '6–10 am'    },
-  { id: 'lunch',     label: 'Lunch',     icon: '☀️',  hint: '11 am–2 pm' },
-  { id: 'snack',     label: 'Snack',     icon: '🍎',  hint: '2–5 pm'    },
-  { id: 'dinner',    label: 'Dinner',    icon: '🌙',  hint: '5–9 pm'    },
+const getMealSlotsNutrition = (t) => [
+  { id: 'breakfast', label: t('meals.breakfast'), icon: '🌅', hint: t('cal.mealTime.breakfast') },
+  { id: 'lunch',     label: t('meals.lunch'),     icon: '☀️',  hint: t('cal.mealTime.lunch')    },
+  { id: 'snack',     label: t('meals.snack'),     icon: '🍎',  hint: t('cal.mealTime.snack')    },
+  { id: 'dinner',    label: t('meals.dinner'),    icon: '🌙',  hint: t('cal.mealTime.dinner')   },
 ]
 
 const FOOD_DB = [
@@ -116,6 +116,7 @@ function MacroBar({ label, current, goal, color }) {
 // ─────────────────────────────────────────────
 function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
   const { t } = useTranslation()
+  const MEAL_SLOTS = getMealSlotsNutrition(t)
   const [desc,    setDesc]    = useState('')
   const [loading, setLoading] = useState(false)
   const [result,  setResult]  = useState(null)
@@ -253,8 +254,8 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
 
       {/* Disclaimer */}
       <div style={{ fontSize: 11, color: C.textDim, marginTop: 16, lineHeight: 1.6, textAlign: 'center' }}>
-        Auron provides wellness support and informational guidance only.<br />
-        Always follow the advice of your healthcare professionals.
+        {t('disclaimer.line1')}<br />
+        {t('disclaimer.line2')}
       </div>
     </div>
   )
@@ -327,6 +328,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 // ─────────────────────────────────────────────
 function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose }) {
   const { t } = useTranslation()
+  const MEAL_SLOTS = getMealSlotsNutrition(t)
   const [query, setQuery] = useState('')
   const filtered = FOOD_DB.filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
 
@@ -340,7 +342,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose }) {
         style={{ background: T.surface, borderRadius: '20px 20px 0 0', padding: 24, width: '100%', maxWidth: 480, maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: T.shadowStrong }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18 }}>Add food</div>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18 }}>{t('cal.foodLog').replace('+ ', '')}</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 22, cursor: 'pointer' }}>×</button>
         </div>
 
@@ -405,6 +407,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose }) {
 // ─────────────────────────────────────────────
 export default function CaloriesTab({ userId, profile, preferences, lang = 'en' }) {
   const { t } = useTranslation()
+  const MEAL_SLOTS = getMealSlotsNutrition(t)
   const [logs,         setLogs]         = useState([])
   const [loading,      setLoading]      = useState(true)
   const [modal,        setModal]        = useState(false)
@@ -484,12 +487,12 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
       {/* Calorie summary */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
         <div style={{ background: C.surfaceLight, borderRadius: 14, padding: '14px 16px', border: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 4 }}>Calories today</div>
+          <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 4 }}>{t('cal.caloriesLabel')}</div>
           <div style={{ fontSize: 26, fontWeight: 700, color: C.gold }}>{totalCal.toLocaleString()}</div>
-          <div style={{ fontSize: 11, color: C.textMuted }}>of {calorieGoal.toLocaleString()} goal</div>
+          <div style={{ fontSize: 11, color: C.textMuted }}>{t('cal.ofGoal').replace('{n}', calorieGoal.toLocaleString())}</div>
         </div>
         <div style={{ background: C.surfaceLight, borderRadius: 14, padding: '14px 16px', border: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 4 }}>Remaining</div>
+          <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 4 }}>{t('cal.remaining')}</div>
           <div style={{ fontSize: 26, fontWeight: 700, color: totalCal > calorieGoal ? C.red : C.green }}>
             {Math.abs(calorieGoal - totalCal).toLocaleString()}
           </div>
@@ -499,7 +502,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
 
       {/* Macros */}
       <Card style={{ marginBottom: 20 }}>
-        <Label>Macros today</Label>
+        <Label>{t('cal.macrosToday')}</Label>
         <MacroBar label={t('cal.protein')} current={totalP} goal={proteinGoal} color={C.blue}  />
         <MacroBar label={t('cal.carbs')}   current={totalC} goal={carbsGoal}   color={C.amber} />
         <MacroBar label={t('cal.fat')}     current={totalF} goal={fatGoal}     color={C.gold}  />
@@ -517,12 +520,12 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
       {/* Food log by meal slot */}
       <div style={{ marginBottom: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Label style={{ marginBottom: 0 }}>Food log</Label>
+          <Label style={{ marginBottom: 0 }}>{t('cal.foodLog')}</Label>
           <button
             onClick={() => setModal(true)}
             style={{ padding: '6px 14px', borderRadius: 20, background: C.gold, color: C.dark, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
           >
-            + Add food
+            {t('cal.addFood')}
           </button>
         </div>
 
@@ -592,8 +595,8 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
 
       {/* Disclaimer */}
       <div style={{ fontSize: 11, color: C.textDim, marginTop: 20, lineHeight: 1.6, textAlign: 'center' }}>
-        Auron provides wellness support and informational guidance only.<br />
-        Always follow the advice of your healthcare professionals.
+        {t('disclaimer.line1')}<br />
+        {t('disclaimer.line2')}
       </div>
 
       {/* Add food modal */}

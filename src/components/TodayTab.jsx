@@ -589,6 +589,7 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
 // Water tracker
 // ─────────────────────────────────────────────────────────────
 function WaterSettingsModal({ profile, onSave, onClose }) {
+  const { t } = useTranslation()
   const [unit,    setUnit]    = useState(profile?.water_unit || 'cups')
   const [goal,    setGoal]    = useState(
     profile?.water_unit === 'ml'
@@ -613,14 +614,14 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={{ background: T.surface, borderRadius: 22, padding: 24, width: '100%', maxWidth: 380, boxShadow: T.shadowStrong, border: `1px solid ${T.divider}` }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18 }}>Water settings</div>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18 }}>{t('water.waterSettings')}</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 24, cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Track by</div>
+          <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>{t('water.trackBy')}</div>
           <div style={{ display: 'flex', gap: 8 }}>
-            {[['cups','☕ Cups'], ['ml','💧 Millilitres']].map(([val, label]) => (
+            {[['cups', t('water.cups_label')], ['ml', t('water.ml_label')]].map(([val, label]) => (
               <button key={val} onClick={() => setUnit(val)} style={{ flex: 1, padding: 10, borderRadius: 12, border: `1px solid ${unit === val ? C.gold : C.border}`, background: unit === val ? C.goldLight : 'transparent', color: unit === val ? C.gold : C.textMuted, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' }}>{label}</button>
             ))}
           </div>
@@ -629,7 +630,7 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
         {unit === 'cups' ? (
           <>
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}>Daily goal (cups)</div>
+              <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}>{t('water.dailyGoalCups')}</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 {['4','6','8','10','12'].map(n => (
                   <button key={n} onClick={() => setGoal(n)} style={{ flex: 1, padding: '9px 4px', borderRadius: 10, border: `1px solid ${goal === n ? C.gold : C.border}`, background: goal === n ? C.goldLight : 'transparent', color: goal === n ? C.gold : C.textMuted, fontSize: 13, cursor: 'pointer' }}>{n}</button>
@@ -637,20 +638,20 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
               </div>
             </div>
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}>Cup size</div>
+              <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}>{t('water.cupSize')}</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 {[['150','150ml'],['200','200ml'],['250','250ml'],['350','350ml'],['500','500ml']].map(([n, l]) => (
                   <button key={n} onClick={() => setCupSize(n)} style={{ flex: 1, padding: '9px 4px', borderRadius: 10, border: `1px solid ${cupSize === n ? C.gold : C.border}`, background: cupSize === n ? C.goldLight : 'transparent', color: cupSize === n ? C.gold : C.textMuted, fontSize: 10, cursor: 'pointer' }}>{l}</button>
                 ))}
               </div>
               <div style={{ fontSize: 11, color: C.textMuted, marginTop: 8 }}>
-                Total: <strong style={{ color: C.gold }}>{parseInt(goal || 8) * parseInt(cupSize || 250)} ml</strong> / day
+                {t('water.total')} <strong style={{ color: C.gold }}>{parseInt(goal || 8) * parseInt(cupSize || 250)} ml</strong> {t('water.perDay')}
               </div>
             </div>
           </>
         ) : (
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}>Daily goal</div>
+            <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}>{t('water.dailyGoalMl')}</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
               {['1500','2000','2500','3000','3500'].map(n => (
                 <button key={n} onClick={() => setGoal(n)} style={{ flex: 1, padding: '9px 4px', borderRadius: 10, border: `1px solid ${goal === n ? C.gold : C.border}`, background: goal === n ? C.goldLight : 'transparent', color: goal === n ? C.gold : C.textMuted, fontSize: 11, cursor: 'pointer', minWidth: 52 }}>{n}ml</button>
@@ -661,7 +662,7 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
           </div>
         )}
 
-        <button onClick={save} style={{ width: '100%', padding: 13, borderRadius: 24, background: C.gold, color: C.dark, border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Save</button>
+        <button onClick={save} style={{ width: '100%', padding: 13, borderRadius: 24, background: C.gold, color: C.dark, border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t('water.save')}</button>
       </div>
     </div>
   )
@@ -716,7 +717,7 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
     <Card style={{ marginBottom: 0, height: '100%', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>💧 Water</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>💧 {t('today.water')}</div>
           <div style={{ fontSize: 12, color: C.blue }}>
             {loading ? '...' : displayLabel}
             {unit === 'cups' && amount > 0 ? ` · ${mlTotal}ml` : ''}
@@ -726,7 +727,7 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
           onClick={() => setShowSettings(true)}
           style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 10, padding: '5px 10px', color: C.textMuted, fontSize: 11, cursor: 'pointer' }}
         >
-          ⚙ Settings
+          ⚙ {t('today.settings').replace('⚙ ', '')}
         </button>
       </div>
 

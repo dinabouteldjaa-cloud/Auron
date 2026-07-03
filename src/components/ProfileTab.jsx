@@ -158,7 +158,7 @@ function MacroBar({ label, value, goal, color }) {
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
         <span style={{ fontSize: 12, color: C.textMuted }}>{label}</span>
-        <span style={{ fontSize: 12, fontWeight: 500, color: C.text }}>{goal}g / day</span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.text }}>{goal}g {t('profile.perDay')}</span>
       </div>
       <div style={{ height: 5, background: C.surfaceLight, borderRadius: 3, overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3 }} />
@@ -371,7 +371,7 @@ function CalorieTargetsSection({ profile, onSave }) {
         {/* Current targets */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div style={{ fontSize: 13, color: C.text }}>Daily calorie goal</div>
+            <div style={{ fontSize: 13, color: C.text }}>{t('profile.dailyCalGoalLabel')}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="number"
@@ -388,9 +388,9 @@ function CalorieTargetsSection({ profile, onSave }) {
             </div>
           </div>
 
-          <MacroBar label="Protein" value={0} goal={form.protein_goal} color={C.blue} />
-          <MacroBar label="Carbs"   value={0} goal={form.carbs_goal}   color={C.amber} />
-          <MacroBar label="Fat"     value={0} goal={form.fat_goal}     color={C.gold} />
+          <MacroBar label={t('profile.macroProtein')} value={0} goal={form.protein_goal} color={C.blue} />
+          <MacroBar label={t('profile.macroCarbs')}   value={0} goal={form.carbs_goal}   color={C.amber} />
+          <MacroBar label={t('profile.macroFat')}     value={0} goal={form.fat_goal}     color={C.gold} />
         </div>
 
         {/* Macro goal inputs */}
@@ -688,7 +688,7 @@ function AccountSection({ user, onSignOut }) {
             onMouseEnter={e => e.target.style.background = `${C.red}12`}
             onMouseLeave={e => e.target.style.background = 'transparent'}
           >
-            Sign out
+            {t('profile.signOut')}
           </button>
         </div>
       </Card>
