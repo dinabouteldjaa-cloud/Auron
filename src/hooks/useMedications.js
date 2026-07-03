@@ -111,10 +111,14 @@ export function useMedications(userId) {
   const takenCount  = logs.filter(l => l.status === 'taken').length
   const missedCount = logs.filter(l => l.status === 'missed').length
 
-  // Next medication to take (first pending one with a reminder time)
+  // Next medication — first pending one, with or without a reminder time
   const nextMed = medications
-    .filter(m => getStatusForMed(m.id) === 'pending' && m.reminder_time)
-    .sort((a, b) => (a.reminder_time || '').localeCompare(b.reminder_time || ''))[0] || null
+    .filter(m => getStatusForMed(m.id) === 'pending')
+    .sort((a, b) => {
+      const aTime = a.reminder_time || (a.reminder_times ? JSON.parse(a.reminder_times)[0] : '') || ''
+      const bTime = b.reminder_time || (b.reminder_times ? JSON.parse(b.reminder_times)[0] : '') || ''
+      return aTime.localeCompare(bTime)
+    })[0] || null
 
   return {
     medications, logs, loading,
