@@ -866,7 +866,7 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 // Main TodayTab export
 // ─────────────────────────────────────────────────────────────
 export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const today    = new Date()
   const todayStr = today.toISOString().split('T')[0]
 
