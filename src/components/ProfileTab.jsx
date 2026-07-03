@@ -623,11 +623,11 @@ function HealthPreferencesSection({ preferences, onSave }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 10.5, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            Health &amp; food preferences
+            {t('profile.healthPrefs')}
           </span>
           {activeCount > 0 && (
             <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: C.goldLight, color: C.gold, fontWeight: 600 }}>
-              {activeCount} active
+              {t('health.active').replace('{n}', activeCount)}
             </span>
           )}
         </div>
@@ -672,7 +672,7 @@ function AccountSection({ user, onSignOut }) {
             <span style={{ fontSize: 13, color: C.text }}>{user?.email}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: 13, color: C.textMuted }}>Member since</span>
+            <span style={{ fontSize: 13, color: C.textMuted }}>{t('profile.memberSince')}</span>
             <span style={{ fontSize: 13, color: C.text }}>
               {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—'}
             </span>
@@ -700,6 +700,7 @@ function AccountSection({ user, onSignOut }) {
 // Main ProfileTab export
 // ─────────────────────────────────────────────
 export default function ProfileTab({ user, profile, updateProfile, preferences, updatePreferences, lang, setLang }) {
+  const { t } = useTranslation()
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Auron User'
 
   const handleLangChange = async (newLang) => {
