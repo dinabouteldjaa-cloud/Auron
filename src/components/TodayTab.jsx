@@ -461,6 +461,7 @@ function MealsSection({ foodLogs, isToday }) {
 // ─────────────────────────────────────────────────────────────
 function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
   const { t } = useTranslation()
+  const DAYS = getDays(t)
   const dayName  = DAYS[new Date(selectedDate + 'T00:00:00').getDay()]
   const dayIndex = DAYS.indexOf(dayName)
 
