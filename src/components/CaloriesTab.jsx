@@ -480,7 +480,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}
         >
-          ✨ Describe a meal — AI estimates calories
+          {t('cal.describeBtn')}
         </button>
       </div>
 

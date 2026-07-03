@@ -153,6 +153,7 @@ function Avatar({ name, email, size = 72 }) {
 // Macro bar — shows current vs goal
 // ─────────────────────────────────────────────
 function MacroBar({ label, value, goal, color }) {
+  const { t } = useTranslation()
   const pct = goal > 0 ? Math.min((value / goal) * 100, 100) : 0
   return (
     <div style={{ marginBottom: 10 }}>
