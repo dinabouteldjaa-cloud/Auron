@@ -28,8 +28,8 @@ const C = {
   purpleLight:  T.purpleLight,
 }
 
-const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const getDays   = (t) => [t('day.sun'),t('day.mon'),t('day.tue'),t('day.wed'),t('day.thu'),t('day.fri'),t('day.sat')]
+const getMonths = (t) => [t('month.jan'),t('month.feb'),t('month.mar'),t('month.apr'),t('month.may'),t('month.jun'),t('month.jul'),t('month.aug'),t('month.sep'),t('month.oct'),t('month.nov'),t('month.dec')]
 
 const getMealSlots = (t) => [
   { id: 'breakfast', label: t('meals.breakfast'), icon: '🌅', time: t('meals.time.breakfast') },
@@ -793,6 +793,8 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
 // WeekStrip — compact date navigator for top of page
 // ─────────────────────────────────────────────────────────────
 function WeekStrip({ weekDays, selectedDate, todayStr, setSelectedDate, loggedDates, streakDays, weekOffset, setWeekOffset }) {
+  const { t } = useTranslation()
+  const DAYS = getDays(t)
   const today = new Date()
 
   return (
@@ -962,6 +964,9 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
   const calorieGoal = profile?.calorie_goal || 2200
   const firstName   = profile?.full_name?.split(' ')[0] || ''
   const hey         = firstName ? `${firstName}, ` : ''
+  const comma       = firstName ? `, ${firstName}` : ''
+  const DAYS        = getDays(t)
+  const MONTHS      = getMonths(t)
   const proteinGoal = profile?.protein_goal || 150
   const waterUnit   = profile?.water_unit   || 'cups'
   const waterGoal   = waterUnit === 'ml' ? (profile?.water_goal_ml || 2000) : (profile?.water_goal || 8)
@@ -987,40 +992,32 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
     return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`
   }
 
-  // Coach mood — maps app state to Auron's expression
+  // Coach mood
   const hour = new Date().getHours()
+  const coachMood = getAuronMood({ isToday, totalCal, calorieGoal, streakDays, workoutCount: workoutLogs.length, hour })
 
-  const coachMood = getAuronMood({
-    isToday,
-    totalCal,
-    calorieGoal,
-    streakDays,
-    workoutCount: workoutLogs.length,
-    hour,
-  })
-
-  // Coach message — personal, direct, uses first name
+  // Coach message — fully translated
   const coachMessage = !isToday
-    ? `${hey}you're looking back at a previous day. Keep the momentum going today.`
+    ? t('coach.pastDay', { hey })
     : totalCal > calorieGoal
-    ? `${hey}you're ${(totalCal - calorieGoal).toLocaleString()} kcal over. Keep dinner light and stay hydrated.`
+    ? t('coach.overCal', { hey, n: (totalCal - calorieGoal).toLocaleString() })
     : streakDays >= 7
-    ? `${hey}${streakDays} days in a row — that's a real streak. Don't break it now.`
+    ? t('coach.streak7', { hey, n: String(streakDays) })
     : workoutLogs.length > 0 && totalCal > 0
-    ? `${hey}workout done and meals tracked. Today is a great day — keep it up!`
+    ? t('coach.allDone', { hey })
     : workoutLogs.length > 0
-    ? `Workout logged${firstName ? `, ${firstName}` : ''}! Now fuel up — log your meals to stay on target.`
+    ? t('coach.workoutOnly', { comma })
     : streakDays >= 3
-    ? `${hey}${streakDays}-day streak and counting. ${(calorieGoal - totalCal) > 0 ? `${(calorieGoal - totalCal).toLocaleString()} kcal left today.` : "You're right on target."}`
+    ? t('coach.streak3', { hey, n: String(streakDays), kcal: (calorieGoal - totalCal) > 0 ? t('coach.kcalLeft', { n: (calorieGoal - totalCal).toLocaleString() }) : t('coach.onTarget') })
     : streakDays >= 1
-    ? `Day ${streakDays}${firstName ? `, ${firstName}` : ''} — you're building something real. Keep showing up.`
+    ? t('coach.streak1', { n: String(streakDays), comma })
     : totalCal === 0 && hour < 10
-    ? `Good morning${firstName ? `, ${firstName}` : ''}! Ready for a great day? Start by logging breakfast.`
+    ? t('coach.morning', { comma })
     : totalCal === 0 && hour >= 10
-    ? `${hey}nothing logged yet. Start small — even one meal keeps the streak alive.`
+    ? t('coach.nothingLogged', { hey })
     : hour >= 20
-    ? `Evening${firstName ? `, ${firstName}` : ''}. How did today go? Log anything you missed.`
-    : `${hey}ready when you are. Log your first meal to get started.`
+    ? t('coach.evening', { comma })
+    : t('coach.default', { hey })
 
   return (
     <div style={{ paddingBottom: 8 }}>

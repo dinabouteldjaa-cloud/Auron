@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from '../lib/i18n.jsx'
 import { T } from '../lib/theme'
 
 const C = {
@@ -457,7 +458,7 @@ export default function HealthPreferences({ preferences = {}, onSave, saving = f
           marginBottom: 8,
         }}
       >
-        {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save preferences'}
+        {saving ? t('health.saving') : saved ? t('health.saved') : t('health.save')}
       </button>
 
       {/* Summary of active preferences — shown when at least one is set */}

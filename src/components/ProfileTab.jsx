@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
+import { useTranslation } from '../lib/i18n.jsx'
 import HealthPreferences from './HealthPreferences'
 
 const C = {
@@ -102,7 +103,9 @@ function SelectInput({ value, onChange, options }) {
   )
 }
 
-function SaveButton({ onSave, saving, saved, label = 'Save changes' }) {
+function SaveButton({ onSave, saving, saved, label }) {
+  const { t } = useTranslation()
+  const btnLabel = label || t('profile.saveChanges')
   return (
     <button
       onClick={onSave}
@@ -117,7 +120,7 @@ function SaveButton({ onSave, saving, saved, label = 'Save changes' }) {
         transition: 'background 0.2s',
       }}
     >
-      {saving ? 'Saving...' : saved ? 'Saved ✓' : label}
+      {saving ? t('profile.saving') : saved ? t('profile.saved') : btnLabel}
     </button>
   )
 }
@@ -168,6 +171,7 @@ function MacroBar({ label, value, goal, color }) {
 // Section 1 — Personal Info
 // ─────────────────────────────────────────────
 function PersonalInfoSection({ profile, onSave }) {
+  const { t } = useTranslation()
   const [form, setForm]     = useState({
     full_name:   profile?.full_name   || '',
     age:         profile?.age         || '',
@@ -210,31 +214,31 @@ function PersonalInfoSection({ profile, onSave }) {
 
   return (
     <div style={{ marginBottom: 28 }}>
-      <SectionTitle>Personal info</SectionTitle>
+      <SectionTitle>{t('profile.personalInfo')}</SectionTitle>
       <Card>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           <div>
-            <FieldLabel>Full name</FieldLabel>
-            <TextInput value={form.full_name} onChange={set('full_name')} placeholder="Your full name" />
+            <FieldLabel>{t('profile.fullName')}</FieldLabel>
+            <TextInput value={form.full_name} onChange={set('full_name')} placeholder={t('profile.namePlaceholder')} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <FieldLabel>Age</FieldLabel>
+              <FieldLabel>{t('profile.age')}</FieldLabel>
               <TextInput type="number" value={form.age} onChange={set('age')} placeholder="25" />
             </div>
             <div>
-              <FieldLabel>Gender</FieldLabel>
+              <FieldLabel>{t('profile.gender')}</FieldLabel>
               <SelectInput
                 value={form.gender}
                 onChange={set('gender')}
                 options={[
-                  { value: '',        label: 'Select...' },
-                  { value: 'male',    label: 'Male'      },
-                  { value: 'female',  label: 'Female'    },
-                  { value: 'other',   label: 'Other'     },
-                  { value: 'prefer_not', label: 'Prefer not to say' },
+                  { value: '',        label: t('profile.genderSelect') },
+                  { value: 'male',    label: t('profile.genderMale') },
+                  { value: 'female',  label: t('profile.genderFemale') },
+                  { value: 'other',   label: t('profile.genderOther') },
+                  { value: 'prefer_not', label: t('profile.genderPrefer') },
                 ]}
               />
             </div>
@@ -242,18 +246,18 @@ function PersonalInfoSection({ profile, onSave }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <FieldLabel>Weight (kg)</FieldLabel>
+              <FieldLabel>{t('profile.weight')}</FieldLabel>
               <TextInput type="number" value={form.weight_kg} onChange={set('weight_kg')} placeholder="70" />
             </div>
             <div>
-              <FieldLabel>Height (cm)</FieldLabel>
+              <FieldLabel>{t('profile.height')}</FieldLabel>
               <TextInput type="number" value={form.height_cm} onChange={set('height_cm')} placeholder="175" />
             </div>
           </div>
 
           <div>
-            <FieldLabel>Nationality</FieldLabel>
-            <TextInput value={form.nationality} onChange={set('nationality')} placeholder="e.g. Qatari, British, French..." />
+            <FieldLabel>{t('profile.nationality')}</FieldLabel>
+            <TextInput value={form.nationality} onChange={set('nationality')} placeholder={t('profile.nationalityPlaceholder')} />
           </div>
 
         </div>
@@ -271,6 +275,7 @@ function PersonalInfoSection({ profile, onSave }) {
 // (includes inline BMR calculator)
 // ─────────────────────────────────────────────
 function CalorieTargetsSection({ profile, onSave }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState({
     calorie_goal: profile?.calorie_goal || 2200,
     protein_goal: profile?.protein_goal || 150,
@@ -318,16 +323,16 @@ function CalorieTargetsSection({ profile, onSave }) {
 
   const goalAdj    = { lose_fast: -500, lose: -250, maintain: 0, gain: 250, gain_fast: 500 }
   const goalLabels = {
-    lose_fast: 'Lose 1 kg/week', lose: 'Lose 0.5 kg/week',
-    maintain: 'Maintain weight',
-    gain: 'Gain 0.5 kg/week', gain_fast: 'Gain 1 kg/week',
+    lose_fast: t('profile.goalLoseFast'), lose: t('profile.goalLose'),
+    maintain: t('profile.goalMaintain'),
+    gain: t('profile.goalGain'), gain_fast: t('profile.goalGainFast'),
   }
   const activityOptions = [
-    { value: '1.2',   label: 'Sedentary (desk job)'       },
-    { value: '1.375', label: 'Light (1–3 days/week)'      },
-    { value: '1.55',  label: 'Moderate (3–5 days/week)'   },
-    { value: '1.725', label: 'Active (6–7 days/week)'     },
-    { value: '1.9',   label: 'Very active (athlete)'      },
+    { value: '1.2',   label: t('profile.act1')       },
+    { value: '1.375', label: t('profile.act2')      },
+    { value: '1.55',  label: t('profile.act3')   },
+    { value: '1.725', label: t('profile.act4')     },
+    { value: '1.9',   label: t('profile.act5')      },
   ]
 
   const runCalculator = () => {
@@ -360,7 +365,7 @@ function CalorieTargetsSection({ profile, onSave }) {
 
   return (
     <div style={{ marginBottom: 28 }}>
-      <SectionTitle>Calorie &amp; macro targets</SectionTitle>
+      <SectionTitle>{t('profile.calorieTargets')}</SectionTitle>
       <Card>
 
         {/* Current targets */}
@@ -391,9 +396,9 @@ function CalorieTargetsSection({ profile, onSave }) {
         {/* Macro goal inputs */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
           {[
-            { key: 'protein_goal', label: 'Protein (g)', color: C.blue  },
-            { key: 'carbs_goal',   label: 'Carbs (g)',   color: C.amber },
-            { key: 'fat_goal',     label: 'Fat (g)',     color: C.gold  },
+            { key: 'protein_goal', label: t('profile.protein'), color: C.blue  },
+            { key: 'carbs_goal',   label: t('profile.carbsG'),   color: C.amber },
+            { key: 'fat_goal',     label: t('profile.fatG'),     color: C.gold  },
           ].map(({ key, label, color }) => (
             <div key={key}>
               <FieldLabel>{label}</FieldLabel>
@@ -422,7 +427,7 @@ function CalorieTargetsSection({ profile, onSave }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}
         >
-          {calcOpen ? '▴ Hide calculator' : '🧮 Calculate my targets'}
+          {calcOpen ? t('profile.hideCalc') : t('profile.calculator')}
         </button>
 
         {/* Inline BMR / TDEE calculator */}
@@ -438,22 +443,22 @@ function CalorieTargetsSection({ profile, onSave }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <div>
-                <FieldLabel>Age</FieldLabel>
+                <FieldLabel>{t('profile.age')}</FieldLabel>
                 <input type="number" value={calcForm.age} onChange={e => setCalcForm(p => ({ ...p, age: e.target.value }))} placeholder="25"
                   style={{ width: '100%', padding: '9px 10px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, outline: 'none' }} />
               </div>
               <div>
-                <FieldLabel>Gender</FieldLabel>
+                <FieldLabel>{t('profile.gender')}</FieldLabel>
                 <SelectInput value={calcForm.gender} onChange={v => setCalcForm(p => ({ ...p, gender: v }))}
                   options={[{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }]} />
               </div>
               <div>
-                <FieldLabel>Weight (kg)</FieldLabel>
+                <FieldLabel>{t('profile.weight')}</FieldLabel>
                 <input type="number" value={calcForm.weight} onChange={e => setCalcForm(p => ({ ...p, weight: e.target.value }))} placeholder="70"
                   style={{ width: '100%', padding: '9px 10px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, outline: 'none' }} />
               </div>
               <div>
-                <FieldLabel>Height (cm)</FieldLabel>
+                <FieldLabel>{t('profile.height')}</FieldLabel>
                 <input type="number" value={calcForm.height} onChange={e => setCalcForm(p => ({ ...p, height: e.target.value }))} placeholder="175"
                   style={{ width: '100%', padding: '9px 10px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, outline: 'none' }} />
               </div>
@@ -486,10 +491,10 @@ function CalorieTargetsSection({ profile, onSave }) {
               <div style={{ marginTop: 12 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
                   {[
-                    { label: 'BMR',        value: calcResult.bmr,    sub: 'kcal at rest'   },
-                    { label: 'Maintenance', value: calcResult.tdee,   sub: 'kcal/day'      },
-                    { label: 'Target',     value: calcResult.target,  sub: 'kcal/day',  gold: true },
-                    { label: 'Protein',    value: `${calcResult.protein}g`, sub: 'per day' },
+                    { label: t('profile.bmr'),        value: calcResult.bmr,    sub: t('profile.bmrSub')   },
+                    { label: t('profile.maintenance'), value: calcResult.tdee,   sub: t('profile.maintenanceSub')      },
+                    { label: t('profile.target'),     value: calcResult.target,  sub: t('profile.maintenanceSub'),  gold: true },
+                    { label: t('profile.proteinResult'),    value: `${calcResult.protein}g`, sub: t('profile.perDay') },
                   ].map(item => (
                     <div key={item.label} style={{ background: C.surfaceLight, borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
                       <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 3 }}>{item.label}</div>
@@ -516,7 +521,8 @@ function CalorieTargetsSection({ profile, onSave }) {
 // Section 3 — Fitness Goal
 // ─────────────────────────────────────────────
 function FitnessGoalSection({ profile, onSave }) {
-  const goals = ['Lose weight', 'Build muscle', 'Improve endurance', 'General health', 'Maintain weight']
+  const { t } = useTranslation()
+  const goals = [t('profile.loseWeight'), t('profile.buildMuscle'), t('profile.endurance'), t('profile.generalHealth'), t('profile.goalMaintain')]
   const [selected, setSelected] = useState(profile?.primary_goal || '')
   const [saving,   setSaving]   = useState(false)
   const [saved,    setSaved]    = useState(false)
@@ -532,7 +538,7 @@ function FitnessGoalSection({ profile, onSave }) {
 
   return (
     <div style={{ marginBottom: 28 }}>
-      <SectionTitle>Fitness goal</SectionTitle>
+      <SectionTitle>{t('profile.fitnessGoal')}</SectionTitle>
       <Card>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
           {goals.map(g => (
@@ -556,12 +562,13 @@ function FitnessGoalSection({ profile, onSave }) {
 // Ready to expand in a future phase
 // ─────────────────────────────────────────────
 function WorkoutPreferencesSection() {
+  const { t } = useTranslation()
   return (
     <div style={{ marginBottom: 28 }}>
-      <SectionTitle>Workout preferences</SectionTitle>
+      <SectionTitle>{t('profile.workoutPrefs')}</SectionTitle>
       <Card style={{ border: `1px dashed ${C.border}` }}>
         <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 8 }}>
-          Workout preferences are coming in a future update.
+          {t('profile.workoutComingSoon')}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, opacity: 0.4, pointerEvents: 'none' }}>
           {['Gym', 'Home', 'Outdoors', 'Strength', 'Cardio', 'HIIT', 'Yoga', 'Swimming'].map(tag => (
@@ -580,6 +587,7 @@ function WorkoutPreferencesSection() {
 // Wrapper that passes through to existing component
 // ─────────────────────────────────────────────
 function HealthPreferencesSection({ preferences, onSave }) {
+  const { t } = useTranslation()
   const [open,   setOpen]   = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved,  setSaved]  = useState(false)
@@ -653,13 +661,14 @@ function HealthPreferencesSection({ preferences, onSave }) {
 // Section 6 — Account
 // ─────────────────────────────────────────────
 function AccountSection({ user, onSignOut }) {
+  const { t } = useTranslation()
   return (
     <div style={{ marginBottom: 28 }}>
-      <SectionTitle>Account</SectionTitle>
+      <SectionTitle>{t('profile.account')}</SectionTitle>
       <Card>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: `1px solid ${C.border}` }}>
-            <span style={{ fontSize: 13, color: C.textMuted }}>Email</span>
+            <span style={{ fontSize: 13, color: C.textMuted }}>{t('profile.email')}</span>
             <span style={{ fontSize: 13, color: C.text }}>{user?.email}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: `1px solid ${C.border}` }}>
@@ -746,11 +755,11 @@ export default function ProfileTab({ user, profile, updateProfile, preferences, 
       {lang !== undefined && setLang && (
         <div style={{ marginBottom: 28 }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
-            {lang === 'fr' ? 'Langue' : 'Language'}
+            {t('profile.language')}
           </div>
           <Card>
             <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
-              {lang === 'fr' ? 'Choisissez votre langue' : 'Select your language'}
+              {t('profile.selectLang')}
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               {[{ code: 'en', label: 'English', flag: '🇬🇧' }, { code: 'fr', label: 'Français', flag: '🇫🇷' }].map(l => (

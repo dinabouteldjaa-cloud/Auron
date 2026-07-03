@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { askMealSuggestion, estimateMealFromDescription } from '../lib/claude'
 import { T } from '../lib/theme'
+import { useTranslation } from '../lib/i18n.jsx'
 
 // Map theme tokens to local alias
 const C = {
@@ -114,6 +115,7 @@ function MacroBar({ label, current, goal, color }) {
 // AI Describe & Estimate meal
 // ─────────────────────────────────────────────
 function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
+  const { t } = useTranslation()
   const [desc,    setDesc]    = useState('')
   const [loading, setLoading] = useState(false)
   const [result,  setResult]  = useState(null)
@@ -139,9 +141,9 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
       <button onClick={onBack} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 13, marginBottom: 20, cursor: 'pointer' }}>
         ← Back
       </button>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, marginBottom: 6 }}>AI Calorie Estimator</div>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, marginBottom: 6 }}>{t('cal.describeTitle')}</div>
       <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 20 }}>
-        Describe your meal and Auron will estimate the calories and macros.
+        {t('cal.describeSubtitle')}
       </div>
 
       {/* Meal slot selector */}
@@ -187,7 +189,7 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
             cursor: desc.trim() && !loading ? 'pointer' : 'default',
           }}
         >
-          {loading ? 'Estimating...' : 'Estimate calories ✨'}
+          {loading ? t('cal.estimating') : t('cal.estimateBtn')}
         </button>
       </Card>
 
@@ -218,7 +220,7 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
                 )}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 14 }}>
-                {[['Calories', result.calories, 'kcal', C.gold], ['Protein', result.protein, 'g', C.blue], ['Carbs', result.carbs, 'g', C.amber], ['Fat', result.fat, 'g', C.green]].map(([l, v, u, col]) => (
+                {[['Calories', result.calories, 'kcal', C.gold], [t('cal.protein'), result.protein, 'g', C.blue], [t('cal.carbs'), result.carbs, 'g', C.amber], ['Fat', result.fat, 'g', C.green]].map(([l, v, u, col]) => (
                   <div key={l} style={{ background: C.surfaceLight, borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
                     <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: col }}>{v}</div>
                     <div style={{ fontSize: 10, color: C.textMuted }}>{u} {l}</div>
@@ -262,6 +264,7 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
 // AI Suggestion card
 // ─────────────────────────────────────────────
 function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF, lang = 'en' }) {
+  const { t } = useTranslation()
   const [suggestion, setSuggestion] = useState('')
   const [loading,    setLoading]    = useState(false)
   const [fetched,    setFetched]    = useState(false)
@@ -284,7 +287,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
     <Card style={{ borderColor: C.borderStrong, marginBottom: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: fetched || loading ? 12 : 0 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.gold }}>✨ Coach Auron suggests</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.gold }}>{t('cal.aiSuggest')}</div>
           {activeRestrictions.length > 0 && (
             <div style={{ fontSize: 11, color: C.textDim, marginTop: 3 }}>
               Respecting: {activeRestrictions.slice(0, 3).join(', ')}{activeRestrictions.length > 3 ? ` +${activeRestrictions.length - 3} more` : ''}
@@ -301,12 +304,12 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
             display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
           }}
         >
-          {loading ? <><Spinner /> Thinking...</> : fetched ? '↺ Refresh' : 'Ask AI'}
+          {loading ? <><Spinner /> Thinking...</> : fetched ? t('cal.refresh') : t('cal.askAI')}
         </button>
       </div>
       {!fetched && !loading && (
         <div style={{ fontSize: 13, color: C.textMuted }}>
-          Tap "Ask AI" for a personalised meal suggestion based on what you've eaten today.
+          {t('cal.tapAsk')}
         </div>
       )}
       {loading && !suggestion && (
@@ -323,6 +326,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 // Add food modal
 // ─────────────────────────────────────────────
 function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose }) {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const filtered = FOOD_DB.filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
 
@@ -400,6 +404,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose }) {
 // Main CaloriesTab
 // ─────────────────────────────────────────────
 export default function CaloriesTab({ userId, profile, preferences, lang = 'en' }) {
+  const { t } = useTranslation()
   const [logs,         setLogs]         = useState([])
   const [loading,      setLoading]      = useState(true)
   const [modal,        setModal]        = useState(false)
@@ -488,16 +493,16 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
           <div style={{ fontSize: 26, fontWeight: 700, color: totalCal > calorieGoal ? C.red : C.green }}>
             {Math.abs(calorieGoal - totalCal).toLocaleString()}
           </div>
-          <div style={{ fontSize: 11, color: C.textMuted }}>{totalCal > calorieGoal ? 'kcal over' : 'kcal left'}</div>
+          <div style={{ fontSize: 11, color: C.textMuted }}>{totalCal > calorieGoal ? t('cal.kcalOver') : t('cal.kcalLeft')}</div>
         </div>
       </div>
 
       {/* Macros */}
       <Card style={{ marginBottom: 20 }}>
         <Label>Macros today</Label>
-        <MacroBar label="Protein" current={totalP} goal={proteinGoal} color={C.blue}  />
-        <MacroBar label="Carbs"   current={totalC} goal={carbsGoal}   color={C.amber} />
-        <MacroBar label="Fat"     current={totalF} goal={fatGoal}     color={C.gold}  />
+        <MacroBar label={t('cal.protein')} current={totalP} goal={proteinGoal} color={C.blue}  />
+        <MacroBar label={t('cal.carbs')}   current={totalC} goal={carbsGoal}   color={C.amber} />
+        <MacroBar label={t('cal.fat')}     current={totalF} goal={fatGoal}     color={C.gold}  />
       </Card>
 
       {/* AI Suggestion */}
