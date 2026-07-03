@@ -4,6 +4,7 @@ import { useProfile } from './hooks/useProfile'
 import { usePreferences } from './hooks/usePreferences'
 import { useMedications } from './hooks/useMedications'
 import { T, globalCss } from './lib/theme'
+import { useTranslation, LANGUAGES } from './lib/i18n.jsx'
 import TodayTab from './components/TodayTab'
 import ProfileTab from './components/ProfileTab'
 import CaloriesTab from './components/CaloriesTab'
@@ -93,17 +94,19 @@ function MedIcon({ active }) {
 }
 
 // ── Tab definitions — must be AFTER icon functions ────────────
-const TABS = [
-  { id: 'today',      label: 'Home',      icon: HomeIcon      },
-  { id: 'calories',   label: 'Nutrition', icon: NutritionIcon },
-  { id: 'workouts',   label: 'Progress',  icon: ProgressIcon  },
-  { id: 'medication', label: 'Meds',      icon: MedIcon       },
-  { id: 'profile',    label: 'Profile',   icon: ProfileIcon   },
-]
-
 export default function App() {
   const [tab,     setTab]     = useState('today')
-  const [session, setSession] = useState(undefined) // undefined=loading, null=logged out
+  const [session, setSession] = useState(undefined)
+  const { t, lang, setLang }  = useTranslation()
+
+  // Translated tab labels — inside component so t() is live
+  const TABS = [
+    { id: 'today',      label: t('nav.home'),      icon: HomeIcon      },
+    { id: 'calories',   label: t('nav.nutrition'), icon: NutritionIcon },
+    { id: 'workouts',   label: t('nav.progress'),  icon: ProgressIcon  },
+    { id: 'medication', label: t('nav.meds'),      icon: MedIcon       },
+    { id: 'profile',    label: t('nav.profile'),   icon: ProfileIcon   },
+  ]
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null))
@@ -116,9 +119,14 @@ export default function App() {
   const { preferences, updatePreferences } = usePreferences(uid)
   const { medications, takenCount, missedCount, nextMed, markTaken, getStatusForMed } = useMedications(uid)
 
-  const hour      = new Date().getHours()
-  const greeting  = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const hour = new Date().getHours()
+  const greeting = hour < 5 ? t('greeting.late') : hour < 12 ? t('greeting.morning') : hour < 17 ? t('greeting.afternoon') : t('greeting.evening')
   const firstName = profile?.full_name?.split(' ')[0] || session?.user?.email?.split('@')[0] || ''
+
+  // Sync language from profile when it loads
+  useEffect(() => {
+    if (profile?.language && profile.language !== lang) setLang(profile.language)
+  }, [profile?.language])
 
   // ── Loading ──────────────────────────────────
   if (session === undefined) {
@@ -176,6 +184,7 @@ export default function App() {
       <ProfileTab
         user={session.user} profile={profile} updateProfile={updateProfile}
         preferences={preferences} updatePreferences={updatePreferences}
+        lang={lang} setLang={setLang}
       />
     ),
   }
@@ -190,7 +199,7 @@ export default function App() {
           <div style={{ padding: '52px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: 22, fontWeight: 700, color: T.text, lineHeight: 1.2 }}>
-                {tab === 'today' ? 'Today' : TABS.find(t => t.id === tab)?.label || 'Auron'}
+                {tab === 'today' ? t('today.title') : TABS.find(tt => tt.id === tab)?.label || 'Auron'}
               </div>
             </div>
 
