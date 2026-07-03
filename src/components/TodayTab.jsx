@@ -700,14 +700,15 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate, userTz }) 
   }, [userId, selectedDate]) // only re-fetch when date or user changes, not on unit/cupSize change
 
   const save = async (newAmount) => {
-    const clamped  = Math.max(0, newAmount)
+    if (!isToday) return // never write to past days
+    const clamped   = Math.max(0, newAmount)
     setAmount(clamped)
     const cups      = unit === 'cups' ? clamped : Math.round(clamped / cupSize)
     const amount_ml = unit === 'ml'   ? clamped : clamped * cupSize
-    await supabase.from('water_logs').upsert({
-      user_id: userId, log_date: selectedDate,
-      cups, amount_ml, updated_at: new Date().toISOString(),
-    })
+    await supabase.from('water_logs').upsert(
+      { user_id: userId, log_date: selectedDate, cups, amount_ml, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,log_date' }
+    )
   }
 
   const displayLabel = unit === 'ml'
@@ -875,8 +876,16 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
   const userTz = profile?.timezone || getBrowserTimezone()
   const getNow  = () => toUserDateStr(userTz)
 
-  const [todayStr,      setTodayStr]      = useState(getNow)
-  const [selectedDate,  setSelectedDate]  = useState(getNow)
+  const [todayStr,      setTodayStr]      = useState(() => toUserDateStr(getBrowserTimezone()))
+  const [selectedDate,  setSelectedDate]  = useState(() => toUserDateStr(getBrowserTimezone()))
+
+  // Once profile loads (with stored timezone), correct the date if it differs
+  useEffect(() => {
+    if (!profile?.timezone) return
+    const correctDate = toUserDateStr(profile.timezone)
+    setTodayStr(correctDate)
+    setSelectedDate(prev => prev === correctDate ? prev : correctDate)
+  }, [profile?.timezone])
 
   // Auto-advance at midnight — check every 30 seconds
   useEffect(() => {
