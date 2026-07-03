@@ -209,7 +209,9 @@ function MedicationCard({ nextMed, takenCount, missedCount, onMarkTaken, onOpenT
           {nextMed ? (
             <>
               <div style={{ fontSize: 12, fontWeight: 700, color: T.text, lineHeight: 1.3 }}>{nextMed.medication_name}</div>
-              <div style={{ fontSize: 10, color: T.textMuted }}>{nextMed.reminder_time?.slice(0,5) || 'No time'}</div>
+              <div style={{ fontSize: 10, color: T.textMuted }}>
+                {(() => { try { const t = nextMed.reminder_time || (nextMed.reminder_times ? JSON.parse(nextMed.reminder_times)[0] : null); return t ? t.slice(0,5) : 'No time set' } catch { return 'No time set' } })()}
+              </div>
             </>
           ) : (
             <>
