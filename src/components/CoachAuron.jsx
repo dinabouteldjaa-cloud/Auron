@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { T } from '../lib/theme'
+import { useTranslation } from '../lib/i18n.jsx'
 
 // ─────────────────────────────────────────────────────────────
 // Auron character image map
@@ -173,6 +174,7 @@ export function AuronWelcomeScreen({ onDismiss }) {
 // CoachHero — main coach card shown on Today tab
 // ─────────────────────────────────────────────────────────────
 export function CoachHero({ mood = 'neutral', message = '', actionLabel = '', onAction = null }) {
+  const { t } = useTranslation()
   return (
     <div style={{
       background: T.purpleLight,
@@ -186,7 +188,7 @@ export function CoachHero({ mood = 'neutral', message = '', actionLabel = '', on
         <div style={{ width: 28, height: 28, borderRadius: 8, background: T.purple, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>✦</span>
         </div>
-        <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>Coach Auron</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{t('coach.name')}</span>
       </div>
 
       {/* Body — character fills entire left, message right */}
@@ -215,7 +217,7 @@ export function CoachHero({ mood = 'neutral', message = '', actionLabel = '', on
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
       }}>
         <span style={{ fontSize: 13 }}>✨</span>
-        <span style={{ fontSize: 13, color: T.purple, fontWeight: 600 }}>Open AI Coach ›</span>
+        <span style={{ fontSize: 13, color: T.purple, fontWeight: 600 }}>{t('coach.openAI')}</span>
       </div>
     </div>
   )
@@ -235,7 +237,7 @@ export function CoachInsightCard({ message, mood = 'happy' }) {
       height: '100%', boxSizing: 'border-box',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: T.purple }}>✦ Auron Insight</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: T.purple }}>{t('coach.name') + ' Insight'}</span>
         <span style={{ fontSize: 11, color: T.purple }}>›</span>
       </div>
       <div style={{ fontSize: 12, color: T.text, lineHeight: 1.6, flex: 1 }}>

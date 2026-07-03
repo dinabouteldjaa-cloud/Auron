@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
+import { useTranslation } from '../lib/i18n.jsx'
 import { AuronCharacter, AuronWelcomeScreen, CoachHero, CoachInsightCard, getAuronMood } from './CoachAuron'
 
 const C = {
@@ -30,11 +31,11 @@ const C = {
 const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
-const MEAL_SLOTS = [
-  { id: 'breakfast', label: 'Breakfast', icon: '🌅', time: '6–10am'   },
-  { id: 'lunch',     label: 'Lunch',     icon: '☀️',  time: '11am–2pm' },
-  { id: 'snack',     label: 'Snack',     icon: '🍎',  time: '2–5pm'   },
-  { id: 'dinner',    label: 'Dinner',    icon: '🌙',  time: '5–9pm'   },
+const getMealSlots = (t) => [
+  { id: 'breakfast', label: t('meals.breakfast'), icon: '🌅', time: t('meals.time.breakfast') },
+  { id: 'lunch',     label: t('meals.lunch'),     icon: '☀️',  time: t('meals.time.lunch')    },
+  { id: 'snack',     label: t('meals.snack'),     icon: '🍎',  time: t('meals.time.snack')    },
+  { id: 'dinner',    label: t('meals.dinner'),    icon: '🌙',  time: t('meals.time.dinner')   },
 ]
 
 // ─────────────────────────────────────────────────────────────
@@ -117,6 +118,7 @@ function TodaysFocus({ consumed, goal, workoutCount, waterPct, streakDays }) {
 // HeroCard — full-width purple gradient card, calorie ring + macros
 // ─────────────────────────────────────────────────────────────
 function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
+  const { t } = useTranslation()
   const r    = 64
   const circ = 2 * Math.PI * r
   const pct  = Math.min(consumed / goal, 1)
@@ -142,22 +144,22 @@ function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
             style={{ transition: 'stroke-dashoffset 0.8s ease' }} />
         </svg>
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>Calories</div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>{t('today.calories')}</div>
           <div style={{ fontSize: 26, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{consumed.toLocaleString()}</div>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>/ {goal.toLocaleString()}</div>
           <div style={{ fontSize: 11, fontWeight: 600, color: over ? T.red : 'rgba(255,255,255,0.9)', marginTop: 2 }}>
-            {over ? `${(consumed-goal).toLocaleString()} over` : `${(goal-consumed).toLocaleString()} left`}
+            {over ? `${(consumed-goal).toLocaleString()} ${t('today.over')}` : `${(goal-consumed).toLocaleString()} ${t('today.left')}`}
           </div>
         </div>
       </div>
 
       {/* Macros */}
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginBottom: 12 }}>Macros</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginBottom: 12 }}>{t('today.macros')}</div>
         {[
-          { label: 'Protein', val: proteinG, goal: proteinGoal, color: '#6EE7B7' },
-          { label: 'Carbs',   val: carbsG,   goal: Math.round((goal*0.45)/4), color: T.amber },
-          { label: 'Fats',    val: fatG,     goal: Math.round((goal*0.25)/9), color: '#F87171' },
+          { label: t('today.protein'), val: proteinG, goal: proteinGoal, color: '#6EE7B7' },
+          { label: t('today.carbs'),   val: carbsG,   goal: Math.round((goal*0.45)/4), color: T.amber },
+          { label: t('today.fats'),    val: fatG,     goal: Math.round((goal*0.25)/9), color: '#F87171' },
         ].map(m => {
           const mpct = m.goal > 0 ? Math.min(m.val / m.goal, 1) : 0
           return (
@@ -173,7 +175,7 @@ function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
           )
         })}
         <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>View Nutrition</span>
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>{t('today.viewNutrition')}</span>
           <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)' }}>›</span>
         </div>
       </div>
@@ -185,8 +187,7 @@ function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
 // MedicationCard — purple-tinted placeholder, Phase 3 ready
 // ─────────────────────────────────────────────────────────────
 function MedicationCard({ nextMed, takenCount, missedCount, onMarkTaken, onOpenTracker }) {
-  const pendingCount = 0 // placeholder until we pass full count
-
+  const { t } = useTranslation()
   return (
     <div style={{
       borderRadius: 20, marginBottom: 16,
@@ -196,57 +197,47 @@ function MedicationCard({ nextMed, takenCount, missedCount, onMarkTaken, onOpenT
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 32, height: 32, borderRadius: 10, background: T.purpleMid, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>💊</div>
-          <span style={{ fontSize: 15, fontWeight: 600, color: T.text }}>Medication</span>
+          <span style={{ fontSize: 15, fontWeight: 600, color: T.text }}>{t('meds.title')}</span>
         </div>
-        <button onClick={onOpenTracker} style={{ background: 'none', border: 'none', fontSize: 13, color: T.purple, fontWeight: 500, cursor: 'pointer' }}>See all ›</button>
+        <button onClick={onOpenTracker} style={{ background: 'none', border: 'none', fontSize: 13, color: T.purple, fontWeight: 500, cursor: 'pointer' }}>{t('meds.seeAll')}</button>
       </div>
-
-      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
-        {/* Next up */}
         <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
-          <div style={{ fontSize: 10, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>⏰ Next up</div>
+          <div style={{ fontSize: 10, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>{t('meds.nextUp')}</div>
           {nextMed ? (
             <>
               <div style={{ fontSize: 12, fontWeight: 700, color: T.text, lineHeight: 1.3 }}>{nextMed.medication_name}</div>
               <div style={{ fontSize: 10, color: T.textMuted }}>
-                {(() => { try { const t = nextMed.reminder_time || (nextMed.reminder_times ? JSON.parse(nextMed.reminder_times)[0] : null); return t ? t.slice(0,5) : 'No time set' } catch { return 'No time set' } })()}
+                {(() => { try { const tm = nextMed.reminder_time || (nextMed.reminder_times ? JSON.parse(nextMed.reminder_times)[0] : null); return tm ? tm.slice(0,5) : t('meds.noTimeSet') } catch { return t('meds.noTimeSet') } })()}
               </div>
             </>
           ) : (
             <>
               <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>—</div>
-              <div style={{ fontSize: 10, color: T.textMuted }}>No meds</div>
+              <div style={{ fontSize: 10, color: T.textMuted }}>{t('meds.noMeds')}</div>
             </>
           )}
         </div>
-
-        {/* Taken */}
         <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
-          <div style={{ fontSize: 10, color: T.green, marginBottom: 4, fontWeight: 500 }}>✓ Taken</div>
+          <div style={{ fontSize: 10, color: T.green, marginBottom: 4, fontWeight: 500 }}>{t('meds.takenLabel')}</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{takenCount}</div>
-          <div style={{ fontSize: 10, color: T.textMuted }}>today</div>
+          <div style={{ fontSize: 10, color: T.textMuted }}>{t('meds.today')}</div>
         </div>
-
-        {/* Missed */}
         <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
-          <div style={{ fontSize: 10, color: T.red, marginBottom: 4, fontWeight: 500 }}>✗ Missed</div>
+          <div style={{ fontSize: 10, color: T.red, marginBottom: 4, fontWeight: 500 }}>{t('meds.missedLabel')}</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{missedCount}</div>
-          <div style={{ fontSize: 10, color: T.textMuted }}>today</div>
+          <div style={{ fontSize: 10, color: T.textMuted }}>{t('meds.today')}</div>
         </div>
       </div>
-
-      {/* Mark taken button — only if there's a next med */}
       {nextMed ? (
-        <button
-          onClick={() => onMarkTaken?.(nextMed.id, nextMed.reminder_time)}
-          style={{ width: '100%', padding: '11px', borderRadius: 12, background: T.purple, border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-        >
-          ✓ Mark {nextMed.medication_name} as taken
+        <button onClick={() => onMarkTaken?.(nextMed.id, nextMed.reminder_time)}
+          style={{ width: '100%', padding: '11px', borderRadius: 12, background: T.purple, border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          {t('meds.markName', { name: nextMed.medication_name })}
         </button>
       ) : (
-        <button onClick={onOpenTracker} style={{ width: '100%', padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${T.border}`, color: T.purple, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          📅 Open Medication Tracker ›
+        <button onClick={onOpenTracker}
+          style={{ width: '100%', padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${T.border}`, color: T.purple, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          {t('meds.openTracker')}
         </button>
       )}
     </div>
@@ -280,6 +271,7 @@ function MiniRing({ pct, color, size = 52, icon }) {
 }
 
 function ActivityStepsRow({ workoutLogs, steps, burned, isToday, onStatChange }) {
+  const { t } = useTranslation()
   const workoutMin  = workoutLogs.reduce((s, w) => s + (w.duration_minutes || 0), 0)
   const activityGoal = 60
   const stepsGoal    = 10000
@@ -294,18 +286,18 @@ function ActivityStepsRow({ workoutLogs, steps, burned, isToday, onStatChange })
       <div style={{ background: T.surface, borderRadius: 18, padding: '16px 14px', boxShadow: T.shadowCard, border: `1px solid ${T.divider}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <div style={{ width: 28, height: 28, borderRadius: 8, background: T.greenLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🏃</div>
-          <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Activity</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{t('today.activity')}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
           <div>
             <div style={{ fontSize: 28, fontWeight: 700, color: T.text, lineHeight: 1 }}>{workoutMin}</div>
-            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>/ {activityGoal} min</div>
-            {workoutMin > 0 && <div style={{ fontSize: 11, color: T.amber, marginTop: 4, fontWeight: 500 }}>⭐ Great job!</div>}
+            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>/ {activityGoal} {t('today.min')}</div>
+            {workoutMin > 0 && <div style={{ fontSize: 11, color: T.amber, marginTop: 4, fontWeight: 500 }}>⭐ {t('today.greatJob')}</div>}
           </div>
           <MiniRing pct={actPct} color={T.green} size={52} icon="🏃" />
         </div>
         <div style={{ borderTop: `1px solid ${T.divider}`, paddingTop: 10, marginTop: 4 }}>
-          <span style={{ fontSize: 12, color: T.purple, fontWeight: 600 }}>Log Workout →</span>
+          <span style={{ fontSize: 12, color: T.purple, fontWeight: 600 }}>{t('today.logWorkout')}</span>
         </div>
       </div>
 
@@ -313,37 +305,32 @@ function ActivityStepsRow({ workoutLogs, steps, burned, isToday, onStatChange })
       <div style={{ background: T.surface, borderRadius: 18, padding: '16px 14px', boxShadow: T.shadowCard, border: `1px solid ${T.divider}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <div style={{ width: 28, height: 28, borderRadius: 8, background: T.blueLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>👟</div>
-          <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Steps</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{t('today.steps')}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
           <div>
             {isToday ? (
-              <input
-                type="number"
-                value={steps || ''}
-                onChange={e => onStatChange('steps', e.target.value)}
-                placeholder="0"
-                style={{ width: 90, background: 'transparent', border: 'none', outline: 'none', fontSize: 28, fontWeight: 700, color: T.text, padding: 0, fontFamily: 'inherit', lineHeight: 1 }}
-              />
+              <input type="number" value={steps || ''} onChange={e => onStatChange('steps', e.target.value)} placeholder="0"
+                style={{ width: 90, background: 'transparent', border: 'none', outline: 'none', fontSize: 28, fontWeight: 700, color: T.text, padding: 0, fontFamily: 'inherit', lineHeight: 1 }} />
             ) : (
               <div style={{ fontSize: 28, fontWeight: 700, color: T.text, lineHeight: 1 }}>{stepsVal.toLocaleString() || '—'}</div>
             )}
-            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>/ {stepsGoal.toLocaleString()} steps</div>
-            {stepsVal > 0 && stepsVal < stepsGoal && <div style={{ fontSize: 11, color: T.textMuted, marginTop: 4 }}>Keep moving!</div>}
-            {stepsVal >= stepsGoal && <div style={{ fontSize: 11, color: T.green, marginTop: 4, fontWeight: 500 }}>Goal reached! 🎉</div>}
+            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>/ {stepsGoal.toLocaleString()} {t('today.steps').toLowerCase()}</div>
+            {stepsVal > 0 && stepsVal < stepsGoal && <div style={{ fontSize: 11, color: T.textMuted, marginTop: 4 }}>{t('today.keepMoving')}</div>}
+            {stepsVal >= stepsGoal && <div style={{ fontSize: 11, color: T.green, marginTop: 4, fontWeight: 500 }}>🎉</div>}
           </div>
           <MiniRing pct={stepsPct} color={T.blue} size={52} icon="👟" />
         </div>
         <div style={{ borderTop: `1px solid ${T.divider}`, paddingTop: 10, marginTop: 4 }}>
-          <span style={{ fontSize: 12, color: T.blue, fontWeight: 600 }}>View Progress →</span>
+          <span style={{ fontSize: 12, color: T.blue, fontWeight: 600 }}>{t('today.viewProgress')}</span>
         </div>
       </div>
     </div>
   )
 }
 
-// Sleep card — full width below activity row
 function SleepCard({ sleep, isToday, onStatChange }) {
+  const { t } = useTranslation()
   const sleepVal  = parseFloat(sleep) || 0
   const sleepGoal = 8
   const pct       = sleepVal / sleepGoal
@@ -351,7 +338,7 @@ function SleepCard({ sleep, isToday, onStatChange }) {
     <div style={{ background: T.surface, borderRadius: 18, padding: '14px 16px', boxShadow: T.shadowCard, border: `1px solid ${T.divider}`, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
       <div style={{ width: 36, height: 36, borderRadius: 10, background: T.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🌙</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>Sleep</div>
+        <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>{t('today.sleep')}</div>
         <div style={{ height: 5, background: T.surfaceMid, borderRadius: 3, overflow: 'hidden' }}>
           <div style={{ width: `${Math.min(pct, 1) * 100}%`, height: '100%', background: T.purple, borderRadius: 3, transition: 'width 0.5s' }} />
         </div>
@@ -381,10 +368,12 @@ function StatCard({ icon, label, value, onChange, unit, color, placeholder, isTo
 // ─────────────────────────────────────────────────────────────
 function MealsSection({ foodLogs, isToday }) {
   const [expanded, setExpanded] = useState(null)
+  const { t } = useTranslation()
+  const MEAL_SLOTS = getMealSlots(t)
 
   return (
     <div style={{ marginBottom: 20 }}>
-      <Label>Meals</Label>
+      <Label>{t('today.meals')}</Label>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {MEAL_SLOTS.map(slot => {
           const items    = foodLogs.filter(f => f.meal_slot === slot.id)
@@ -422,8 +411,8 @@ function MealsSection({ foodLogs, isToday }) {
                   <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{slot.label}</div>
                   <div style={{ fontSize: 11, color: C.textMuted, marginTop: 1 }}>
                     {hasItems
-                      ? `${items.length} item${items.length > 1 ? 's' : ''} · ${Math.round(slotP)}g protein`
-                      : <span style={{ color: C.textDim }}>Nothing logged</span>}
+                      ? `${items.length} ${items.length > 1 ? t('meals.items') : t('meals.item')} · ${Math.round(slotP)}g ${t('today.protein').toLowerCase()}`
+                      : <span style={{ color: C.textDim }}>{t('meals.nothingLogged')}</span>}
                   </div>
                 </div>
                 {hasItems && (
@@ -460,7 +449,7 @@ function MealsSection({ foodLogs, isToday }) {
 
       {foodLogs.length === 0 && isToday && (
         <div style={{ marginTop: 10, padding: 16, background: C.surfaceLight, borderRadius: 12, textAlign: 'center', border: `1px dashed ${C.border}` }}>
-          <div style={{ fontSize: 13, color: C.textMuted }}>Log your first meal in the Calories tab</div>
+          <div style={{ fontSize: 13, color: C.textMuted }}>{t('cal.nothingLogged')}</div>
         </div>
       )}
     </div>
@@ -471,6 +460,7 @@ function MealsSection({ foodLogs, isToday }) {
 // Workout section
 // ─────────────────────────────────────────────────────────────
 function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
+  const { t } = useTranslation()
   const dayName  = DAYS[new Date(selectedDate + 'T00:00:00').getDay()]
   const dayIndex = DAYS.indexOf(dayName)
 
@@ -503,7 +493,7 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Label style={{ marginBottom: 0 }}>Workout</Label>
+        <Label style={{ marginBottom: 0 }}>{t('today.workout')}</Label>
         {workoutLogs.length > 0 && (
           <div style={{ fontSize: 11, color: C.textMuted }}>
             {totalMinutes}min · {totalCalBurned} kcal
@@ -585,9 +575,9 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
         <div style={{ background: C.surfaceLight, borderRadius: 14, padding: '22px 16px', textAlign: 'center', border: `1px dashed ${C.border}` }}>
           <div style={{ fontSize: 24, marginBottom: 8 }}>🏃</div>
           <div style={{ fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: 4 }}>
-            {isToday ? 'No workout logged today' : 'No workouts this day'}
+            {isToday ? t('today.noWorkout') : t('today.noWorkoutDay')}
           </div>
-          {isToday && <div style={{ fontSize: 12, color: C.textDim }}>Go to the Workouts tab to log one</div>}
+          {isToday && <div style={{ fontSize: 12, color: C.textDim }}>{t('today.logWorkoutHint')}</div>}
         </div>
       )}
     </div>
@@ -677,6 +667,7 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
 }
 
 function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
+  const { t } = useTranslation()
   const [amount,       setAmount]       = useState(0)
   const [showSettings, setShowSettings] = useState(false)
   const [loading,      setLoading]      = useState(true)
@@ -783,8 +774,8 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
         </div>
       )}
 
-      {!isToday && <div style={{ fontSize: 11, color: C.textDim, marginTop: 12, textAlign: 'center' }}>View only — switch to today to log water</div>}
-      {pct >= 100 && isToday && <div style={{ fontSize: 12, color: C.green, marginTop: 10, textAlign: 'center', fontWeight: 500 }}>🎉 Daily water goal reached!</div>}
+      {!isToday && <div style={{ fontSize: 11, color: C.textDim, marginTop: 12, textAlign: 'center' }}>{t('water.viewOnly')}</div>}
+      {pct >= 100 && isToday && <div style={{ fontSize: 12, color: C.green, marginTop: 10, textAlign: 'center', fontWeight: 500 }}>🎉 {t('water.goal')}</div>}
 
       {showSettings && (
         <WaterSettingsModal
@@ -870,6 +861,7 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 // Main TodayTab export
 // ─────────────────────────────────────────────────────────────
 export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds }) {
+  const { t } = useTranslation()
   const today    = new Date()
   const todayStr = today.toISOString().split('T')[0]
 
@@ -987,11 +979,11 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
 
   // Date label
   const formatDate = (ds) => {
-    if (ds === todayStr) return 'Today'
+    if (ds === todayStr) return t('today.todayLabel')
     const d         = new Date(ds + 'T00:00:00')
     const yesterday = new Date(today)
     yesterday.setDate(today.getDate() - 1)
-    if (ds === yesterday.toISOString().split('T')[0]) return 'Yesterday'
+    if (ds === yesterday.toISOString().split('T')[0]) return t('today.yesterday')
     return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`
   }
 
