@@ -661,7 +661,7 @@ function HealthPreferencesSection({ preferences, onSave }) {
 // ─────────────────────────────────────────────
 // Section 6 — Account
 // ─────────────────────────────────────────────
-function AccountSection({ user, onSignOut }) {
+function AccountSection({ user, onSignOut, lang }) {
   const { t } = useTranslation()
   return (
     <div style={{ marginBottom: 28 }}>
@@ -675,7 +675,7 @@ function AccountSection({ user, onSignOut }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: `1px solid ${C.border}` }}>
             <span style={{ fontSize: 13, color: C.textMuted }}>{t('profile.memberSince')}</span>
             <span style={{ fontSize: 13, color: C.text }}>
-              {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '—'}
+              {user?.created_at ? new Date(user.created_at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'long', year: 'numeric' }) : '—'}
             </span>
           </div>
           <button
@@ -785,7 +785,7 @@ export default function ProfileTab({ user, profile, updateProfile, preferences, 
         </div>
       )}
 
-      <AccountSection user={user} onSignOut={() => supabase.auth.signOut()} />
+      <AccountSection user={user} onSignOut={() => supabase.auth.signOut()} lang={lang} />
     </div>
   )
 }

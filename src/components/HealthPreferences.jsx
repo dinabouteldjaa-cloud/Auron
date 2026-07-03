@@ -311,6 +311,7 @@ function AvoidedFoodsEditor({ foods = [], onChange }) {
 // Main HealthPreferences component
 // ─────────────────────────────────────────────
 export default function HealthPreferences({ preferences = {}, onSave, saving = false, saved = false }) {
+  const { t } = useTranslation()
   const [dietary,      setDietary]      = useState(preferences.dietary_preferences  || [])
   const [allergies,    setAllergies]    = useState(preferences.allergies             || [])
   const [restrictions, setRestrictions] = useState(preferences.food_restrictions    || [])
