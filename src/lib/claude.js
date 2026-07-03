@@ -1,10 +1,15 @@
 // ─────────────────────────────────────────────────────────────
 // Auron AI — Groq (Llama 3.3) integration
 // All meal-related prompts are built through buildMealPrompt()
-// so user preferences are always respected.
+// so user preferences and language are always respected.
 // ─────────────────────────────────────────────────────────────
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
+
+const LANG_INSTRUCTION = {
+  en: 'Always respond in English.',
+  fr: 'Réponds toujours en français. Tous tes messages, suggestions et conseils doivent être en français.',
+}
 
 function getKey() {
   return import.meta.env.VITE_GROQ_KEY
@@ -39,16 +44,9 @@ async function callGroq(systemPrompt, userMessage, maxTokens = 1000) {
 
 // ─────────────────────────────────────────────────────────────
 // buildMealPrompt — constructs the system prompt for ALL
-// meal-related AI features, baking in the user's preferences.
-//
-// preferences shape (from user_preferences table):
-//   dietary_preferences : string[]  e.g. ['Halal', 'Keto']
-//   allergies           : string[]  e.g. ['Nuts', 'Dairy']
-//   food_restrictions   : string[]  e.g. ['Low sodium']
-//   avoided_foods       : string[]  e.g. ['Cheese', 'Onions']
-//   health_notes        : string    (for context only, no medical advice)
+// meal-related AI features, baking in preferences AND language.
 // ─────────────────────────────────────────────────────────────
-export function buildMealPrompt(preferences = {}) {
+export function buildMealPrompt(preferences = {}, lang = 'en') {
   const {
     dietary_preferences = [],
     allergies           = [],
@@ -61,15 +59,15 @@ export function buildMealPrompt(preferences = {}) {
     'You are Coach Auron, a helpful AI wellness and nutrition assistant inside the Auron fitness app.',
     'You provide practical, personalized meal guidance based on the user\'s goals and preferences.',
     '',
+    // Language instruction — FIRST so the model prioritises it
+    LANG_INSTRUCTION[lang] || LANG_INSTRUCTION.en,
+    '',
     '── IMPORTANT RULES ──────────────────────────────────────',
     'NEVER provide medical advice, diagnoses, or treatment recommendations.',
     'NEVER suggest changing, stopping, or starting medications.',
     'NEVER claim medical accuracy.',
     'If the user mentions a health condition or disease, provide only general wellness support',
     'and remind them to follow their healthcare provider\'s guidance.',
-    'Always add this reminder when health conditions are mentioned:',
-    '"Auron provides wellness support and informational guidance only.',
-    'Always follow the advice of your healthcare professionals."',
     '─────────────────────────────────────────────────────────',
   ]
 
@@ -81,7 +79,7 @@ export function buildMealPrompt(preferences = {}) {
   if (allergies.length > 0) {
     lines.push('')
     lines.push(`ALLERGIES — NEVER include these ingredients in any suggestion: ${allergies.join(', ')}`)
-    lines.push('Allergy safety is non-negotiable. If a suggested dish might contain any of these, do not suggest it.')
+    lines.push('Allergy safety is non-negotiable.')
   }
 
   if (food_restrictions.length > 0) {
@@ -92,7 +90,6 @@ export function buildMealPrompt(preferences = {}) {
   if (avoided_foods.length > 0) {
     lines.push('')
     lines.push(`FOODS TO AVOID — never include these in any meal suggestion: ${avoided_foods.join(', ')}`)
-    lines.push('Even as minor ingredients or toppings, do not include any food from this list.')
   }
 
   if (health_notes.trim()) {
@@ -108,30 +105,27 @@ export function buildMealPrompt(preferences = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Public AI functions
+// Public AI functions — all accept lang parameter
 // ─────────────────────────────────────────────────────────────
 
-// Generic call — for coach messages, streak tips, workout plans etc.
 export async function askClaude(systemPrompt, userMessage) {
   return callGroq(systemPrompt, userMessage)
 }
 
-// Meal suggestion — uses preferences
-export async function askMealSuggestion(preferences, { totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF }) {
-  const system = buildMealPrompt(preferences)
-  const calLeft    = calorieGoal - totalCal
-  const proteinLeft = proteinGoal - totalP
+export async function askMealSuggestion(preferences, { totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF }, lang = 'en') {
+  const system   = buildMealPrompt(preferences, lang)
+  const calLeft  = calorieGoal - totalCal
+  const protLeft = proteinGoal - totalP
 
   const user = `The user has eaten ${totalCal} kcal today (goal: ${calorieGoal} kcal, ${calLeft > 0 ? calLeft + ' remaining' : Math.abs(calLeft) + ' over'}).
-Macros so far: ${Math.round(totalP)}g protein (${Math.round(proteinLeft)}g left), ${Math.round(totalC)}g carbs, ${Math.round(totalF)}g fat.
+Macros so far: ${Math.round(totalP)}g protein (${Math.round(protLeft)}g left), ${Math.round(totalC)}g carbs, ${Math.round(totalF)}g fat.
 What should they eat next? Give 1 specific, practical suggestion in 2 sentences max. Name the food and approximate calories.`
 
   return callGroq(system, user, 200)
 }
 
-// Meal description estimator — uses preferences
-export async function estimateMealFromDescription(preferences, description) {
-  const system = buildMealPrompt(preferences) + `
+export async function estimateMealFromDescription(preferences, description, lang = 'en') {
+  const system = buildMealPrompt(preferences, lang) + `
 
 You are also a nutrition expert. When asked to estimate a meal, respond ONLY with valid JSON — no markdown, no explanation:
 {"meal":"meal name","calories":number,"protein":number,"carbs":number,"fat":number,"items":[{"name":"item","calories":number}],"confidence":"high/medium/low","note":"one brief tip"}`
@@ -140,17 +134,16 @@ You are also a nutrition expert. When asked to estimate a meal, respond ONLY wit
   return callGroq(system, user, 600)
 }
 
-// Workout plan — preferences not needed but uses same pattern
-export async function generateWorkoutPlan(goal) {
+export async function generateWorkoutPlan(goal, lang = 'en') {
   const system = `You are Coach Auron, an expert personal trainer inside the Auron fitness app.
+${LANG_INSTRUCTION[lang] || LANG_INSTRUCTION.en}
 Create concise, practical workout plans. Plain text only — no markdown symbols, no asterisks.
 Number each day clearly. Keep it under 250 words.`
   return callGroq(system, `Create a weekly workout plan for: ${goal}`, 800)
 }
 
-// Fitness + nutrition plan
-export async function generateFullPlan(preferences, { goal, days, equipment, diet }) {
-  const system = buildMealPrompt(preferences) + `
+export async function generateFullPlan(preferences, { goal, days, equipment, diet }, lang = 'en') {
+  const system = buildMealPrompt(preferences, lang) + `
 
 You are also an expert fitness coach. Create a combined fitness and nutrition plan.
 Plain text only — no markdown symbols, no asterisks. Max 300 words.`
@@ -160,15 +153,14 @@ Include a weekly workout schedule and basic nutrition guidelines.`
   return callGroq(system, user, 1000)
 }
 
-// Weekly insights
-export async function generateWeeklyInsights(stats) {
+export async function generateWeeklyInsights(stats, lang = 'en') {
   const system = `You are Coach Auron, a fitness coach inside the Auron fitness app.
+${LANG_INSTRUCTION[lang] || LANG_INSTRUCTION.en}
 Provide 3 specific, numbered insights based on the user's data. Plain text only. No markdown.
-${buildMealPrompt()}`
+${buildMealPrompt({}, lang)}`
   return callGroq(system, `User this week: ${stats}`, 600)
 }
 
-// Image scanning not supported on Groq free tier
 export async function askClaudeWithImage() {
   return JSON.stringify({
     meal: 'Photo scanning unavailable',
@@ -177,3 +169,4 @@ export async function askClaudeWithImage() {
     note: 'Photo scanning requires a paid AI plan. Please use the Describe meal option instead.',
   })
 }
+
