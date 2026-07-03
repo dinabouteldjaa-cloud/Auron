@@ -670,20 +670,20 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
   )
 }
 
-function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
+function WaterTracker({ userId, profile, updateProfile, selectedDate, userTz }) {
   const { t } = useTranslation()
   const [amount,       setAmount]       = useState(0)
   const [showSettings, setShowSettings] = useState(false)
   const [loading,      setLoading]      = useState(true)
 
-  const isToday  = selectedDate === toUserDateStr()
+  const isToday  = selectedDate === toUserDateStr(userTz)
   const unit     = profile?.water_unit    || 'cups'
   const goal     = unit === 'ml' ? (profile?.water_goal_ml || 2000) : (profile?.water_goal || 8)
   const cupSize  = profile?.cup_size_ml  || 250
   const pct      = Math.min((amount / goal) * 100, 100)
 
   useEffect(() => {
-    if (!userId) return
+    if (!userId || !selectedDate) return
     setLoading(true)
     supabase
       .from('water_logs')
@@ -692,12 +692,12 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
       .eq('log_date', selectedDate)
       .single()
       .then(({ data }) => {
-        if (data) setAmount(unit === 'ml' ? (data.amount_ml || data.cups * cupSize) : (data.cups || 0))
+        if (data) setAmount(unit === 'ml' ? (data.amount_ml || 0) : (data.cups || 0))
         else setAmount(0)
       })
       .catch(() => setAmount(0))
       .finally(() => setLoading(false))
-  }, [userId, selectedDate, unit, cupSize])
+  }, [userId, selectedDate]) // only re-fetch when date or user changes, not on unit/cupSize change
 
   const save = async (newAmount) => {
     const clamped  = Math.max(0, newAmount)
@@ -941,7 +941,8 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
       supabase.from('workout_logs').select('*').eq('user_id', userId).eq('log_date', selectedDate),
       supabase.from('saved_plans').select('*').eq('user_id', userId).eq('is_active', true).limit(5),
       supabase.from('daily_stats').select('*').eq('user_id', userId).eq('log_date', selectedDate).single(),
-    ]).then(([food, workout, plans, stats]) => {
+      supabase.from('water_logs').select('cups, amount_ml').eq('user_id', userId).eq('log_date', selectedDate).single(),
+    ]).then(([food, workout, plans, stats, water]) => {
       setFoodLogs(food.data    || [])
       setWorkoutLogs(workout.data || [])
       setSavedPlans(plans.data || [])
@@ -949,6 +950,13 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
         ? { steps: stats.data.steps || '', burned: stats.data.burned_kcal || '', sleep: stats.data.sleep_hours || '' }
         : { steps: '', burned: '', sleep: '' }
       )
+      // Water for coach context
+      if (water.data) {
+        const wUnit = profile?.water_unit || 'cups'
+        setWaterAmount(wUnit === 'ml' ? (water.data.amount_ml || 0) : (water.data.cups || 0))
+      } else {
+        setWaterAmount(0)
+      }
       setLoading(false)
     })
   }, [userId, selectedDate])
@@ -1114,6 +1122,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
         profile={profile}
         updateProfile={updateProfile}
         selectedDate={selectedDate}
+        userTz={userTz}
       />
 
       {/* 6 ── Meals */}
