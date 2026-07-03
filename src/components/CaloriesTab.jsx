@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { askMealSuggestion, estimateMealFromDescription } from '../lib/claude'
 import { T } from '../lib/theme'
-import { todayLocal } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
 
 // Map theme tokens to local alias
@@ -415,7 +414,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
   const [selectedMeal, setSelectedMeal] = useState('breakfast')
   const [subView,      setSubView]      = useState('log') // 'log' | 'describe'
 
-  const today = todayLocal()
+  const today = new Date().toISOString().split('T')[0]
   const calorieGoal   = profile?.calorie_goal || 2200
   const proteinGoal   = profile?.protein_goal || 150
   const carbsGoal     = profile?.carbs_goal   || 250

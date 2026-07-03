@@ -676,7 +676,7 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
   const [showSettings, setShowSettings] = useState(false)
   const [loading,      setLoading]      = useState(true)
 
-  const isToday  = selectedDate === todayLocal()
+  const isToday  = selectedDate === new Date().toISOString().split('T')[0]
   const unit     = profile?.water_unit    || 'cups'
   const goal     = unit === 'ml' ? (profile?.water_goal_ml || 2000) : (profile?.water_goal || 8)
   const cupSize  = profile?.cup_size_ml  || 250
@@ -810,7 +810,7 @@ function WeekStrip({ weekDays, selectedDate, todayStr, setSelectedDate, loggedDa
         {/* Day buttons */}
         <div style={{ display: 'flex', gap: 4, flex: 1 }}>
           {weekDays.map((d, i) => {
-            const ds           = localDateStr(d)
+            const ds           = d.toISOString().split('T')[0]
             const isSel        = ds === selectedDate
             const isFuture     = d > today
             const isCurrentDay = ds === todayStr
@@ -869,8 +869,9 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds }) {
   const { t, lang } = useTranslation()
 
-  // Always use LOCAL date — safe for all timezones (UTC+3, UTC+5:30, etc.)
-  const getNow = () => todayLocal()
+  // Use UTC dates everywhere for DB consistency — all existing data uses UTC
+  // The stale date bug is fixed by calling getNow() fresh on each render tick
+  const getNow = () => new Date().toISOString().split('T')[0]
 
   const [todayStr,      setTodayStr]      = useState(getNow)
   const [selectedDate,  setSelectedDate]  = useState(getNow)
@@ -959,7 +960,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
       .from('food_logs')
       .select('log_date')
       .eq('user_id', userId)
-      .gte('log_date', localDateStr(from))
+      .gte('log_date', new Date(new Date().setDate(new Date().getDate() - 60)).toISOString().split('T')[0])
       .then(({ data }) => {
         setLoggedDates(new Set((data || []).map(r => r.log_date)))
       })
@@ -1000,7 +1001,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
   for (let i = 0; i < 60; i++) {
     const d  = new Date(today)
     d.setDate(today.getDate() - i)
-    if (loggedDates.has(localDateStr(d))) streakDays++
+    if (loggedDates.has(d.toISOString().split('T')[0])) streakDays++
     else break
   }
 
