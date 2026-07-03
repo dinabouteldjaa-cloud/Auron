@@ -113,7 +113,7 @@ function MacroBar({ label, current, goal, color }) {
 // ─────────────────────────────────────────────
 // AI Describe & Estimate meal
 // ─────────────────────────────────────────────
-function DescribeMeal({ preferences, onLog, onBack }) {
+function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
   const [desc,    setDesc]    = useState('')
   const [loading, setLoading] = useState(false)
   const [result,  setResult]  = useState(null)
@@ -123,7 +123,7 @@ function DescribeMeal({ preferences, onLog, onBack }) {
     if (!desc.trim()) return
     setLoading(true); setResult(null)
     try {
-      const raw   = await estimateMealFromDescription(preferences, desc)
+      const raw   = await estimateMealFromDescription(preferences, desc, lang)
       const clean = raw.replace(/```json|```/g, '').trim()
       setResult(JSON.parse(clean))
     } catch {
@@ -261,7 +261,7 @@ function DescribeMeal({ preferences, onLog, onBack }) {
 // ─────────────────────────────────────────────
 // AI Suggestion card
 // ─────────────────────────────────────────────
-function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF }) {
+function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF, lang = 'en' }) {
   const [suggestion, setSuggestion] = useState('')
   const [loading,    setLoading]    = useState(false)
   const [fetched,    setFetched]    = useState(false)
@@ -270,7 +270,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
     setLoading(true); setSuggestion('')
     const result = await askMealSuggestion(preferences, {
       totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF,
-    })
+    }, lang)
     setSuggestion(result); setLoading(false); setFetched(true)
   }
 
@@ -399,7 +399,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose }) {
 // ─────────────────────────────────────────────
 // Main CaloriesTab
 // ─────────────────────────────────────────────
-export default function CaloriesTab({ userId, profile, preferences }) {
+export default function CaloriesTab({ userId, profile, preferences, lang = 'en' }) {
   const [logs,         setLogs]         = useState([])
   const [loading,      setLoading]      = useState(true)
   const [modal,        setModal]        = useState(false)
@@ -452,6 +452,7 @@ export default function CaloriesTab({ userId, profile, preferences }) {
     return (
       <DescribeMeal
         preferences={preferences}
+        lang={lang}
         onLog={(food, meal) => { addFood(food, meal); setSubView('log') }}
         onBack={() => setSubView('log')}
       />
@@ -502,6 +503,7 @@ export default function CaloriesTab({ userId, profile, preferences }) {
       {/* AI Suggestion */}
       <AISuggestionCard
         preferences={preferences}
+        lang={lang}
         totalCal={totalCal}   calorieGoal={calorieGoal}
         totalP={totalP}       proteinGoal={proteinGoal}
         totalC={totalC}       totalF={totalF}
