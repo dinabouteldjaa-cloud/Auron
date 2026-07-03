@@ -173,17 +173,10 @@ export function AuronWelcomeScreen({ onDismiss }) {
 // ─────────────────────────────────────────────────────────────
 // CoachHero — main coach card shown on Today tab
 // ─────────────────────────────────────────────────────────────
-export function CoachHero({ mood = 'neutral', message = '', actionLabel = '', onAction = null }) {
+export function CoachHero({ mood = 'neutral', message = '', loading = false, actionLabel = '', onAction = null }) {
   const { t } = useTranslation()
   return (
-    <div style={{
-      background: T.purpleLight,
-      border: `1px solid ${T.borderStrong}`,
-      borderRadius: 20,
-      marginBottom: 16,
-      overflow: 'hidden',
-    }}>
-      {/* Header — just the name, no See all */}
+    <div style={{ background: T.purpleLight, border: `1px solid ${T.borderStrong}`, borderRadius: 20, marginBottom: 16, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 18px 0' }}>
         <div style={{ width: 28, height: 28, borderRadius: 8, background: T.purple, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>✦</span>
@@ -191,31 +184,25 @@ export function CoachHero({ mood = 'neutral', message = '', actionLabel = '', on
         <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{t('coach.name')}</span>
       </div>
 
-      {/* Body — character fills entire left, message right */}
       <div style={{ display: 'flex', alignItems: 'stretch', minHeight: 120 }}>
-
-        {/* Character — anchored to bottom */}
         <div style={{ width: 120, flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingLeft: 8 }}>
           <AuronCharacter mood={mood} size="hero" />
         </div>
-
-        {/* Message */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '10px 16px 14px 8px' }}>
-          {message && (
-            <div style={{ fontSize: 14.5, color: T.text, lineHeight: 1.6, fontWeight: 500 }}>
-              {message}
+          {loading ? (
+            <div style={{ width: '100%' }}>
+              <style>{`@keyframes shimmer{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}`}</style>
+              {[90, 100, 65].map((w, i) => (
+                <div key={i} style={{ height: 10, borderRadius: 6, marginBottom: i < 2 ? 8 : 0, width: `${w}%`, background: T.purpleMid, animation: `shimmer 1.4s ease-in-out ${i*0.15}s infinite` }} />
+              ))}
             </div>
-          )}
+          ) : message ? (
+            <div style={{ fontSize: 14.5, color: T.text, lineHeight: 1.6, fontWeight: 500 }}>{message}</div>
+          ) : null}
         </div>
       </div>
 
-      {/* Bottom CTA */}
-      <div style={{
-        borderTop: `1px solid ${T.borderStrong}`,
-        margin: '0 18px',
-        padding: '11px 0',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-      }}>
+      <div style={{ borderTop: `1px solid ${T.borderStrong}`, margin: '0 18px', padding: '11px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
         <span style={{ fontSize: 13 }}>✨</span>
         <span style={{ fontSize: 13, color: T.purple, fontWeight: 600 }}>{t('coach.openAI')}</span>
       </div>

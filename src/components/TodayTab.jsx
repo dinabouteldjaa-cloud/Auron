@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { useTranslation } from '../lib/i18n.jsx'
 import { AuronCharacter, AuronWelcomeScreen, CoachHero, CoachInsightCard, getAuronMood } from './CoachAuron'
+import { useCoachMessage, getAuronMoodFromContext } from '../hooks/useCoachMessage'
 
 const C = {
   gold:         T.purple,
@@ -964,12 +965,8 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
   const totalF     = foodLogs.reduce((s, f) => s + (f.fat      || 0), 0)
 
   const calorieGoal = profile?.calorie_goal || 2200
-  const firstName   = profile?.full_name?.split(' ')[0] || ''
-  const hey         = firstName ? `${firstName}, ` : ''
-  const comma       = firstName ? `, ${firstName}` : ''
   const DAYS        = getDays(t)
   const MONTHS      = getMonths(t)
-  const proteinGoal = profile?.protein_goal || 150
   const waterUnit   = profile?.water_unit   || 'cups'
   const waterGoal   = waterUnit === 'ml' ? (profile?.water_goal_ml || 2000) : (profile?.water_goal || 8)
   const cupSize     = profile?.cup_size_ml  || 250
@@ -994,32 +991,37 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
     return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`
   }
 
-  // Coach mood
-  const hour = new Date().getHours()
-  const coachMood = getAuronMood({ isToday, totalCal, calorieGoal, streakDays, workoutCount: workoutLogs.length, hour })
+  // ── Coach Auron — full context for AI message + smart expression ──
+  const hour        = new Date().getHours()
+  const firstName   = profile?.full_name?.split(' ')[0] || ''
+  const proteinGoal = profile?.protein_goal || 150
+  const workoutDone    = workoutLogs.length > 0
+  const workoutMinutes = workoutLogs.reduce((s, w) => s + (w.duration_minutes || 0), 0)
 
-  // Coach message — fully translated
-  const coachMessage = !isToday
-    ? t('coach.pastDay', { hey })
-    : totalCal > calorieGoal
-    ? t('coach.overCal', { hey, n: (totalCal - calorieGoal).toLocaleString() })
-    : streakDays >= 7
-    ? t('coach.streak7', { hey, n: String(streakDays) })
-    : workoutLogs.length > 0 && totalCal > 0
-    ? t('coach.allDone', { hey })
-    : workoutLogs.length > 0
-    ? t('coach.workoutOnly', { comma })
-    : streakDays >= 3
-    ? t('coach.streak3', { hey, n: String(streakDays), kcal: (calorieGoal - totalCal) > 0 ? t('coach.kcalLeft', { n: (calorieGoal - totalCal).toLocaleString() }) : t('coach.onTarget') })
-    : streakDays >= 1
-    ? t('coach.streak1', { n: String(streakDays), comma })
-    : totalCal === 0 && hour < 10
-    ? t('coach.morning', { comma })
-    : totalCal === 0 && hour >= 10
-    ? t('coach.nothingLogged', { hey })
-    : hour >= 20
-    ? t('coach.evening', { comma })
-    : t('coach.default', { hey })
+  const coachCtx = {
+    firstName, isToday, hour,
+    totalCal, calorieGoal,
+    calRemaining: Math.max(0, calorieGoal - totalCal),
+    calOver:      Math.max(0, totalCal - calorieGoal),
+    totalP, proteinGoal, proteinShort: Math.max(0, proteinGoal - totalP),
+    totalC, totalF,
+    waterAmount, waterGoal,
+    waterUnit: profile?.water_unit || 'cups',
+    waterPct,
+    workoutDone, workoutMinutes,
+    streakDays,
+    missedMeds:  missedCount  || 0,
+    nextMedName: nextMed?.medication_name || '',
+    proteinPct:  proteinGoal > 0 ? (totalP / proteinGoal) * 100 : 0,
+    mood: '',
+  }
+
+  const coachMood   = getAuronMoodFromContext(coachCtx)
+  coachCtx.mood     = coachMood
+
+  const { message: coachMessage, loading: coachLoading } = useCoachMessage(
+    coachCtx, lang, import.meta.env.VITE_GROQ_KEY,
+  )
 
   return (
     <div style={{ paddingBottom: 8 }}>
@@ -1045,6 +1047,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
       <CoachHero
         mood={coachMood}
         message={coachMessage}
+        loading={coachLoading}
       />
 
       {/* 1 ── Calorie ring + macros */}
