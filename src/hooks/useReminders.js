@@ -21,7 +21,7 @@ export function useReminders(userId, medications, markTaken) {
   // Reminder preferences loaded from DB
   const [prefs, setPrefs] = useState({
     reminders_enabled: true,
-    snooze_minutes:    10,
+    snooze_minutes:    5,
     advance_minutes:   0,
   })
 
