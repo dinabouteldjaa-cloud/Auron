@@ -147,6 +147,25 @@ const translations = {
     // General
     'general.comingSoon':'Coming soon','general.loading':'Loading...',
     'general.disclaimer':'Auron provides wellness support and informational guidance only.\nAlways follow the advice of your healthcare professionals.',
+
+    // Water settings modal
+    'water.waterSettings':'Water settings','water.trackBy':'Track by',
+    'water.cups_label':'☕ Cups','water.ml_label':'💧 Millilitres',
+    'water.dailyGoalCups':'Daily goal (cups)','water.dailyGoalMl':'Daily goal',
+    'water.cupSize':'Cup size','water.total':'Total:','water.perDay':'/ day',
+    'water.save':'Save',
+    // Nutrition tab remaining
+    'cal.ofGoal':'of {n} goal','cal.mealTime.breakfast':'6–10 am','cal.mealTime.lunch':'11 am–2 pm',
+    'cal.mealTime.snack':'2–5 pm','cal.mealTime.dinner':'5–9 pm',
+    'cal.macroLabel':'MACROS TODAY','cal.foodLogLabel':'FOOD LOG',
+    // Profile remaining
+    'profile.dailyCalGoalLabel':'Daily calorie goal','profile.perDay':'/ day',
+    'profile.macroProtein':'Protein','profile.macroCarbs':'Carbs','profile.macroFat':'Fat',
+    // App coming soon
+    'app.comingSoon':'Coming soon','app.sectionBeingBuilt':'This section is being built',
+    // Disclaimer
+    'disclaimer.line1':'Auron provides wellness support and informational guidance only.',
+    'disclaimer.line2':'Always follow the advice of your healthcare professionals.',
     'lang.en':'English','lang.fr':'Français',
   },
 
@@ -296,6 +315,25 @@ const translations = {
     // General
     'general.comingSoon':'Bientôt disponible','general.loading':'Chargement...',
     'general.disclaimer':'Auron fournit uniquement un soutien bien-être et des conseils informatifs.\nSuivez toujours les recommandations de votre professionnel de santé.',
+
+    // Water settings modal
+    'water.waterSettings':"Paramètres de l'eau",'water.trackBy':'Suivre par',
+    'water.cups_label':'☕ Verres','water.ml_label':'💧 Millilitres',
+    'water.dailyGoalCups':'Objectif quotidien (verres)','water.dailyGoalMl':'Objectif quotidien',
+    'water.cupSize':'Taille du verre','water.total':'Total :','water.perDay':'/ jour',
+    'water.save':'Enregistrer',
+    // Nutrition tab remaining
+    'cal.ofGoal':'sur {n}','cal.mealTime.breakfast':'6h–10h','cal.mealTime.lunch':'11h–14h',
+    'cal.mealTime.snack':'14h–17h','cal.mealTime.dinner':'17h–21h',
+    'cal.macroLabel':'MACROS DU JOUR','cal.foodLogLabel':'JOURNAL ALIMENTAIRE',
+    // Profile remaining
+    'profile.dailyCalGoalLabel':'Objectif calorique quotidien','profile.perDay':'/ jour',
+    'profile.macroProtein':'Protéines','profile.macroCarbs':'Glucides','profile.macroFat':'Lipides',
+    // App coming soon
+    'app.comingSoon':'Bientôt disponible','app.sectionBeingBuilt':'Cette section est en cours de construction',
+    // Disclaimer
+    'disclaimer.line1':'Auron fournit uniquement un soutien bien-être et des conseils informatifs.',
+    'disclaimer.line2':'Suivez toujours les recommandations de votre professionnel de santé.',
     'lang.en':'English','lang.fr':'Français',
   },
 }
