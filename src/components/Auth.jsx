@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
+import { useTranslation } from '../lib/i18n.jsx'
 
 const C = {
   gold:         T.purple,
@@ -41,13 +42,14 @@ function TextInput({ type = 'text', value, onChange, placeholder, onKeyDown }) {
 }
 
 export default function Auth() {
-  const [mode,     setMode]     = useState('login') // login | signup | reset
+  const [mode,     setMode]     = useState('login')
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [name,     setName]     = useState('')
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState('')
   const [message,  setMessage]  = useState('')
+  const { t } = useTranslation()
 
   const clear = () => { setError(''); setMessage('') }
 
@@ -70,24 +72,23 @@ export default function Auth() {
         options: { data: { full_name: name.trim() } },
       })
       if (error) setError(error.message)
-      else setMessage('Account created! Check your email to confirm, then sign in.')
+      else setMessage(t('auth.accountCreated'))
     }
 
     if (mode === 'reset') {
       const { error } = await supabase.auth.resetPasswordForEmail(email)
       if (error) setError(error.message)
-      else setMessage('Password reset link sent — check your inbox.')
+      else setMessage(t('auth.resetSent'))
     }
 
     setLoading(false)
   }
 
   const onKey = e => { if (e.key === 'Enter') handleSubmit() }
-
   const switchMode = (m) => { clear(); setMode(m); setEmail(''); setPassword(''); setName('') }
 
-  const modeTitle = { login: 'Welcome back', signup: 'Create account', reset: 'Reset password' }
-  const modeCTA   = { login: 'Sign in', signup: 'Create account', reset: 'Send reset link' }
+  const modeTitle = { login: t('auth.welcomeBack'), signup: t('auth.createAccount'), reset: t('auth.resetPassword') }
+  const modeCTA   = { login: t('auth.signIn'),      signup: t('auth.signUp'),       reset: t('auth.sendReset')  }
 
   return (
     <div style={{
@@ -112,7 +113,7 @@ export default function Auth() {
             Auron
           </div>
           <div style={{ fontSize: 14, color: T.textMuted }}>
-            Your premium fitness companion
+            {t('auth.tagline')}
           </div>
         </div>
 
@@ -130,30 +131,12 @@ export default function Auth() {
             {modeTitle[mode]}
           </div>
 
-          {/* Fields */}
           {mode === 'signup' && (
-            <TextInput
-              value={name}
-              onChange={setName}
-              placeholder="Full name"
-              onKeyDown={onKey}
-            />
+            <TextInput value={name} onChange={setName} placeholder={t('auth.fullName')} onKeyDown={onKey} />
           )}
-          <TextInput
-            type="email"
-            value={email}
-            onChange={setEmail}
-            placeholder="Email address"
-            onKeyDown={onKey}
-          />
+          <TextInput type="email" value={email} onChange={setEmail} placeholder={t('auth.email')} onKeyDown={onKey} />
           {mode !== 'reset' && (
-            <TextInput
-              type="password"
-              value={password}
-              onChange={setPassword}
-              placeholder="Password"
-              onKeyDown={onKey}
-            />
+            <TextInput type="password" value={password} onChange={setPassword} placeholder={t('auth.password')} onKeyDown={onKey} />
           )}
 
           {/* Error */}
@@ -203,21 +186,21 @@ export default function Auth() {
             {mode === 'login' && (
               <>
                 <button onClick={() => switchMode('signup')} style={{ background: 'none', border: 'none', color: T.purple, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
-                  Don't have an account? Sign up
+                  {t('auth.noAccount')}
                 </button>
                 <button onClick={() => switchMode('reset')} style={{ background: 'none', border: 'none', color: T.textMuted, fontSize: 13, cursor: 'pointer' }}>
-                  Forgot your password?
+                  {t('auth.forgot')}
                 </button>
               </>
             )}
             {mode === 'signup' && (
               <button onClick={() => switchMode('login')} style={{ background: 'none', border: 'none', color: T.purple, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
-                Already have an account? Sign in
+                {t('auth.hasAccount')}
               </button>
             )}
             {mode === 'reset' && (
               <button onClick={() => switchMode('login')} style={{ background: 'none', border: 'none', color: T.purple, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
-                Back to sign in
+                {t('auth.backToSignIn')}
               </button>
             )}
           </div>

@@ -690,8 +690,14 @@ function AccountSection({ user, onSignOut }) {
 // ─────────────────────────────────────────────
 // Main ProfileTab export
 // ─────────────────────────────────────────────
-export default function ProfileTab({ user, profile, updateProfile, preferences, updatePreferences }) {
+export default function ProfileTab({ user, profile, updateProfile, preferences, updatePreferences, lang, setLang }) {
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Auron User'
+
+  const handleLangChange = async (newLang) => {
+    setLang(newLang)
+    // Also persist to profile so it loads on next login
+    await updateProfile({ language: newLang })
+  }
 
   return (
     <div>
@@ -735,7 +741,40 @@ export default function ProfileTab({ user, profile, updateProfile, preferences, 
       <FitnessGoalSection        profile={profile}      onSave={updateProfile} />
       <WorkoutPreferencesSection />
       <HealthPreferencesSection  preferences={preferences} onSave={updatePreferences} />
-      <AccountSection            user={user}            onSignOut={() => supabase.auth.signOut()} />
+
+      {/* ── Language ── */}
+      {lang !== undefined && setLang && (
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
+            {lang === 'fr' ? 'Langue' : 'Language'}
+          </div>
+          <Card>
+            <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
+              {lang === 'fr' ? 'Choisissez votre langue' : 'Select your language'}
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {[{ code: 'en', label: 'English', flag: '🇬🇧' }, { code: 'fr', label: 'Français', flag: '🇫🇷' }].map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => handleLangChange(l.code)}
+                  style={{
+                    flex: 1, padding: '12px 8px', borderRadius: 14, cursor: 'pointer',
+                    border: `1px solid ${lang === l.code ? C.gold : C.border}`,
+                    background: lang === l.code ? C.goldLight : 'transparent',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <span style={{ fontSize: 26 }}>{l.flag}</span>
+                  <span style={{ fontSize: 13, fontWeight: lang === l.code ? 600 : 400, color: lang === l.code ? C.gold : C.textMuted }}>{l.label}</span>
+                </button>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      <AccountSection user={user} onSignOut={() => supabase.auth.signOut()} />
     </div>
   )
 }
