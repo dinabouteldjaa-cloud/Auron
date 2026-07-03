@@ -184,7 +184,9 @@ function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
 // ─────────────────────────────────────────────────────────────
 // MedicationCard — purple-tinted placeholder, Phase 3 ready
 // ─────────────────────────────────────────────────────────────
-function MedicationCard({ onOpenTracker }) {
+function MedicationCard({ nextMed, takenCount, missedCount, onMarkTaken, onOpenTracker }) {
+  const pendingCount = 0 // placeholder until we pass full count
+
   return (
     <div style={{
       borderRadius: 20, marginBottom: 16,
@@ -196,24 +198,55 @@ function MedicationCard({ onOpenTracker }) {
           <div style={{ width: 32, height: 32, borderRadius: 10, background: T.purpleMid, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>💊</div>
           <span style={{ fontSize: 15, fontWeight: 600, color: T.text }}>Medication</span>
         </div>
-        <span style={{ fontSize: 13, color: T.purple, fontWeight: 500 }}>See all ›</span>
+        <button onClick={onOpenTracker} style={{ background: 'none', border: 'none', fontSize: 13, color: T.purple, fontWeight: 500, cursor: 'pointer' }}>See all ›</button>
       </div>
+
+      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
-        {[
-          { label: '⏰ Next up', value: '—', sub: 'No meds',  color: T.textMuted },
-          { label: '✓ Taken',   value: '0', sub: 'today',    color: T.green     },
-          { label: '✗ Missed',  value: '0', sub: 'today',    color: T.red       },
-        ].map(item => (
-          <div key={item.label} style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
-            <div style={{ fontSize: 10, color: item.color, marginBottom: 4, fontWeight: 500 }}>{item.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{item.value}</div>
-            <div style={{ fontSize: 10, color: T.textMuted }}>{item.sub}</div>
-          </div>
-        ))}
+        {/* Next up */}
+        <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
+          <div style={{ fontSize: 10, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>⏰ Next up</div>
+          {nextMed ? (
+            <>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.text, lineHeight: 1.3 }}>{nextMed.medication_name}</div>
+              <div style={{ fontSize: 10, color: T.textMuted }}>{nextMed.reminder_time?.slice(0,5) || 'No time'}</div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>—</div>
+              <div style={{ fontSize: 10, color: T.textMuted }}>No meds</div>
+            </>
+          )}
+        </div>
+
+        {/* Taken */}
+        <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
+          <div style={{ fontSize: 10, color: T.green, marginBottom: 4, fontWeight: 500 }}>✓ Taken</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{takenCount}</div>
+          <div style={{ fontSize: 10, color: T.textMuted }}>today</div>
+        </div>
+
+        {/* Missed */}
+        <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
+          <div style={{ fontSize: 10, color: T.red, marginBottom: 4, fontWeight: 500 }}>✗ Missed</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{missedCount}</div>
+          <div style={{ fontSize: 10, color: T.textMuted }}>today</div>
+        </div>
       </div>
-      <button onClick={onOpenTracker} style={{ width: '100%', padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${T.border}`, color: T.purple, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-        📅 Open Medication Tracker ›
-      </button>
+
+      {/* Mark taken button — only if there's a next med */}
+      {nextMed ? (
+        <button
+          onClick={() => onMarkTaken?.(nextMed.id, nextMed.reminder_time)}
+          style={{ width: '100%', padding: '11px', borderRadius: 12, background: T.purple, border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+        >
+          ✓ Mark {nextMed.medication_name} as taken
+        </button>
+      ) : (
+        <button onClick={onOpenTracker} style={{ width: '100%', padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${T.border}`, color: T.purple, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          📅 Open Medication Tracker ›
+        </button>
+      )}
     </div>
   )
 }
@@ -834,7 +867,7 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 // ─────────────────────────────────────────────────────────────
 // Main TodayTab export
 // ─────────────────────────────────────────────────────────────
-export default function TodayTab({ userId, profile, updateProfile }) {
+export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds }) {
   const today    = new Date()
   const todayStr = today.toISOString().split('T')[0]
 
@@ -1045,7 +1078,13 @@ export default function TodayTab({ userId, profile, updateProfile }) {
       />
 
       {/* 4 ── Medication card */}
-      <MedicationCard onOpenTracker={() => {}} />
+      <MedicationCard
+        nextMed={nextMed}
+        takenCount={takenCount}
+        missedCount={missedCount}
+        onMarkTaken={markTaken}
+        onOpenTracker={onOpenMeds}
+      />
 
       {/* 5 ── Water tracker — full width now insight is removed */}
       <WaterTracker
