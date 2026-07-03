@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { useTranslation } from '../lib/i18n.jsx'
-import { localDateStr, todayLocal } from '../lib/dateUtils.js'
+import { toUserDateStr, getBrowserTimezone } from '../lib/dateUtils.js'
 import { AuronCharacter, AuronWelcomeScreen, CoachHero, CoachInsightCard, getAuronMood } from './CoachAuron'
 import { useCoachMessage, getAuronMoodFromContext } from '../hooks/useCoachMessage'
 
@@ -676,7 +676,7 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
   const [showSettings, setShowSettings] = useState(false)
   const [loading,      setLoading]      = useState(true)
 
-  const isToday  = selectedDate === new Date().toISOString().split('T')[0]
+  const isToday  = selectedDate === toUserDateStr()
   const unit     = profile?.water_unit    || 'cups'
   const goal     = unit === 'ml' ? (profile?.water_goal_ml || 2000) : (profile?.water_goal || 8)
   const cupSize  = profile?.cup_size_ml  || 250
@@ -810,7 +810,8 @@ function WeekStrip({ weekDays, selectedDate, todayStr, setSelectedDate, loggedDa
         {/* Day buttons */}
         <div style={{ display: 'flex', gap: 4, flex: 1 }}>
           {weekDays.map((d, i) => {
-            const ds           = d.toISOString().split('T')[0]
+            const y = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0')
+            const ds           = `${y}-${mo}-${dy}`
             const isSel        = ds === selectedDate
             const isFuture     = d > today
             const isCurrentDay = ds === todayStr
@@ -869,9 +870,10 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds }) {
   const { t, lang } = useTranslation()
 
-  // Use UTC dates everywhere for DB consistency — all existing data uses UTC
-  // The stale date bug is fixed by calling getNow() fresh on each render tick
-  const getNow = () => new Date().toISOString().split('T')[0]
+  // Use profile timezone (auto-detected from browser, stored in DB)
+  // Falls back to browser timezone if profile not yet loaded
+  const userTz = profile?.timezone || getBrowserTimezone()
+  const getNow  = () => toUserDateStr(userTz)
 
   const [todayStr,      setTodayStr]      = useState(getNow)
   const [selectedDate,  setSelectedDate]  = useState(getNow)
@@ -960,7 +962,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
       .from('food_logs')
       .select('log_date')
       .eq('user_id', userId)
-      .gte('log_date', new Date(new Date().setDate(new Date().getDate() - 60)).toISOString().split('T')[0])
+      .gte('log_date', (() => { const d = new Date(todayStr + 'T12:00:00'); d.setDate(d.getDate() - 60); const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dy=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dy}` })())
       .then(({ data }) => {
         setLoggedDates(new Set((data || []).map(r => r.log_date)))
       })
@@ -1001,7 +1003,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
   for (let i = 0; i < 60; i++) {
     const d  = new Date(today)
     d.setDate(today.getDate() - i)
-    if (loggedDates.has(d.toISOString().split('T')[0])) streakDays++
+    if (loggedDates.has((() => { const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dy=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dy}` })())) streakDays++
     else break
   }
 
@@ -1011,7 +1013,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
     const d         = new Date(ds + 'T00:00:00')
     const yesterday = new Date(today)
     yesterday.setDate(today.getDate() - 1)
-    if (ds === localDateStr(yesterday)) return t('today.yesterday')
+    if (ds === (() => { const y=yesterday.getFullYear(),m=String(yesterday.getMonth()+1).padStart(2,'0'),dy=String(yesterday.getDate()).padStart(2,'0'); return `${y}-${m}-${dy}` })()) return t('today.yesterday')
     return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`
   }
 
