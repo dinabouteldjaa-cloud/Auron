@@ -867,10 +867,29 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 // ─────────────────────────────────────────────────────────────
 export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds }) {
   const { t, lang } = useTranslation()
-  const today    = new Date()
-  const todayStr = today.toISOString().split('T')[0]
 
-  const [selectedDate,  setSelectedDate]  = useState(todayStr)
+  // Core date state — declared first so midnight effect can reference setSelectedDate
+  const [selectedDate,  setSelectedDate]  = useState(() => new Date().toISOString().split('T')[0])
+
+  // Recompute todayStr every minute so it auto-advances at midnight
+  const [todayStr, setTodayStr] = useState(() => new Date().toISOString().split('T')[0])
+  useEffect(() => {
+    const tick = () => {
+      const newToday = new Date().toISOString().split('T')[0]
+      setTodayStr(prev => {
+        if (prev !== newToday) {
+          setSelectedDate(newToday)
+          return newToday
+        }
+        return prev
+      })
+    }
+    const id = setInterval(tick, 60 * 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  const today = new Date(todayStr + 'T00:00:00')
+
   const [weekOffset,    setWeekOffset]    = useState(0)
   const [foodLogs,      setFoodLogs]      = useState([])
   const [workoutLogs,   setWorkoutLogs]   = useState([])
