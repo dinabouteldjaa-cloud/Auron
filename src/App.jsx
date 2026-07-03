@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import { useProfile } from './hooks/useProfile'
 import { usePreferences } from './hooks/usePreferences'
+import { useMedications } from './hooks/useMedications'
 import { T, globalCss } from './lib/theme'
 import TodayTab from './components/TodayTab'
 import ProfileTab from './components/ProfileTab'
 import CaloriesTab from './components/CaloriesTab'
+import MedicationTab from './components/MedicationTab'
 import Auth from './components/Auth'
 
 // ── SVG tab icons ────────────────────────────────────────────
@@ -73,13 +75,30 @@ function ProfileIcon({ active }) {
   )
 }
 
+function MedIcon({ active }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="6" width="18" height="13" rx="3"
+        stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" fill="none" />
+      <line x1="3" y1="10" x2="21" y2="10"
+        stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" />
+      <circle cx="8" cy="15" r="1.5"
+        fill={active ? T.purple : T.textMuted} />
+      <circle cx="12" cy="15" r="1.5"
+        fill={active ? T.purple : T.textMuted} />
+      <circle cx="16" cy="15" r="1.5"
+        fill={active ? T.purple : T.textMuted} />
+    </svg>
+  )
+}
+
 // ── Tab definitions — must be AFTER icon functions ────────────
 const TABS = [
-  { id: 'today',    label: 'Home',      icon: HomeIcon      },
-  { id: 'calories', label: 'Nutrition', icon: NutritionIcon },
-  { id: 'workouts', label: 'Progress',  icon: ProgressIcon  },
-  { id: 'plans',    label: 'Plans',     icon: PlansIcon     },
-  { id: 'profile',  label: 'Profile',   icon: ProfileIcon   },
+  { id: 'today',      label: 'Home',      icon: HomeIcon      },
+  { id: 'calories',   label: 'Nutrition', icon: NutritionIcon },
+  { id: 'workouts',   label: 'Progress',  icon: ProgressIcon  },
+  { id: 'medication', label: 'Meds',      icon: MedIcon       },
+  { id: 'profile',    label: 'Profile',   icon: ProfileIcon   },
 ]
 
 export default function App() {
@@ -95,6 +114,7 @@ export default function App() {
   const uid = session?.user?.id
   const { profile,     updateProfile     } = useProfile(uid)
   const { preferences, updatePreferences } = usePreferences(uid)
+  const { medications, takenCount, missedCount, nextMed, markTaken, getStatusForMed } = useMedications(uid)
 
   const hour      = new Date().getHours()
   const greeting  = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -138,10 +158,19 @@ export default function App() {
   // ── Screens ──────────────────────────────────
   const screens = {
     today: (
-      <TodayTab userId={uid} profile={profile} updateProfile={updateProfile} />
+      <TodayTab
+        userId={uid} profile={profile} updateProfile={updateProfile}
+        medications={medications} takenCount={takenCount}
+        missedCount={missedCount} nextMed={nextMed}
+        markTaken={markTaken} getStatusForMed={getStatusForMed}
+        onOpenMeds={() => setTab('medication')}
+      />
     ),
     calories: (
       <CaloriesTab userId={uid} profile={profile} preferences={preferences} />
+    ),
+    medication: (
+      <MedicationTab userId={uid} />
     ),
     profile: (
       <ProfileTab
