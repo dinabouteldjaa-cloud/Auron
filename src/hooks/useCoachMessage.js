@@ -50,7 +50,7 @@ function buildCoachPrompt(ctx, lang) {
   const system = `You are Coach Auron, a friendly and motivating AI health companion inside the Auron fitness app.
 ${langInstruction}
 
-Write EXACTLY 1-2 sentences. Be specific — use the actual numbers provided. Use the user's name naturally.
+Write EXACTLY 1 sentence — maximum 20 words. Be specific with the numbers. Use the user's name once.
 Current expression/mood: ${mood} — match your tone to it:
 - greeting: warm and energetic morning welcome
 - happy: celebratory and proud
@@ -140,7 +140,7 @@ export function useCoachMessage(ctx, lang, groqKey) {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
-        max_tokens: 80,
+        max_tokens: 40,
         temperature: 0.85, // higher temp = more variety
         messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
       }),
