@@ -25,12 +25,19 @@ const T = {
   shadowStrong: '0 4px 24px rgba(108,92,231,0.18)',
 }
 
-const FREQ_LABELS = {
-  daily:       'Once daily',
-  twice_daily: 'Twice daily',
-  weekly:      'Once a week',
-  as_needed:   'As needed',
-}
+const FREQ_OPTIONS = [
+  { value: 'daily',         label: 'Once daily',      times: 1 },
+  { value: 'twice_daily',   label: 'Twice daily',     times: 2 },
+  { value: 'three_daily',   label: '3× a day',        times: 3 },
+  { value: 'four_daily',    label: '4× a day',        times: 4 },
+  { value: 'every_morning', label: 'Every morning',   times: 1 },
+  { value: 'every_night',   label: 'Every night',     times: 1 },
+  { value: 'with_meals',    label: 'With meals',      times: 3 },
+  { value: 'weekly',        label: 'Once a week',     times: 1 },
+  { value: 'as_needed',     label: 'As needed',       times: 0 },
+]
+
+const FREQ_LABELS = Object.fromEntries(FREQ_OPTIONS.map(f => [f.value, f.label]))
 
 function Card({ children, style = {} }) {
   return (
@@ -59,11 +66,18 @@ function StatusBadge({ status }) {
 // Add / Edit Medication Modal
 // ─────────────────────────────────────────────
 function MedModal({ med, onSave, onClose }) {
+  // Parse existing reminder_times from DB (stored as JSON string or array)
+  const parseTimes = (raw) => {
+    if (!raw) return ['']
+    if (Array.isArray(raw)) return raw.length ? raw : ['']
+    try { const p = JSON.parse(raw); return Array.isArray(p) && p.length ? p : [''] } catch { return [raw] }
+  }
+
   const [form, setForm] = useState({
     medication_name: med?.medication_name || '',
     dosage:          med?.dosage          || '',
     frequency:       med?.frequency       || 'daily',
-    reminder_time:   med?.reminder_time   || '',
+    reminder_times:  parseTimes(med?.reminder_times || med?.reminder_time),
     notes:           med?.notes           || '',
     start_date:      med?.start_date      || new Date().toISOString().split('T')[0],
     end_date:        med?.end_date        || '',
@@ -73,17 +87,42 @@ function MedModal({ med, onSave, onClose }) {
 
   const set = key => val => setForm(p => ({ ...p, [key]: val }))
 
+  // When frequency changes, adjust number of reminder time slots
+  const handleFreqChange = (val) => {
+    const opt   = FREQ_OPTIONS.find(f => f.value === val)
+    const count = opt?.times || 1
+    if (val === 'as_needed') {
+      setForm(p => ({ ...p, frequency: val, reminder_times: [] }))
+    } else {
+      setForm(p => {
+        const existing = p.reminder_times.filter(Boolean)
+        const times = Array.from({ length: count }, (_, i) => existing[i] || '')
+        return { ...p, frequency: val, reminder_times: times }
+      })
+    }
+  }
+
+  const setTime = (i, val) => {
+    setForm(p => {
+      const times = [...p.reminder_times]
+      times[i] = val
+      return { ...p, reminder_times: times }
+    })
+  }
+
   const handleSave = async () => {
     if (!form.medication_name.trim()) { setError('Medication name is required.'); return }
     setSaving(true); setError('')
+    const filledTimes = form.reminder_times.filter(Boolean)
     const { error } = await onSave({
       medication_name: form.medication_name.trim(),
       dosage:          form.dosage.trim(),
       frequency:       form.frequency,
-      reminder_time:   form.reminder_time || null,
+      reminder_time:   filledTimes[0] || null,          // keep single field for compat
+      reminder_times:  JSON.stringify(filledTimes),     // new multi-time field
       notes:           form.notes.trim(),
       start_date:      form.start_date || null,
-      end_date:        form.end_date || null,
+      end_date:        form.end_date   || null,
     })
     if (error) { setError(error.message); setSaving(false) }
     else onClose()
@@ -94,6 +133,9 @@ function MedModal({ med, onSave, onClose }) {
     background: T.surfaceMid, border: `1px solid ${T.border}`,
     color: T.text, fontSize: 14, outline: 'none',
   }
+
+  const selectedFreq = FREQ_OPTIONS.find(f => f.value === form.frequency)
+  const showTimes    = form.frequency !== 'as_needed'
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.6)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
@@ -122,12 +164,12 @@ function MedModal({ med, onSave, onClose }) {
           <div>
             <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 8, fontWeight: 500 }}>Frequency</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {Object.entries(FREQ_LABELS).map(([val, label]) => (
-                <button key={val} onClick={() => set('frequency')(val)} style={{
+              {FREQ_OPTIONS.map(({ value, label }) => (
+                <button key={value} onClick={() => handleFreqChange(value)} style={{
                   padding: '7px 14px', borderRadius: 20, fontSize: 13, cursor: 'pointer',
-                  border: `1px solid ${form.frequency === val ? T.purple : T.border}`,
-                  background: form.frequency === val ? T.purpleLight : 'transparent',
-                  color: form.frequency === val ? T.purple : T.textMuted,
+                  border: `1px solid ${form.frequency === value ? T.purple : T.border}`,
+                  background: form.frequency === value ? T.purpleLight : 'transparent',
+                  color: form.frequency === value ? T.purple : T.textMuted,
                   transition: 'all 0.15s',
                 }}>
                   {label}
@@ -136,10 +178,34 @@ function MedModal({ med, onSave, onClose }) {
             </div>
           </div>
 
-          <div>
-            <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 6, fontWeight: 500 }}>Reminder time</div>
-            <input type="time" value={form.reminder_time} onChange={e => set('reminder_time')(e.target.value)} style={{ ...inputStyle, colorScheme: 'light' }} />
-          </div>
+          {/* Reminder times — dynamic slots based on frequency */}
+          {showTimes && (
+            <div>
+              <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 8, fontWeight: 500 }}>
+                Reminder time{form.reminder_times.length > 1 ? 's' : ''}
+                {selectedFreq?.times > 1 && (
+                  <span style={{ color: T.textDim, fontWeight: 400 }}> — {form.reminder_times.length} dose{form.reminder_times.length > 1 ? 's' : ''}</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {form.reminder_times.map((t, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {form.reminder_times.length > 1 && (
+                      <div style={{ fontSize: 12, color: T.textMuted, minWidth: 52, fontWeight: 500 }}>
+                        Dose {i + 1}
+                      </div>
+                    )}
+                    <input
+                      type="time"
+                      value={t}
+                      onChange={e => setTime(i, e.target.value)}
+                      style={{ ...inputStyle, flex: 1, colorScheme: 'light' }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
@@ -211,7 +277,14 @@ function MedCard({ med, status, onMarkTaken, onEdit, onDelete }) {
           <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>
             {med.dosage && <span>{med.dosage} · </span>}
             {FREQ_LABELS[med.frequency] || med.frequency}
-            {med.reminder_time && <span> · {med.reminder_time.slice(0,5)}</span>}
+            {(() => {
+              try {
+                const times = med.reminder_times
+                  ? JSON.parse(med.reminder_times).filter(Boolean).map(t => t.slice(0,5))
+                  : med.reminder_time ? [med.reminder_time.slice(0,5)] : []
+                return times.length ? <span> · {times.join(', ')}</span> : null
+              } catch { return null }
+            })()}
           </div>
           {med.notes && (
             <div style={{ fontSize: 11, color: T.textDim, marginTop: 4, fontStyle: 'italic' }}>{med.notes}</div>
