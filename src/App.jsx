@@ -226,8 +226,8 @@ export default function App() {
                 padding: '40px 24px', boxShadow: T.shadowCard,
               }}>
                 <div style={{ fontSize: 32, marginBottom: 12 }}>🚧</div>
-                <div style={{ fontSize: 16, fontWeight: 600, color: T.text, marginBottom: 6 }}>Coming soon</div>
-                <div style={{ fontSize: 13, color: T.textMuted }}>This section is being built</div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: T.text, marginBottom: 6 }}>{t('app.comingSoon')}</div>
+                <div style={{ fontSize: 13, color: T.textMuted }}>{t('app.sectionBeingBuilt')}</div>
               </div>
             )}
           </div>
