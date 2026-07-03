@@ -675,7 +675,8 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate }) {
   const [showSettings, setShowSettings] = useState(false)
   const [loading,      setLoading]      = useState(true)
 
-  const isToday  = selectedDate === new Date().toISOString().split('T')[0]
+  const getLocalDate = (d=new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  const isToday  = selectedDate === getLocalDate()
   const unit     = profile?.water_unit    || 'cups'
   const goal     = unit === 'ml' ? (profile?.water_goal_ml || 2000) : (profile?.water_goal || 8)
   const cupSize  = profile?.cup_size_ml  || 250
@@ -809,7 +810,7 @@ function WeekStrip({ weekDays, selectedDate, todayStr, setSelectedDate, loggedDa
         {/* Day buttons */}
         <div style={{ display: 'flex', gap: 4, flex: 1 }}>
           {weekDays.map((d, i) => {
-            const ds           = d.toISOString().split('T')[0]
+            const ds           = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
             const isSel        = ds === selectedDate
             const isFuture     = d > today
             const isCurrentDay = ds === todayStr
@@ -868,8 +869,11 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds }) {
   const { t, lang } = useTranslation()
 
-  // Always compute today fresh — never cache from mount time
-  const getNow = () => new Date().toISOString().split('T')[0]
+  // Always use LOCAL date — toISOString() gives UTC which is wrong for UTC+3 timezones
+  const getNow = () => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  }
 
   const [todayStr,      setTodayStr]      = useState(getNow)
   const [selectedDate,  setSelectedDate]  = useState(getNow)
@@ -958,7 +962,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
       .from('food_logs')
       .select('log_date')
       .eq('user_id', userId)
-      .gte('log_date', from.toISOString().split('T')[0])
+      .gte('log_date', `${from.getFullYear()}-${String(from.getMonth()+1).padStart(2,'0')}-${String(from.getDate()).padStart(2,'0')}`)
       .then(({ data }) => {
         setLoggedDates(new Set((data || []).map(r => r.log_date)))
       })
@@ -999,7 +1003,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
   for (let i = 0; i < 60; i++) {
     const d  = new Date(today)
     d.setDate(today.getDate() - i)
-    if (loggedDates.has(d.toISOString().split('T')[0])) streakDays++
+    if (loggedDates.has(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)) streakDays++
     else break
   }
 
@@ -1009,7 +1013,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
     const d         = new Date(ds + 'T00:00:00')
     const yesterday = new Date(today)
     yesterday.setDate(today.getDate() - 1)
-    if (ds === yesterday.toISOString().split('T')[0]) return t('today.yesterday')
+    if (ds === `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`) return t('today.yesterday')
     return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`
   }
 

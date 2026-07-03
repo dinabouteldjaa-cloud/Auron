@@ -414,7 +414,8 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
   const [selectedMeal, setSelectedMeal] = useState('breakfast')
   const [subView,      setSubView]      = useState('log') // 'log' | 'describe'
 
-  const today         = new Date().toISOString().split('T')[0]
+  const localDate = (d=new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  const today = localDate()
   const calorieGoal   = profile?.calorie_goal || 2200
   const proteinGoal   = profile?.protein_goal || 150
   const carbsGoal     = profile?.carbs_goal   || 250
