@@ -690,14 +690,12 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate, userTz }) 
       .select('cups, amount_ml')
       .eq('user_id', userId)
       .eq('log_date', selectedDate)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
-        if (data) setAmount(unit === 'ml' ? (data.amount_ml || 0) : (data.cups || 0))
-        else setAmount(0)
+        setAmount(data ? (unit === 'ml' ? (data.amount_ml || 0) : (data.cups || 0)) : 0)
       })
-      .catch(() => setAmount(0))
       .finally(() => setLoading(false))
-  }, [userId, selectedDate]) // only re-fetch when date or user changes, not on unit/cupSize change
+  }, [userId, selectedDate])
 
   const save = async (newAmount) => {
     if (!isToday) return // never write to past days
@@ -949,8 +947,8 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
       supabase.from('food_logs').select('*').eq('user_id', userId).eq('log_date', selectedDate),
       supabase.from('workout_logs').select('*').eq('user_id', userId).eq('log_date', selectedDate),
       supabase.from('saved_plans').select('*').eq('user_id', userId).eq('is_active', true).limit(5),
-      supabase.from('daily_stats').select('*').eq('user_id', userId).eq('log_date', selectedDate).single(),
-      supabase.from('water_logs').select('cups, amount_ml').eq('user_id', userId).eq('log_date', selectedDate).single(),
+      supabase.from('daily_stats').select('*').eq('user_id', userId).eq('log_date', selectedDate).maybeSingle(),
+      supabase.from('water_logs').select('cups, amount_ml').eq('user_id', userId).eq('log_date', selectedDate).maybeSingle(),
     ]).then(([food, workout, plans, stats, water]) => {
       setFoodLogs(food.data    || [])
       setWorkoutLogs(workout.data || [])
