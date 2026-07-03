@@ -1,7 +1,8 @@
+import { toUserDateStr } from '../lib/dateUtils.js'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function useMedications(userId) {
+export function useMedications(userId, timezone) {
   const [medications, setMedications] = useState([])
   const [logs,        setLogs]        = useState([])
   const [loading,     setLoading]     = useState(true)
@@ -10,7 +11,7 @@ export function useMedications(userId) {
     if (!userId) return
     setLoading(true)
 
-    const today = new Date().toISOString().split('T')[0]
+    const today = toUserDateStr(timezone)
 
     const [{ data: meds }, { data: todayLogs }] = await Promise.all([
       supabase
@@ -99,7 +100,7 @@ export function useMedications(userId) {
     }
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = toUserDateStr(timezone)
   const getStatusForMed = (medicationId) => {
     const log = logs.find(l => l.medication_id === medicationId && l.log_date === today)
     return log?.status || 'pending'

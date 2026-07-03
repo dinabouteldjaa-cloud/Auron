@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { getBrowserTimezone } from '../lib/dateUtils.js'
 
 export function useProfile(userId) {
   const [profile, setProfile] = useState(null)
@@ -16,7 +17,20 @@ export function useProfile(userId) {
       .select('*')
       .eq('id', userId)
       .single()
-    setProfile(data)
+
+    // Auto-detect timezone and save if missing or changed
+    const detectedTz = getBrowserTimezone()
+    if (data && data.timezone !== detectedTz) {
+      const updated = { ...data, timezone: detectedTz }
+      setProfile(updated)
+      // Save silently in background — user never has to think about this
+      supabase
+        .from('profiles')
+        .upsert({ id: userId, timezone: detectedTz, updated_at: new Date().toISOString() })
+        .then(() => {})
+    } else {
+      setProfile(data)
+    }
     setLoading(false)
   }
 
