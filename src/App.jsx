@@ -3,13 +3,11 @@ import { supabase } from './lib/supabase'
 import { useProfile } from './hooks/useProfile'
 import { usePreferences } from './hooks/usePreferences'
 import { useMedications } from './hooks/useMedications'
-import { useReminders } from './hooks/useReminders'
 import { T, globalCss } from './lib/theme'
 import TodayTab from './components/TodayTab'
 import ProfileTab from './components/ProfileTab'
 import CaloriesTab from './components/CaloriesTab'
 import MedicationTab from './components/MedicationTab'
-import { ReminderBanner } from './components/ReminderBanner'
 import Auth from './components/Auth'
 
 // ── SVG tab icons ────────────────────────────────────────────
@@ -117,7 +115,6 @@ export default function App() {
   const { profile,     updateProfile     } = useProfile(uid)
   const { preferences, updatePreferences } = usePreferences(uid)
   const { medications, takenCount, missedCount, nextMed, markTaken, getStatusForMed } = useMedications(uid)
-  const { alerts, prefs: reminderPrefs, updatePrefs: updateReminderPrefs, dismissAlert, snoozeAlert, markTakenFromAlert } = useReminders(uid, medications, markTaken)
 
   const hour      = new Date().getHours()
   const greeting  = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -173,7 +170,7 @@ export default function App() {
       <CaloriesTab userId={uid} profile={profile} preferences={preferences} />
     ),
     medication: (
-      <MedicationTab userId={uid} reminderPrefs={reminderPrefs} updateReminderPrefs={updateReminderPrefs} />
+      <MedicationTab userId={uid} />
     ),
     profile: (
       <ProfileTab
@@ -186,14 +183,6 @@ export default function App() {
   return (
     <>
       <style>{globalCss}</style>
-      {/* Global reminder alerts — fires app-wide regardless of active tab */}
-      <ReminderBanner
-        alerts={alerts}
-        snoozeMinutes={reminderPrefs.snooze_minutes}
-        onDismiss={dismissAlert}
-        onSnooze={snoozeAlert}
-        onMarkTaken={markTakenFromAlert}
-      />
       <div style={{ minHeight: '100vh', background: T.pageBg, display: 'flex', justifyContent: 'center' }}>
         <div style={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
