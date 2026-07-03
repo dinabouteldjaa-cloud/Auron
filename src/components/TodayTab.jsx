@@ -868,14 +868,16 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds }) {
   const { t, lang } = useTranslation()
 
-  // Core date state — declared first so midnight effect can reference setSelectedDate
-  const [selectedDate,  setSelectedDate]  = useState(() => new Date().toISOString().split('T')[0])
+  // Always compute today fresh — never cache from mount time
+  const getNow = () => new Date().toISOString().split('T')[0]
 
-  // Recompute todayStr every minute so it auto-advances at midnight
-  const [todayStr, setTodayStr] = useState(() => new Date().toISOString().split('T')[0])
+  const [todayStr,      setTodayStr]      = useState(getNow)
+  const [selectedDate,  setSelectedDate]  = useState(getNow)
+
+  // Auto-advance at midnight — check every 30 seconds
   useEffect(() => {
     const tick = () => {
-      const newToday = new Date().toISOString().split('T')[0]
+      const newToday = getNow()
       setTodayStr(prev => {
         if (prev !== newToday) {
           setSelectedDate(newToday)
@@ -884,7 +886,8 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
         return prev
       })
     }
-    const id = setInterval(tick, 60 * 1000)
+    tick() // run immediately on mount to fix any stale date
+    const id = setInterval(tick, 30 * 1000)
     return () => clearInterval(id)
   }, [])
 
