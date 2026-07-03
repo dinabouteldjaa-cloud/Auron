@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMedications } from '../hooks/useMedications'
+import { ReminderSettings } from './ReminderBanner'
 
 const T = {
   surface:      '#FFFFFF',
@@ -329,7 +330,7 @@ function MedCard({ med, status, onMarkTaken, onEdit, onDelete }) {
 // ─────────────────────────────────────────────
 // Main MedicationTab
 // ─────────────────────────────────────────────
-export default function MedicationTab({ userId }) {
+export default function MedicationTab({ userId, reminderPrefs, updateReminderPrefs }) {
   const {
     medications, loading,
     addMedication, updateMedication, deleteMedication, markTaken,
@@ -456,6 +457,16 @@ export default function MedicationTab({ userId }) {
               ))}
             </>
           )}
+        </div>
+      )}
+
+      {/* Reminder settings */}
+      {reminderPrefs && updateReminderPrefs && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
+            Reminder settings
+          </div>
+          <ReminderSettings prefs={reminderPrefs} onUpdate={updateReminderPrefs} />
         </div>
       )}
 
