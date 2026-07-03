@@ -175,7 +175,7 @@ export default function App() {
       />
     ),
     calories: (
-      <CaloriesTab userId={uid} profile={profile} preferences={preferences} />
+      <CaloriesTab userId={uid} profile={profile} preferences={preferences} lang={lang} />
     ),
     medication: (
       <MedicationTab userId={uid} />
