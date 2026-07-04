@@ -992,19 +992,28 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
   }, [userId, selectedDate])
 
   // Load streak history (last 60 days)
+  // Fetch all activity dates for streak — food, workouts, water, meds
   useEffect(() => {
     if (!userId) return
     const from = new Date(today)
     from.setDate(today.getDate() - 60)
-    supabase
-      .from('food_logs')
-      .select('log_date')
-      .eq('user_id', userId)
-      .gte('log_date', (() => { const d = new Date(todayStr + 'T12:00:00'); d.setDate(d.getDate() - 60); const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dy=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dy}` })())
-      .then(({ data }) => {
-        setLoggedDates(new Set((data || []).map(r => r.log_date)))
-      })
-  }, [userId, foodLogs])
+    const fromStr = (() => { const y=from.getFullYear(),m=String(from.getMonth()+1).padStart(2,'0'),d=String(from.getDate()).padStart(2,'0'); return `${y}-${m}-${d}` })()
+
+    Promise.all([
+      supabase.from('food_logs').select('log_date').eq('user_id', userId).gte('log_date', fromStr),
+      supabase.from('workout_logs').select('log_date').eq('user_id', userId).gte('log_date', fromStr),
+      supabase.from('water_logs').select('log_date').eq('user_id', userId).gte('log_date', fromStr).gt('cups', 0),
+      supabase.from('medication_logs').select('log_date').eq('user_id', userId).eq('status', 'taken').gte('log_date', fromStr),
+    ]).then(([food, workout, water, meds]) => {
+      const allDates = new Set([
+        ...(food.data    || []).map(r => r.log_date),
+        ...(workout.data || []).map(r => r.log_date),
+        ...(water.data   || []).map(r => r.log_date),
+        ...(meds.data    || []).map(r => r.log_date),
+      ])
+      setLoggedDates(allDates)
+    })
+  }, [userId, todayStr])
 
   // Debounced stats save — passes value directly to avoid stale closure
   const handleStatChange = (key, value) => {
