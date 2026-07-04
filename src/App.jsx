@@ -95,22 +95,15 @@ function MedIcon({ active }) {
   )
 }
 
-// ── Tab definitions — must be AFTER icon functions ────────────
-// Combined Progress + Workout screen
-function WorkoutsScreen({ userId, profile }) {
-  const { t } = useTranslation()
-  const [section, setSection] = useState('progress')
+function WorkoutIcon({ active }) {
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        {[['progress', '📊 Progress'], ['workout', '🏋️ Workout']].map(([id, label]) => (
-          <button key={id} onClick={() => setSection(id)} style={{ flex: 1, padding: '10px', borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: 'pointer', border: `1px solid ${section === id ? T.purple : T.border}`, background: section === id ? T.purpleLight : T.surface, color: section === id ? T.purple : T.textMuted, transition: 'all 0.15s' }}>
-            {label}
-          </button>
-        ))}
-      </div>
-      {section === 'progress' ? <ProgressTab userId={userId} profile={profile} /> : <WorkoutTab userId={userId} profile={profile} />}
-    </div>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M6.5 6.5L4 9l2.5 2.5M17.5 6.5L20 9l-2.5 2.5" stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="4" y1="9" x2="20" y2="9" stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" strokeLinecap="round" />
+      <line x1="9" y1="9" x2="9" y2="15" stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" strokeLinecap="round" />
+      <line x1="15" y1="9" x2="15" y2="15" stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" strokeLinecap="round" />
+      <line x1="9" y1="15" x2="15" y2="15" stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   )
 }
 
@@ -124,7 +117,8 @@ export default function App() {
     { id: 'today',      label: t('nav.home'),      icon: HomeIcon      },
     { id: 'calories',   label: t('nav.nutrition'), icon: NutritionIcon },
     { id: 'workouts',   label: t('nav.progress'),  icon: ProgressIcon  },
-    { id: 'medication', label: t('nav.meds'),      icon: MedIcon       },
+    { id: 'workout',    label: 'Workout',           icon: WorkoutIcon   },
+    { id: 'medication', label: t('nav.meds'),       icon: MedIcon       },
     { id: 'profile',    label: t('nav.profile'),   icon: ProfileIcon   },
   ]
 
@@ -197,14 +191,20 @@ export default function App() {
         markTaken={markTaken} getStatusForMed={getStatusForMed}
         onOpenMeds={() => setTab('medication')}
         onDateChange={setViewDate}
-        onOpenWorkout={() => setTab('workouts')}
+        onOpenWorkout={() => setTab('workout')}
       />
     ),
     workouts: (
-      <WorkoutsScreen userId={uid} profile={profile} />
+      <ProgressTab userId={uid} profile={profile} />
+    ),
+    workout: (
+      <WorkoutTab userId={uid} profile={profile} />
     ),
     calories: (
       <CaloriesTab userId={uid} profile={profile} preferences={preferences} lang={lang} />
+    ),
+    medication: (
+      <MedicationTab userId={uid} />
     ),
     medication: (
       <MedicationTab userId={uid} />
@@ -214,6 +214,7 @@ export default function App() {
         user={session.user} profile={profile} updateProfile={updateProfile}
         preferences={preferences} updatePreferences={updatePreferences}
         lang={lang} setLang={setLang}
+        onOpenMeds={() => setTab('medication')}
       />
     ),
   }
@@ -276,19 +277,19 @@ export default function App() {
               const Icon   = t.icon
               const active = tab === t.id
               return (
-                <button
+                  <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
                   style={{
                     flex: 1, display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', gap: 4,
-                    background: 'none', border: 'none', padding: '4px 0',
+                    alignItems: 'center', gap: 2,
+                    background: 'none', border: 'none', padding: '4px 2px',
                     color: active ? T.purple : T.textMuted,
                     transition: 'color 0.15s',
                   }}
                 >
-                  <Icon active={active} />
-                  <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, color: active ? T.purple : T.textMuted }}>
+                  <div style={{ transform: 'scale(0.85)' }}><Icon active={active} /></div>
+                  <span style={{ fontSize: 9, fontWeight: active ? 600 : 400, color: active ? T.purple : T.textMuted }}>
                     {t.label}
                   </span>
                 </button>
