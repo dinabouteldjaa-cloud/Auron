@@ -1,5 +1,5 @@
-import { toUserDateStr, getBrowserTimezone } from '../lib/dateUtils.js'
-import { useState, useEffect } from 'react'
+import { searchFoods, LOCAL_DB } from '../lib/foodSearch.js'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { askMealSuggestion, estimateMealFromDescription } from '../lib/claude'
 import { T } from '../lib/theme'
@@ -31,29 +31,6 @@ const getMealSlotsNutrition = (t) => [
   { id: 'lunch',     label: t('meals.lunch'),     icon: '☀️',  hint: t('cal.mealTime.lunch')    },
   { id: 'snack',     label: t('meals.snack'),     icon: '🍎',  hint: t('cal.mealTime.snack')    },
   { id: 'dinner',    label: t('meals.dinner'),    icon: '🌙',  hint: t('cal.mealTime.dinner')   },
-]
-
-const FOOD_DB = [
-  { name: 'Chicken breast (100g)', cal: 165, p: 31, c: 0,  f: 4  },
-  { name: 'Greek yogurt (150g)',   cal: 100, p: 17, c: 6,  f: 1  },
-  { name: 'Brown rice (100g)',     cal: 216, p: 5,  c: 45, f: 2  },
-  { name: 'Whole egg',             cal: 72,  p: 6,  c: 0,  f: 5  },
-  { name: 'Banana (medium)',       cal: 105, p: 1,  c: 27, f: 0  },
-  { name: 'Salmon fillet (100g)',  cal: 208, p: 20, c: 0,  f: 13 },
-  { name: 'Oats (50g)',            cal: 188, p: 6,  c: 32, f: 4  },
-  { name: 'Almonds (30g)',         cal: 174, p: 6,  c: 6,  f: 15 },
-  { name: 'Whey protein shake',    cal: 130, p: 25, c: 5,  f: 2  },
-  { name: 'Broccoli (100g)',       cal: 34,  p: 3,  c: 7,  f: 0  },
-  { name: 'Sweet potato (150g)',   cal: 130, p: 3,  c: 30, f: 0  },
-  { name: 'Avocado (half)',        cal: 120, p: 1,  c: 6,  f: 11 },
-  { name: 'Cottage cheese (100g)', cal: 98,  p: 11, c: 3,  f: 4  },
-  { name: 'Tuna can (185g)',       cal: 170, p: 38, c: 0,  f: 1  },
-  { name: 'Olive oil (1 tbsp)',    cal: 119, p: 0,  c: 0,  f: 14 },
-  { name: 'Apple (medium)',        cal: 95,  p: 0,  c: 25, f: 0  },
-  { name: 'Quinoa (100g)',         cal: 222, p: 8,  c: 39, f: 4  },
-  { name: 'Whole milk (250ml)',    cal: 149, p: 8,  c: 12, f: 8  },
-  { name: 'Whole wheat bread',     cal: 81,  p: 4,  c: 14, f: 1  },
-  { name: 'Orange (medium)',       cal: 62,  p: 1,  c: 15, f: 0  },
 ]
 
 // ─────────────────────────────────────────────
@@ -325,79 +302,172 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 }
 
 // ─────────────────────────────────────────────
-// Add food modal
+// ─────────────────────────────────────────────
+// Add food modal — live search via USDA + Open Food Facts
 // ─────────────────────────────────────────────
 function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose }) {
   const { t } = useTranslation()
   const MEAL_SLOTS = getMealSlotsNutrition(t)
-  const [query, setQuery] = useState('')
-  const filtered = FOOD_DB.filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
+  const [query,    setQuery]    = useState('')
+  const [results,  setResults]  = useState(LOCAL_DB.slice(0, 20))
+  const [loading,  setLoading]  = useState(false)
+  const [selected, setSelected] = useState(null)  // food being customized
+  const [qty,      setQty]      = useState('1')   // multiplier
+  const debounceRef = useRef(null)
+
+  // Search with debounce
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!query.trim()) { setResults(LOCAL_DB.slice(0, 20)); return }
+    setLoading(true)
+    debounceRef.current = setTimeout(async () => {
+      const res = await searchFoods(query)
+      setResults(res)
+      setLoading(false)
+    }, 400)
+    return () => clearTimeout(debounceRef.current)
+  }, [query])
+
+  const scale  = parseFloat(qty) || 1
+  const scaled = selected ? {
+    cal:    Math.round(selected.cal * scale),
+    p:      Math.round(selected.p   * scale),
+    c:      Math.round(selected.c   * scale),
+    f:      Math.round(selected.f   * scale),
+    fiber:  Math.round((selected.fiber  || 0) * scale),
+    sodium: Math.round((selected.sodium || 0) * scale),
+  } : null
+
+  const handleAdd = () => {
+    if (!selected) return
+    onAdd({
+      name:     `${selected.name}${scale !== 1 ? ` ×${qty}` : ''}`,
+      calories: scaled.cal,
+      protein:  scaled.p,
+      carbs:    scaled.c,
+      fat:      scaled.f,
+    }, selectedMeal)
+    onClose()
+  }
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.55)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
-      onClick={onClose}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ background: T.surface, borderRadius: '20px 20px 0 0', padding: 24, width: '100%', maxWidth: 480, maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: T.shadowStrong }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18 }}>{t('cal.foodLog').replace('+ ', '')}</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 22, cursor: 'pointer' }}>×</button>
+    <div style={{ position:'fixed', inset:0, background:'rgba(26,26,46,0.55)', zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background:T.surface, borderRadius:'20px 20px 0 0', padding:24, width:'100%', maxWidth:480, maxHeight:'88vh', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:T.shadowStrong }}>
+
+        {/* Header */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <div style={{ fontSize:18, fontWeight:700, color:T.text }}>
+            {selected ? selected.name.slice(0, 28) + (selected.name.length > 28 ? '…' : '') : t('cal.addFood').replace('+ ','')}
+          </div>
+          <button onClick={selected ? () => setSelected(null) : onClose} style={{ background:'none', border:'none', color:T.textMuted, fontSize:22, cursor:'pointer' }}>
+            {selected ? '‹' : '×'}
+          </button>
         </div>
 
-        {/* Meal slot */}
-        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Adding to:</div>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-          {MEAL_SLOTS.map(s => (
-            <button key={s.id} onClick={() => setSelectedMeal(s.id)} style={{
-              flex: 1, padding: '8px 4px', borderRadius: 10, cursor: 'pointer',
-              border: `1px solid ${selectedMeal === s.id ? C.gold : C.border}`,
-              background: selectedMeal === s.id ? C.goldLight : 'transparent',
-              color: selectedMeal === s.id ? C.gold : C.textMuted,
-              fontSize: 11, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-            }}>
-              <span style={{ fontSize: 15 }}>{s.icon}</span>{s.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Search */}
-        <input
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Search food..."
-          autoFocus
-          style={{
-            width: '100%', padding: '10px 14px', borderRadius: 10,
-            background: C.surfaceLight, border: `1px solid ${C.border}`,
-            color: C.text, fontSize: 14, marginBottom: 12, outline: 'none',
-          }}
-        />
-
-        {/* Results */}
-        <div style={{ overflowY: 'auto', flex: 1 }}>
-          {filtered.map((f, i) => (
-            <div key={i} style={{ padding: '10px 0', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: 13, color: C.text }}>{f.name}</div>
-                <div style={{ fontSize: 11, color: C.textMuted }}>{f.cal} kcal · P {f.p}g · C {f.c}g · F {f.f}g</div>
+        {/* ── Food detail view ── */}
+        {selected ? (
+          <div style={{ flex:1, overflowY:'auto' }}>
+            {/* Nutrition summary */}
+            <div style={{ background:T.purpleLight, borderRadius:14, padding:'14px 16px', marginBottom:16 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:12 }}>
+                {[['Kcal', scaled.cal, T.purple], ['Protein', `${scaled.p}g`, T.blue], ['Carbs', `${scaled.c}g`, T.amber], ['Fat', `${scaled.f}g`, T.red]].map(([l,v,c]) => (
+                  <div key={l} style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:18, fontWeight:700, color:c }}>{v}</div>
+                    <div style={{ fontSize:10, color:T.textMuted }}>{l}</div>
+                  </div>
+                ))}
               </div>
-              <button
-                onClick={() => { onAdd({ name: f.name, cal: f.cal, p: f.p, c: f.c, f: f.f }, selectedMeal); onClose() }}
-                style={{ padding: '5px 14px', background: C.gold, color: C.dark, border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
-              >
-                Add
-              </button>
+              {(scaled.fiber > 0 || scaled.sodium > 0) && (
+                <div style={{ display:'flex', gap:16, fontSize:11, color:T.textMuted, borderTop:`1px solid ${T.border}`, paddingTop:8 }}>
+                  {scaled.fiber  > 0 && <span>Fiber: {scaled.fiber}g</span>}
+                  {scaled.sodium > 0 && <span>Sodium: {scaled.sodium}mg</span>}
+                  <span style={{ marginLeft:'auto', color:T.textDim }}>{selected.source}</span>
+                </div>
+              )}
             </div>
-          ))}
-          {filtered.length === 0 && (
-            <div style={{ padding: '20px 0', textAlign: 'center', color: C.textMuted, fontSize: 13 }}>
-              No results for "{query}"
+
+            {/* Quantity */}
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:12, color:T.textMuted, marginBottom:8, fontWeight:500 }}>
+                Quantity <span style={{ color:T.textDim }}>({selected.serving} × qty)</span>
+              </div>
+              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                <button onClick={() => setQty(q => String(Math.max(0.5, parseFloat(q)-0.5)))}
+                  style={{ width:40, height:40, borderRadius:12, background:T.purpleLight, border:'none', fontSize:20, color:T.purple, cursor:'pointer', fontWeight:700 }}>−</button>
+                <input type="number" value={qty} onChange={e => setQty(e.target.value)} min="0.5" step="0.5"
+                  style={{ flex:1, textAlign:'center', padding:'10px', borderRadius:12, border:`1px solid ${T.border}`, background:T.surfaceMid, fontSize:16, fontWeight:700, color:T.text, outline:'none' }} />
+                <button onClick={() => setQty(q => String(parseFloat(q)+0.5))}
+                  style={{ width:40, height:40, borderRadius:12, background:T.purpleLight, border:'none', fontSize:20, color:T.purple, cursor:'pointer', fontWeight:700 }}>+</button>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Meal slot */}
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:12, color:T.textMuted, marginBottom:8, fontWeight:500 }}>{t('cal.logTo')}</div>
+              <div style={{ display:'flex', gap:6 }}>
+                {MEAL_SLOTS.map(s => (
+                  <button key={s.id} onClick={() => setSelectedMeal(s.id)} style={{ flex:1, padding:'8px 4px', borderRadius:10, cursor:'pointer', border:`1px solid ${selectedMeal===s.id ? T.purple : T.border}`, background:selectedMeal===s.id ? T.purpleLight : 'transparent', color:selectedMeal===s.id ? T.purple : T.textMuted, fontSize:11, display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
+                    <span style={{ fontSize:15 }}>{s.icon}</span>{s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={handleAdd} style={{ width:'100%', padding:13, borderRadius:24, background:T.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer' }}>
+              + {t('cal.logMeal').replace('+ ','').replace('Log this meal','Log')} {scaled.cal} kcal
+            </button>
+          </div>
+        ) : (
+          /* ── Search view ── */
+          <>
+            {/* Meal slot tabs */}
+            <div style={{ display:'flex', gap:6, marginBottom:12 }}>
+              {MEAL_SLOTS.map(s => (
+                <button key={s.id} onClick={() => setSelectedMeal(s.id)} style={{ flex:1, padding:'8px 4px', borderRadius:10, cursor:'pointer', border:`1px solid ${selectedMeal===s.id ? T.purple : T.border}`, background:selectedMeal===s.id ? T.purpleLight : 'transparent', color:selectedMeal===s.id ? T.purple : T.textMuted, fontSize:11, display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
+                  <span style={{ fontSize:15 }}>{s.icon}</span>{s.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Search box */}
+            <div style={{ position:'relative', marginBottom:12 }}>
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t('cal.searchFood')} autoFocus
+                style={{ width:'100%', padding:'10px 14px 10px 38px', borderRadius:12, background:T.surfaceMid, border:`1px solid ${T.border}`, color:T.text, fontSize:14, outline:'none' }} />
+              <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16 }}>🔍</span>
+              {loading && <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:11, color:T.purple }}>Searching…</span>}
+            </div>
+
+            {/* Source badge */}
+            {query.length > 1 && !loading && (
+              <div style={{ fontSize:11, color:T.textDim, marginBottom:8 }}>
+                {results.length} results · USDA + Open Food Facts
+              </div>
+            )}
+
+            {/* Results */}
+            <div style={{ overflowY:'auto', flex:1 }}>
+              {results.map((f) => (
+                <button key={f.id} onClick={() => { setSelected(f); setQty('1') }}
+                  style={{ width:'100%', padding:'12px 0', borderBottom:`1px solid ${T.divider}`, display:'flex', justifyContent:'space-between', alignItems:'center', background:'none', border:'none', borderBottom:`1px solid ${T.divider}`, cursor:'pointer', textAlign:'left' }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:500, color:T.text, marginBottom:2 }}>{f.name}</div>
+                    <div style={{ fontSize:11, color:T.textMuted }}>
+                      {f.brand && <span>{f.brand} · </span>}
+                      <span style={{ color:T.purple, fontWeight:600 }}>{f.cal} kcal</span>
+                      <span> · P {f.p}g · C {f.c}g · F {f.f}g</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:11, color:T.textDim, marginLeft:8, flexShrink:0 }}>{f.serving}</div>
+                </button>
+              ))}
+              {results.length === 0 && !loading && (
+                <div style={{ padding:'30px 0', textAlign:'center', color:T.textMuted, fontSize:13 }}>
+                  {t('cal.noResults')} "{query}"
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
@@ -438,10 +508,10 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
       log_date:  today,
       meal_slot: meal,
       food_name: food.name,
-      calories:  food.cal,
-      protein:   food.p,
-      carbs:     food.c,
-      fat:       food.f,
+      calories:  food.calories ?? food.cal ?? 0,
+      protein:   food.protein  ?? food.p   ?? 0,
+      carbs:     food.carbs    ?? food.c   ?? 0,
+      fat:       food.fat      ?? food.f   ?? 0,
     }
     const { data, error } = await supabase.from('food_logs').insert(entry).select().single()
     if (!error) setLogs(prev => [...prev, data])
