@@ -1086,12 +1086,14 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
     waterUnit: profile?.water_unit || 'cups',
     waterPct,
     workoutDone, workoutMinutes,
+    steps:        parseInt(dailyStats?.steps)  || 0,
+    sleepHours:   parseFloat(dailyStats?.sleep) || 0,
     streakDays,
-    missedMeds:  missedCount  || 0,
-    // pendingMeds = active meds not yet marked taken today
-    pendingMeds: isToday ? medications.filter(m => getStatusForMed(m.id) === 'pending').length : 0,
-    nextMedName: nextMed?.medication_name || '',
-    proteinPct:  proteinGoal > 0 ? (totalP / proteinGoal) * 100 : 0,
+    missedMeds:   missedCount  || 0,
+    pendingMeds:  isToday ? medications.filter(m => getStatusForMed(m.id) === 'pending').length : 0,
+    nextMedName:  nextMed?.medication_name || '',
+    proteinPct:   proteinGoal > 0 ? (totalP / proteinGoal) * 100 : 0,
+    foodLogsCount: foodLogs.length,
     mood: '',
   }
 
@@ -1099,7 +1101,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
   coachCtx.mood     = coachMood
 
   const { message: coachMessage, loading: coachLoading } = useCoachMessage(
-    coachCtx, lang, import.meta.env.VITE_GROQ_KEY,
+    coachCtx, lang,
   )
 
   return (
