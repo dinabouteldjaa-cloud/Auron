@@ -2,7 +2,7 @@ import { toUserDateStr } from '../lib/dateUtils.js'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function useMedications(userId, timezone) {
+export function useMedications(userId, timezone, viewDate) {
   const [medications, setMedications] = useState([])
   const [logs,        setLogs]        = useState([])
   const [loading,     setLoading]     = useState(true)
@@ -11,60 +11,52 @@ export function useMedications(userId, timezone) {
     if (!userId) return
     setLoading(true)
 
-    const today = toUserDateStr(timezone)
+    const today   = toUserDateStr(timezone)
+    const logDate = viewDate || today
 
-    const [{ data: meds }, { data: todayLogs }] = await Promise.all([
+    const [{ data: meds }, { data: dayLogs }] = await Promise.all([
       supabase
         .from('medications')
         .select('*')
         .eq('user_id', userId)
         .eq('active', true)
-        // Only include meds that have started and not yet expired
         .lte('start_date', today)
         .order('reminder_time', { ascending: true }),
       supabase
         .from('medication_logs')
         .select('*')
         .eq('user_id', userId)
-        .eq('log_date', today),
+        .eq('log_date', logDate),
     ])
 
-    // Filter out meds past their end_date (null end_date = no expiry)
-    const activeMeds = (meds || []).filter(m =>
-      !m.end_date || m.end_date >= today
-    )
+    // Filter out meds past their end_date
+    const activeMeds = (meds || []).filter(m => !m.end_date || m.end_date >= today)
 
     setMedications(activeMeds)
-    setLogs(todayLogs || [])
+    setLogs(dayLogs || [])
     setLoading(false)
-  }, [userId])
+  }, [userId, viewDate])
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
-  // Add a new medication
   const addMedication = async (data) => {
     const { data: med, error } = await supabase
       .from('medications')
       .insert({ user_id: userId, ...data, updated_at: new Date().toISOString() })
-      .select()
-      .single()
+      .select().single()
     if (!error) setMedications(prev => [...prev, med])
     return { data: med, error }
   }
 
-  // Update an existing medication
   const updateMedication = async (id, updates) => {
     const { data: med, error } = await supabase
       .from('medications')
       .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single()
+      .eq('id', id).select().single()
     if (!error) setMedications(prev => prev.map(m => m.id === id ? med : m))
     return { data: med, error }
   }
 
-  // Soft delete — mark inactive (stops recurrence immediately)
   const deleteMedication = async (id) => {
     const { error } = await supabase
       .from('medications')
@@ -74,9 +66,9 @@ export function useMedications(userId, timezone) {
     return { error }
   }
 
-  // Mark a medication as taken today — toggles taken ↔ pending
+  // markTaken only allowed for today — uses today's date regardless of viewDate
   const markTaken = async (medicationId, scheduledTime) => {
-    const today    = todayLocal()
+    const today    = toUserDateStr(timezone)
     const existing = logs.find(l => l.medication_id === medicationId && l.log_date === today)
 
     if (existing) {
@@ -84,25 +76,22 @@ export function useMedications(userId, timezone) {
       const { data: log, error } = await supabase
         .from('medication_logs')
         .update({ status: newStatus, taken_at: newStatus === 'taken' ? new Date().toISOString() : null })
-        .eq('id', existing.id)
-        .select()
-        .single()
+        .eq('id', existing.id).select().single()
       if (!error) setLogs(prev => prev.map(l => l.id === existing.id ? log : l))
       return { data: log, error }
     } else {
       const { data: log, error } = await supabase
         .from('medication_logs')
         .insert({ medication_id: medicationId, user_id: userId, log_date: today, scheduled_time: scheduledTime, status: 'taken', taken_at: new Date().toISOString() })
-        .select()
-        .single()
+        .select().single()
       if (!error) setLogs(prev => [...prev, log])
       return { data: log, error }
     }
   }
 
-  const today = toUserDateStr(timezone)
+  const logDate         = viewDate || toUserDateStr(timezone)
   const getStatusForMed = (medicationId) => {
-    const log = logs.find(l => l.medication_id === medicationId && l.log_date === today)
+    const log = logs.find(l => l.medication_id === medicationId && l.log_date === logDate)
     return log?.status || 'pending'
   }
 
