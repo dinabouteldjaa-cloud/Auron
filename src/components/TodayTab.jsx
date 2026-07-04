@@ -1088,6 +1088,8 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
     workoutDone, workoutMinutes,
     streakDays,
     missedMeds:  missedCount  || 0,
+    // pendingMeds = active meds not yet marked taken today
+    pendingMeds: isToday ? medications.filter(m => getStatusForMed(m.id) === 'pending').length : 0,
     nextMedName: nextMed?.medication_name || '',
     proteinPct:  proteinGoal > 0 ? (totalP / proteinGoal) * 100 : 0,
     mood: '',
