@@ -1,17 +1,14 @@
 // ─────────────────────────────────────────────────────────────
-// foodSearch.js — Multi-source food search
+// foodSearch.js — Food search via USDA FoodData Central
 //
-// Sources (in order):
-//   1. USDA FoodData Central — free, no key, 600k+ foods
-//   2. Open Food Facts — open source, branded products
-//   3. Local fallback DB — instant results while APIs load
+// Open Food Facts removed — blocked by CORS in browsers.
+// USDA FoodData Central works fine from the browser (no CORS issues).
 // ─────────────────────────────────────────────────────────────
 
 const USDA_BASE = 'https://api.nal.usda.gov/fdc/v1'
-const USDA_KEY  = 'DEMO_KEY' // free tier: 30 req/hour, 50/day. Replace with your key from https://fdc.nal.usda.gov/api-key-signup
+const USDA_KEY  = 'DEMO_KEY' // free tier: 30 req/hour. Get your key at fdc.nal.usda.gov/api-key-signup
 
-// ── USDA FoodData Central ────────────────────────────────────
-export async function searchUSDA(query, limit = 20) {
+export async function searchUSDA(query, limit = 25) {
   try {
     const res = await fetch(
       `${USDA_BASE}/foods/search?query=${encodeURIComponent(query)}&pageSize=${limit}&api_key=${USDA_KEY}&dataType=Foundation,SR%20Legacy,Survey%20(FNDDS)`,
@@ -22,24 +19,22 @@ export async function searchUSDA(query, limit = 20) {
 
     return data.foods.map(food => {
       const get = (name) => {
-        const n = food.foodNutrients?.find(n =>
-          n.nutrientName?.toLowerCase().includes(name.toLowerCase())
-        )
+        const n = food.foodNutrients?.find(n => n.nutrientName?.toLowerCase().includes(name.toLowerCase()))
         return Math.round(n?.value || 0)
       }
       return {
-        id:     `usda_${food.fdcId}`,
-        name:   food.description,
-        brand:  food.brandOwner || food.brandName || '',
-        cal:    get('energy'),
-        p:      get('protein'),
-        c:      get('carbohydrate'),
-        f:      get('total lipid'),
-        fiber:  get('fiber'),
-        sugar:  get('sugars'),
-        sodium: get('sodium'),
+        id:      `usda_${food.fdcId}`,
+        name:    food.description,
+        brand:   food.brandOwner || food.brandName || '',
+        cal:     get('energy'),
+        p:       get('protein'),
+        c:       get('carbohydrate'),
+        f:       get('total lipid'),
+        fiber:   get('fiber'),
+        sugar:   get('sugars'),
+        sodium:  get('sodium'),
         serving: food.servingSize ? `${food.servingSize}${food.servingSizeUnit || 'g'}` : '100g',
-        source: 'USDA',
+        source:  'USDA',
       }
     }).filter(f => f.cal > 0)
   } catch {
@@ -47,68 +42,15 @@ export async function searchUSDA(query, limit = 20) {
   }
 }
 
-// ── Open Food Facts ──────────────────────────────────────────
-export async function searchOpenFoodFacts(query, limit = 15) {
-  try {
-    const res = await fetch(
-      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=${limit}&fields=product_name,brands,nutriments,serving_size`,
-      { signal: AbortSignal.timeout(5000) }
-    )
-    const data = await res.json()
-    if (!data.products) return []
-
-    return data.products
-      .filter(p => p.product_name && p.nutriments?.['energy-kcal_100g'])
-      .map(p => ({
-        id:     `off_${Math.random().toString(36).slice(2)}`,
-        name:   p.product_name,
-        brand:  p.brands || '',
-        cal:    Math.round(p.nutriments['energy-kcal_100g'] || 0),
-        p:      Math.round(p.nutriments['proteins_100g']    || 0),
-        c:      Math.round(p.nutriments['carbohydrates_100g'] || 0),
-        f:      Math.round(p.nutriments['fat_100g']         || 0),
-        fiber:  Math.round(p.nutriments['fiber_100g']       || 0),
-        sugar:  Math.round(p.nutriments['sugars_100g']      || 0),
-        sodium: Math.round(p.nutriments['sodium_100g'] * 1000 || 0),
-        serving: p.serving_size || '100g',
-        source: 'Open Food Facts',
-      }))
-      .filter(f => f.cal > 0)
-  } catch {
-    return []
-  }
-}
-
-// ── Combined search — USDA + Open Food Facts in parallel ─────
+// Combined search — USDA first, local fallback if no results
 export async function searchFoods(query) {
   if (!query || query.trim().length < 2) return LOCAL_DB.slice(0, 20)
 
-  // Run both searches in parallel, local results shown immediately
-  const [usda, off] = await Promise.all([
-    searchUSDA(query, 25),
-    searchOpenFoodFacts(query, 15),
-  ])
+  const usda = await searchUSDA(query, 25)
+  if (usda.length > 0) return usda
 
-  // Merge: USDA first (more accurate), then branded products, deduplicate by name
-  const seen  = new Set()
-  const merged = []
-
-  for (const item of [...usda, ...off]) {
-    const key = item.name.toLowerCase().slice(0, 30)
-    if (!seen.has(key)) {
-      seen.add(key)
-      merged.push(item)
-    }
-  }
-
-  // If no API results, search local DB
-  if (merged.length === 0) {
-    return LOCAL_DB.filter(f =>
-      f.name.toLowerCase().includes(query.toLowerCase())
-    ).slice(0, 20)
-  }
-
-  return merged
+  // Fallback to local DB
+  return LOCAL_DB.filter(f => f.name.toLowerCase().includes(query.toLowerCase())).slice(0, 20)
 }
 
 // ── Local fallback DB — common foods, instant results ────────
