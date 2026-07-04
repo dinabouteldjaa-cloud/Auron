@@ -10,6 +10,7 @@ import ProfileTab from './components/ProfileTab'
 import CaloriesTab from './components/CaloriesTab'
 import MedicationTab from './components/MedicationTab'
 import ProgressTab from './components/ProgressTab'
+import WorkoutTab from './components/WorkoutTab'
 import Auth from './components/Auth'
 
 // ── SVG tab icons ────────────────────────────────────────────
@@ -95,6 +96,24 @@ function MedIcon({ active }) {
 }
 
 // ── Tab definitions — must be AFTER icon functions ────────────
+// Combined Progress + Workout screen
+function WorkoutsScreen({ userId, profile }) {
+  const { t } = useTranslation()
+  const [section, setSection] = useState('progress')
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {[['progress', '📊 Progress'], ['workout', '🏋️ Workout']].map(([id, label]) => (
+          <button key={id} onClick={() => setSection(id)} style={{ flex: 1, padding: '10px', borderRadius: 14, fontSize: 14, fontWeight: 600, cursor: 'pointer', border: `1px solid ${section === id ? T.purple : T.border}`, background: section === id ? T.purpleLight : T.surface, color: section === id ? T.purple : T.textMuted, transition: 'all 0.15s' }}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {section === 'progress' ? <ProgressTab userId={userId} profile={profile} /> : <WorkoutTab userId={userId} profile={profile} />}
+    </div>
+  )
+}
+
 export default function App() {
   const [tab,     setTab]     = useState('today')
   const [session, setSession] = useState(undefined)
@@ -178,10 +197,11 @@ export default function App() {
         markTaken={markTaken} getStatusForMed={getStatusForMed}
         onOpenMeds={() => setTab('medication')}
         onDateChange={setViewDate}
+        onOpenWorkout={() => setTab('workouts')}
       />
     ),
     workouts: (
-      <ProgressTab userId={uid} profile={profile} />
+      <WorkoutsScreen userId={uid} profile={profile} />
     ),
     calories: (
       <CaloriesTab userId={uid} profile={profile} preferences={preferences} lang={lang} />
