@@ -188,7 +188,7 @@ function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
 // ─────────────────────────────────────────────────────────────
 // MedicationCard — purple-tinted placeholder, Phase 3 ready
 // ─────────────────────────────────────────────────────────────
-function MedicationCard({ nextMed, takenCount, missedCount, onMarkTaken, onOpenTracker }) {
+function MedicationCard({ nextMed, takenCount, missedCount, onMarkTaken, onOpenTracker, isToday }) {
   const { t } = useTranslation()
   return (
     <div style={{
@@ -203,44 +203,64 @@ function MedicationCard({ nextMed, takenCount, missedCount, onMarkTaken, onOpenT
         </div>
         <button onClick={onOpenTracker} style={{ background: 'none', border: 'none', fontSize: 13, color: T.purple, fontWeight: 500, cursor: 'pointer' }}>{t('meds.seeAll')}</button>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
-        <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
-          <div style={{ fontSize: 10, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>{t('meds.nextUp')}</div>
+
+      {isToday ? (
+        /* ── Today: full interactive view ── */
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
+            <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
+              <div style={{ fontSize: 10, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>{t('meds.nextUp')}</div>
+              {nextMed ? (
+                <>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: T.text, lineHeight: 1.3 }}>{nextMed.medication_name}</div>
+                  <div style={{ fontSize: 10, color: T.textMuted }}>
+                    {(() => { try { const tm = nextMed.reminder_time || (nextMed.reminder_times ? JSON.parse(nextMed.reminder_times)[0] : null); return tm ? tm.slice(0,5) : t('meds.noTimeSet') } catch { return t('meds.noTimeSet') } })()}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>—</div>
+                  <div style={{ fontSize: 10, color: T.textMuted }}>{t('meds.noMeds')}</div>
+                </>
+              )}
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
+              <div style={{ fontSize: 10, color: T.green, marginBottom: 4, fontWeight: 500 }}>{t('meds.takenLabel')}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{takenCount}</div>
+              <div style={{ fontSize: 10, color: T.textMuted }}>{t('meds.today')}</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
+              <div style={{ fontSize: 10, color: T.red, marginBottom: 4, fontWeight: 500 }}>{t('meds.missedLabel')}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{missedCount}</div>
+              <div style={{ fontSize: 10, color: T.textMuted }}>{t('meds.today')}</div>
+            </div>
+          </div>
           {nextMed ? (
-            <>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.text, lineHeight: 1.3 }}>{nextMed.medication_name}</div>
-              <div style={{ fontSize: 10, color: T.textMuted }}>
-                {(() => { try { const tm = nextMed.reminder_time || (nextMed.reminder_times ? JSON.parse(nextMed.reminder_times)[0] : null); return tm ? tm.slice(0,5) : t('meds.noTimeSet') } catch { return t('meds.noTimeSet') } })()}
-              </div>
-            </>
+            <button onClick={() => onMarkTaken?.(nextMed.id, nextMed.reminder_time)}
+              style={{ width: '100%', padding: '11px', borderRadius: 12, background: T.purple, border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              {t('meds.markName', { name: nextMed.medication_name })}
+            </button>
           ) : (
-            <>
-              <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>—</div>
-              <div style={{ fontSize: 10, color: T.textMuted }}>{t('meds.noMeds')}</div>
-            </>
+            <button onClick={onOpenTracker}
+              style={{ width: '100%', padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${T.border}`, color: T.purple, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              {t('meds.openTracker')}
+            </button>
           )}
-        </div>
-        <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
-          <div style={{ fontSize: 10, color: T.green, marginBottom: 4, fontWeight: 500 }}>{t('meds.takenLabel')}</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{takenCount}</div>
-          <div style={{ fontSize: 10, color: T.textMuted }}>{t('meds.today')}</div>
-        </div>
-        <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '10px 10px' }}>
-          <div style={{ fontSize: 10, color: T.red, marginBottom: 4, fontWeight: 500 }}>{t('meds.missedLabel')}</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{missedCount}</div>
-          <div style={{ fontSize: 10, color: T.textMuted }}>{t('meds.today')}</div>
-        </div>
-      </div>
-      {nextMed ? (
-        <button onClick={() => onMarkTaken?.(nextMed.id, nextMed.reminder_time)}
-          style={{ width: '100%', padding: '11px', borderRadius: 12, background: T.purple, border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          {t('meds.markName', { name: nextMed.medication_name })}
-        </button>
+        </>
       ) : (
-        <button onClick={onOpenTracker}
-          style={{ width: '100%', padding: '11px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${T.border}`, color: T.purple, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-          {t('meds.openTracker')}
-        </button>
+        /* ── Past day: read-only summary — taken + missed only ── */
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 14, padding: '14px 16px', textAlign: 'center' }}>
+            <div style={{ fontSize: 10, color: T.green, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{t('meds.takenLabel')}</div>
+            <div style={{ fontSize: 30, fontWeight: 700, color: T.text }}>{takenCount}</div>
+            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{takenCount === 1 ? 'medication' : 'medications'}</div>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 14, padding: '14px 16px', textAlign: 'center' }}>
+            <div style={{ fontSize: 10, color: T.red, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{t('meds.missedLabel')}</div>
+            <div style={{ fontSize: 30, fontWeight: 700, color: T.text }}>{missedCount}</div>
+            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{missedCount === 1 ? 'medication' : 'medications'}</div>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -866,7 +886,7 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 // ─────────────────────────────────────────────────────────────
 // Main TodayTab export
 // ─────────────────────────────────────────────────────────────
-export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds }) {
+export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds, onDateChange }) {
   const { t, lang } = useTranslation()
 
   // Use profile timezone (auto-detected from browser, stored in DB)
@@ -885,7 +905,10 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
     setSelectedDate(prev => prev === correctDate ? prev : correctDate)
   }, [profile?.timezone])
 
-  // Auto-advance at midnight — check every 30 seconds
+  // Notify parent (App) when selected date changes so useMedications refetches for the right day
+  useEffect(() => {
+    if (onDateChange) onDateChange(selectedDate === todayStr ? null : selectedDate)
+  }, [selectedDate, todayStr])
   useEffect(() => {
     const tick = () => {
       const newToday = getNow()
@@ -1121,6 +1144,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
         missedCount={missedCount}
         onMarkTaken={markTaken}
         onOpenTracker={onOpenMeds}
+        isToday={isToday}
       />
 
       {/* 5 ── Water tracker — full width now insight is removed */}
