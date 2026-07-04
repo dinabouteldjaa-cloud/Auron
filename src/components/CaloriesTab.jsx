@@ -306,7 +306,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 // ─────────────────────────────────────────────
 // Add food modal — live search via USDA + Open Food Facts
 // ─────────────────────────────────────────────
-function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose }) {
+function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescribe }) {
   const { t } = useTranslation()
   const MEAL_SLOTS = getMealSlotsNutrition(t)
   const [query,    setQuery]    = useState('')
@@ -462,8 +462,23 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose }) {
                 </button>
               ))}
               {results.length === 0 && !loading && (
-                <div style={{ padding:'30px 0', textAlign:'center', color:T.textMuted, fontSize:13 }}>
-                  {t('cal.noResults')} "{query}"
+                <div style={{ padding:'20px 0', textAlign:'center' }}>
+                  <div style={{ fontSize:13, color:T.textMuted, marginBottom:16 }}>
+                    {t('cal.noResults')} "{query}"
+                  </div>
+                  <button onClick={() => { onClose(); setTimeout(() => onDescribe?.(), 100) }}
+                    style={{ padding:'11px 20px', borderRadius:20, background:T.purpleLight, border:`1px solid ${T.border}`, color:T.purple, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                    ✨ Describe meal — AI estimates calories
+                  </button>
+                </div>
+              )}
+              {results.length > 0 && query.length > 1 && !loading && (
+                <div style={{ padding:'16px 0', textAlign:'center', borderTop:`1px solid ${T.divider}`, marginTop:8 }}>
+                  <div style={{ fontSize:12, color:T.textDim, marginBottom:10 }}>Can't find what you're looking for?</div>
+                  <button onClick={() => { onClose(); setTimeout(() => onDescribe?.(), 100) }}
+                    style={{ padding:'9px 18px', borderRadius:20, background:T.purpleLight, border:`1px solid ${T.border}`, color:T.purple, fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    ✨ Describe it — AI will estimate
+                  </button>
                 </div>
               )}
             </div>
@@ -678,6 +693,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
           setSelectedMeal={setSelectedMeal}
           onAdd={addFood}
           onClose={() => setModal(false)}
+          onDescribe={() => { setModal(false); setSubView('describe') }}
         />
       )}
     </div>
