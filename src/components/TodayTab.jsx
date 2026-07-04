@@ -481,7 +481,7 @@ function MealsSection({ foodLogs, isToday }) {
 // ─────────────────────────────────────────────────────────────
 // Workout section
 // ─────────────────────────────────────────────────────────────
-function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
+function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday, onOpenWorkout }) {
   const { t } = useTranslation()
   const DAYS = getDays(t)
   const dayName  = DAYS[new Date(selectedDate + 'T00:00:00').getDay()]
@@ -597,10 +597,14 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday }) {
       ) : (
         <div style={{ background: C.surfaceLight, borderRadius: 14, padding: '22px 16px', textAlign: 'center', border: `1px dashed ${C.border}` }}>
           <div style={{ fontSize: 24, marginBottom: 8 }}>🏃</div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: 4 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: isToday ? 14 : 4 }}>
             {isToday ? t('today.noWorkout') : t('today.noWorkoutDay')}
           </div>
-          {isToday && <div style={{ fontSize: 12, color: C.textDim }}>{t('today.logWorkoutHint')}</div>}
+          {isToday && (
+            <button onClick={onOpenWorkout} style={{ padding: '10px 24px', borderRadius: 20, background: T.purple, border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              🏋️ Log workout
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -886,7 +890,7 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 // ─────────────────────────────────────────────────────────────
 // Main TodayTab export
 // ─────────────────────────────────────────────────────────────
-export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds, onDateChange }) {
+export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds, onDateChange, onOpenWorkout }) {
   const { t, lang } = useTranslation()
 
   // Use profile timezone (auto-detected from browser, stored in DB)
@@ -1174,6 +1178,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
         savedPlans={savedPlans}
         selectedDate={selectedDate}
         isToday={isToday}
+        onOpenWorkout={onOpenWorkout}
       />
 
     </div>
