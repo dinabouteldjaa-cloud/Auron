@@ -1,4 +1,5 @@
 import { searchFoods, LOCAL_DB } from '../lib/foodSearch.js'
+import { toUserDateStr } from '../lib/dateUtils.js'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { askMealSuggestion, estimateMealFromDescription } from '../lib/claude'
