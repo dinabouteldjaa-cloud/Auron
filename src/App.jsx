@@ -9,6 +9,7 @@ import TodayTab from './components/TodayTab'
 import ProfileTab from './components/ProfileTab'
 import CaloriesTab from './components/CaloriesTab'
 import MedicationTab from './components/MedicationTab'
+import ProgressTab from './components/ProgressTab'
 import Auth from './components/Auth'
 
 // ── SVG tab icons ────────────────────────────────────────────
@@ -178,6 +179,9 @@ export default function App() {
         onOpenMeds={() => setTab('medication')}
         onDateChange={setViewDate}
       />
+    ),
+    workouts: (
+      <ProgressTab userId={uid} profile={profile} />
     ),
     calories: (
       <CaloriesTab userId={uid} profile={profile} preferences={preferences} lang={lang} />
