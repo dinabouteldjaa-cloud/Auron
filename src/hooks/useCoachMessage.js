@@ -7,23 +7,53 @@ const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
 // Returns one of the AURON_IMAGES keys based on the full context
 // ─────────────────────────────────────────────────────────────
 export function getAuronMoodFromContext(ctx) {
-  const { isToday, totalCal, calorieGoal, streakDays, workoutDone,
-          proteinPct, waterPct, missedMeds, hour } = ctx
+  const {
+    isToday, totalCal, calorieGoal, streakDays, workoutDone,
+    proteinPct, waterPct, missedMeds, pendingMeds, hour,
+  } = ctx
 
-  if (!isToday)                          return 'mindset'
-  if (missedMeds > 0)                    return 'concerned'
-  if (totalCal > calorieGoal * 1.1)      return 'concerned'
-  if (streakDays >= 7)                   return 'celebrating'
-  if (workoutDone && totalCal > 0 && proteinPct >= 80 && waterPct >= 80) return 'happy'
-  if (workoutDone && totalCal > 0)       return 'happy'
-  if (workoutDone)                       return 'workout'
-  if (streakDays >= 3 && streakDays < 7) return 'habit'
-  if (streakDays >= 1)                   return 'motivating'
-  if (totalCal === 0 && hour < 10)       return 'greeting'
-  if (totalCal === 0 && hour >= 10)      return 'concerned'
-  if (hour >= 20 && totalCal > 0)        return 'resting'
-  if (waterPct < 50 && hour >= 14)       return 'concerned'
-  if (proteinPct < 40 && hour >= 16)     return 'thinking'
+  // Past day — always mindset
+  if (!isToday) return 'mindset'
+
+  const overCalories  = totalCal > calorieGoal * 1.05   // >5% over goal
+  const hasLoggedFood = totalCal > 0
+  const pastMedTime   = pendingMeds > 0                  // any med still pending
+
+  // ── Concerned — highest priority negative states ──────────
+  if (overCalories && hour >= 18) return 'concerned'     // over calories in evening
+  if (overCalories && hour >= 12) return 'concerned'     // over calories after noon
+  if (pastMedTime  && hour >= 12) return 'concerned'     // past noon and meds not taken
+  if (waterPct < 30 && hour >= 16) return 'concerned'    // very low water late afternoon
+
+  // ── Celebrating — milestone ───────────────────────────────
+  if (streakDays >= 7) return 'celebrating'
+
+  // ── Happy — everything going well ────────────────────────
+  if (workoutDone && hasLoggedFood && proteinPct >= 80 && waterPct >= 80) return 'happy'
+  if (workoutDone && hasLoggedFood && !overCalories) return 'happy'
+
+  // ── Workout — exercised but not much else ─────────────────
+  if (workoutDone && !hasLoggedFood) return 'workout'
+
+  // ── Thinking — specific nutritional nudge ─────────────────
+  if (proteinPct < 40 && hour >= 16 && hasLoggedFood) return 'thinking'
+  if (waterPct < 50   && hour >= 14) return 'thinking'
+
+  // ── Habit — building consistency ─────────────────────────
+  if (streakDays >= 3) return 'habit'
+
+  // ── Motivating — early streak or mild progress ────────────
+  if (streakDays >= 1) return 'motivating'
+
+  // ── Greeting — fresh morning ─────────────────────────────
+  if (!hasLoggedFood && hour < 10) return 'greeting'
+
+  // ── Concerned — nothing logged late in day ────────────────
+  if (!hasLoggedFood && hour >= 10) return 'concerned'
+
+  // ── Resting — evening with food logged ───────────────────
+  if (hour >= 20 && hasLoggedFood) return 'resting'
+
   return 'happy'
 }
 
