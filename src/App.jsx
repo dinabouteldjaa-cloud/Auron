@@ -117,7 +117,11 @@ export default function App() {
   const uid = session?.user?.id
   const { profile,     updateProfile     } = useProfile(uid)
   const { preferences, updatePreferences } = usePreferences(uid)
-  const { medications, takenCount, missedCount, nextMed, markTaken, getStatusForMed } = useMedications(uid, profile?.timezone)
+
+  // selectedDate shared between TodayTab and useMedications so med card reflects the right day
+  const [viewDate, setViewDate] = useState(null) // null = today
+
+  const { medications, takenCount, missedCount, nextMed, markTaken, getStatusForMed } = useMedications(uid, profile?.timezone, viewDate)
 
   const hour = new Date().getHours()
   const greeting = hour < 5 ? t('greeting.late') : hour < 12 ? t('greeting.morning') : hour < 17 ? t('greeting.afternoon') : t('greeting.evening')
@@ -172,6 +176,7 @@ export default function App() {
         missedCount={missedCount} nextMed={nextMed}
         markTaken={markTaken} getStatusForMed={getStatusForMed}
         onOpenMeds={() => setTab('medication')}
+        onDateChange={setViewDate}
       />
     ),
     calories: (
