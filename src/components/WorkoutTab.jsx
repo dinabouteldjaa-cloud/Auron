@@ -1254,12 +1254,13 @@ export default function WorkoutTab({ userId, profile }) {
   const timezone = profile?.timezone
   const today    = toUserDateStr(timezone)
 
-  const [tab,         setTab]         = useState('library')
-  const [session,     setSession]     = useState(null)
-  const [logs,        setLogs]        = useState([])
-  const [logsLoading, setLogsLoading] = useState(true)
-  const [preloadPlan, setPreloadPlan] = useState(null)
-  const [showBuilder, setShowBuilder] = useState(false)
+  const [tab,          setTab]          = useState('library')
+  const [session,      setSession]      = useState(null)
+  const [logs,         setLogs]         = useState([])
+  const [logsLoading,  setLogsLoading]  = useState(true)
+  const [preloadPlan,  setPreloadPlan]  = useState(null)
+  const [showBuilder,  setShowBuilder]  = useState(false)
+  const [planRefreshKey, setPlanRefreshKey] = useState(0)
 
   useEffect(() => { fetchLogs() }, [userId])
 
@@ -1315,10 +1316,15 @@ export default function WorkoutTab({ userId, profile }) {
             <AuronWorkoutBuilder
               userId={userId}
               onClose={() => setShowBuilder(false)}
-              onPlanSaved={() => { setShowBuilder(false); setTab('plans') }}
+              onPlanSaved={() => {
+                setShowBuilder(false)
+                // Force MyPlansTab to refetch by remounting with key
+                setPreloadPlan(prev => prev) // no-op, refetch handled inside MyPlansTab via planRefreshKey
+                setPlanRefreshKey(k => k + 1)
+              }}
             />
           )}
-          <MyPlansTab userId={userId}
+          <MyPlansTab key={planRefreshKey} userId={userId}
             onStartPlan={plan => setSession({ ...plan, fromLibrary: false })}
             preloadPlan={preloadPlan}
             onPreloadConsumed={() => setPreloadPlan(null)}
