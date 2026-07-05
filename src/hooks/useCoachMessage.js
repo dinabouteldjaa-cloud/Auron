@@ -1,13 +1,29 @@
+import { useRef, useMemo } from 'react'
+
 // ─────────────────────────────────────────────────────────────
 // useCoachMessage — Two-layer coaching system
-//
-// Layer 1: Expression — overall Auron emotion (8 states)
-// Layer 2: Message — multi-factor analysis, strengths first,
-//          then one improvement opportunity. Never single-metric.
+// Memoized so the message never flashes on re-render
 // ─────────────────────────────────────────────────────────────
 
-function pick(arr) {
-  return arr[Math.floor(Math.random() * arr.length)]
+// Seeded pick — same seed always returns same item, preventing flash on re-render
+function pick(arr, seed) {
+  const idx = Math.abs(seed) % arr.length
+  return arr[idx]
+}
+
+// Build a stable seed from the context so the same state → same message
+function buildSeed(ctx) {
+  return (
+    Math.floor((ctx.totalCal || 0) / 50) * 1 +
+    Math.floor((ctx.totalP   || 0) / 10) * 7 +
+    Math.floor((ctx.waterAmount || 0))   * 13 +
+    (ctx.workoutDone ? 17 : 0) +
+    (ctx.streakDays  || 0) * 3 +
+    (ctx.pendingMeds || 0) * 11 +
+    (ctx.foodLogsCount || 0) * 5 +
+    Math.floor((ctx.steps || 0) / 1000) * 19 +
+    (ctx.hour || 0) * 2
+  )
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -188,7 +204,7 @@ function getTopGap(ctx, lang) {
 // ─────────────────────────────────────────────────────────────
 // Compose the final message
 // ─────────────────────────────────────────────────────────────
-function buildMessage(mood, ctx, lang) {
+function buildMessage(mood, ctx, lang, seed) {
   const { firstName: name, hour, streakDays,
           totalCal, calorieGoal, workoutDone, workoutMinutes,
           waterPct, waterGoal, waterAmount, waterUnit,
@@ -219,33 +235,33 @@ function buildMessage(mood, ctx, lang) {
           `Bonjour ${hi} ! Nouvelle journée, nouvelles opportunités. Commencez par enregistrer votre petit-déjeuner.`,
           `${n}la journée commence ! Vous avez ${calorieGoal} kcal pour aujourd'hui — faites-en quelque chose.`,
           `Bonjour ${hi} ! C'est parti pour une nouvelle journée — premier repas, premier pas.`,
-        ])
+        ], seed)
 
       case 'happy':
         if (gap)
           return pick([
             `${strengthPhrase.charAt(0).toUpperCase() + strengthPhrase.slice(1)} — belle journée ${hi}. ${gap.charAt(0).toUpperCase() + gap.slice(1)}.`,
             `${n}${strengthPhrase}. Tout est bon. ${gap.charAt(0).toUpperCase() + gap.slice(1)}.`,
-          ])
+          ], seed)
         return pick([
           `Excellente journée ${hi} — ${strengthPhrase}. Continuez comme ça.`,
           `${n}tout est aligné : ${strengthPhrase}. C'est ça la régularité.`,
           `Belle journée ${hi}. ${strengthPhrase}. Vous pouvez être fier(e).`,
-        ])
+        ], seed)
 
       case 'celebrating':
         return pick([
           `${streakDays} jours d'affilée ${hi} ! ${strengthPhrase}. C'est une vraie transformation.`,
           `Incroyable ${hi} — ${streakDays} jours sans interruption et ${strengthPhrase}. Ne vous arrêtez pas !`,
           `${n}${streakDays} jours ! ${strengthPhrase}. La plupart des gens ont déjà abandonné.`,
-        ])
+        ], seed)
 
       case 'concerned':
         return pick([
           `${n}${gap}.${strengths.length > 0 ? ` Par ailleurs, ${strengthPhrase}.` : ''}`,
           `Attention ${hi} — ${gap}.${strengths.length > 0 ? ` Côté positif : ${strengthPhrase}.` : ''}`,
           `${n}point important : ${gap}.${strengths.length > 0 ? ` Le reste se passe bien : ${strengthPhrase}.` : ''}`,
-        ])
+        ], seed)
 
       case 'workout':
         if (gap)
@@ -253,57 +269,57 @@ function buildMessage(mood, ctx, lang) {
             `${n}${strengthPhrase}. La récupération est la prochaine priorité — ${gap}.`,
             `Belle séance ${hi}. Maintenant, ${gap}.`,
             `${n}séance terminée — bien joué. Pour la suite : ${gap}.`,
-          ])
+          ], seed)
         return pick([
           `${n}${strengthPhrase}. Continuez à nourrir votre récupération.`,
           `Séance enregistrée ${hi} ! ${strengthPhrase}. Maintenant reposez-vous bien.`,
-        ])
+        ], seed)
 
       case 'habit':
         if (gap)
           return pick([
             `${n}${strengthPhrase} — belle régularité. Pour peaufiner : ${gap}.`,
             `${streakDays} jours de suite ${hi}, avec ${strengthPhrase}. Petit point : ${gap}.`,
-          ])
+          ], seed)
         return pick([
           `${n}${strengthPhrase} et ${streakDays} jours de suite. Vous construisez de vraies habitudes.`,
           `Belle constance ${hi} — ${strengthPhrase}. Encore ${7 - streakDays > 0 ? 7 - streakDays : 1} jours pour une semaine complète.`,
-        ])
+        ], seed)
 
       case 'motivating':
         if (gap)
           return pick([
             `${n}${strengthPhrase}. Pour aller encore plus loin : ${gap}.`,
             `Bonne journée ${hi} — ${strengthPhrase}. Un dernier effort : ${gap}.`,
-          ])
+          ], seed)
         return pick([
           `${n}${strengthPhrase}. Vous avancez bien — continuez.`,
           `Bonne progression ${hi} — ${strengthPhrase}. Chaque jour compte.`,
-        ])
+        ], seed)
 
       case 'thinking':
         return pick([
           `${n}${strengthPhrase}. Cependant, ${gap}.`,
           `Bonne base ${hi} — ${strengthPhrase}. Point à améliorer : ${gap}.`,
           `${n}la journée avance bien avec ${strengthPhrase}. Mais ${gap}.`,
-        ])
+        ], seed)
 
       case 'resting':
         if (gap)
           return pick([
             `${n}${strengthPhrase} — bonne journée. Dernière chose : ${gap}.`,
             `Belle soirée ${hi}. ${strengthPhrase}. Avant de dormir : ${gap}.`,
-          ])
+          ], seed)
         return pick([
           `${n}${strengthPhrase}. Belle journée — reposez-vous bien.`,
           `Bonsoir ${hi}. ${strengthPhrase}. La récupération fait partie de la progression.`,
-        ])
+        ], seed)
 
       case 'mindset':
         return pick([
           `${n}vous regardez un jour passé. Chaque donnée est une leçon pour aujourd'hui.`,
           `Analyser le passé aide à progresser ${hi}. Qu'est-ce que vous pouvez améliorer aujourd'hui ?`,
-        ])
+        ], seed)
 
       default:
         return `${n}prêt(e) quand vous voulez. Commencez par enregistrer un repas.`
@@ -318,7 +334,7 @@ function buildMessage(mood, ctx, lang) {
         `${n}the day is just starting — you've got ${calorieGoal} kcal to work with. Make them count.`,
         `Morning ${hi}! Log your first meal and let's build on yesterday.`,
         `${n}new day, new opportunity. Start with breakfast and keep that streak going.`,
-      ])
+      ], seed)
 
     case 'happy':
       if (gap)
@@ -326,27 +342,27 @@ function buildMessage(mood, ctx, lang) {
           `${strengthPhrase.charAt(0).toUpperCase() + strengthPhrase.slice(1)} — great day ${hi}. One thing to note: ${gap}.`,
           `${n}${strengthPhrase}. Everything's looking good. Just a heads up: ${gap}.`,
           `Strong day ${hi} — ${strengthPhrase}. Worth mentioning: ${gap}.`,
-        ])
+        ], seed)
       return pick([
         `Excellent day ${hi} — ${strengthPhrase}. Keep this up.`,
         `${n}${strengthPhrase}. This is what a great day looks like.`,
         `Everything's aligned ${hi}: ${strengthPhrase}. You should feel good about today.`,
         `${n}you've nailed it — ${strengthPhrase}. This is consistency in action.`,
-      ])
+      ], seed)
 
     case 'celebrating':
       return pick([
         `${streakDays} days straight ${hi}! ${strengthPhrase}. Most people quit long before this.`,
         `${n}${streakDays}-day streak with ${strengthPhrase}. You're genuinely transforming your habits.`,
         `Incredible ${hi} — ${streakDays} days and ${strengthPhrase}. Don't stop now.`,
-      ])
+      ], seed)
 
     case 'concerned':
       return pick([
         `${n}${gap}.${strengths.length > 0 ? ` On the bright side: ${strengthPhrase}.` : ''}`,
         `Worth flagging ${hi}: ${gap}.${strengths.length > 0 ? ` Good news: ${strengthPhrase}.` : ''}`,
         `${n}important: ${gap}.${strengths.length > 0 ? ` Everything else is going well — ${strengthPhrase}.` : ''}`,
-      ])
+      ], seed)
 
     case 'workout':
       if (gap)
@@ -355,12 +371,12 @@ function buildMessage(mood, ctx, lang) {
           `Nice work ${hi} — ${strengthPhrase}. Next up: ${gap}.`,
           `${n}session done — well earned. One more thing: ${gap}.`,
           `Great effort ${hi}. ${strengthPhrase}. To round out the day: ${gap}.`,
-        ])
+        ], seed)
       return pick([
         `${n}${strengthPhrase}. Keep fuelling your recovery well.`,
         `Session logged ${hi}! ${strengthPhrase}. Rest up and come back strong.`,
         `${n}${strengthPhrase}. Strong day — your body will thank you tomorrow.`,
-      ])
+      ], seed)
 
     case 'habit':
       if (gap)
@@ -368,12 +384,12 @@ function buildMessage(mood, ctx, lang) {
           `${n}${strengthPhrase} — solid consistency. One thing to tighten up: ${gap}.`,
           `${streakDays} days straight ${hi}, with ${strengthPhrase}. Small note: ${gap}.`,
           `${n}${strengthPhrase} and a ${streakDays}-day streak. Just watch: ${gap}.`,
-        ])
+        ], seed)
       return pick([
         `${n}${strengthPhrase} and ${streakDays} days straight. Real habits are forming.`,
         `Solid consistency ${hi} — ${strengthPhrase}. ${7 - streakDays > 0 ? (7 - streakDays) + ' more days for a full week.' : 'Full week achieved!'}`,
         `${n}${streakDays}-day streak with ${strengthPhrase}. You're in the zone now.`,
-      ])
+      ], seed)
 
     case 'motivating':
       if (gap)
@@ -381,12 +397,12 @@ function buildMessage(mood, ctx, lang) {
           `${n}${strengthPhrase}. To take it further: ${gap}.`,
           `Good progress ${hi} — ${strengthPhrase}. One push left: ${gap}.`,
           `${n}solid day building with ${strengthPhrase}. Worth working on: ${gap}.`,
-        ])
+        ], seed)
       return pick([
         `${n}${strengthPhrase}. You're moving in the right direction.`,
         `Good progress ${hi} — ${strengthPhrase}. Every day adds up.`,
         `${n}${strengthPhrase}. Keep showing up and the results will follow.`,
-      ])
+      ], seed)
 
     case 'thinking':
       return pick([
@@ -394,7 +410,7 @@ function buildMessage(mood, ctx, lang) {
         `Good base ${hi} — ${strengthPhrase}. One thing to improve: ${gap}.`,
         `${n}the day's going well with ${strengthPhrase}. But ${gap}.`,
         `Decent progress ${hi}. ${strengthPhrase}. Focus area: ${gap}.`,
-      ])
+      ], seed)
 
     case 'resting':
       if (gap)
@@ -402,12 +418,12 @@ function buildMessage(mood, ctx, lang) {
           `${n}${strengthPhrase} — good day overall. Before bed: ${gap}.`,
           `Good evening ${hi}. ${strengthPhrase}. One last thing: ${gap}.`,
           `${n}${strengthPhrase}. Wind down and rest — just note: ${gap}.`,
-        ])
+        ], seed)
       return pick([
         `${n}${strengthPhrase}. Great day — rest up and come back strong tomorrow.`,
         `Good evening ${hi}. ${strengthPhrase}. Recovery is part of the process.`,
         `${n}${strengthPhrase}. You've done the work today. Sleep well.`,
-      ])
+      ], seed)
 
     case 'mindset':
       return pick([
@@ -415,7 +431,7 @@ function buildMessage(mood, ctx, lang) {
         `Past data helps you improve ${hi}. What will you do differently today?`,
         `${n}reflection is powerful. Use what you see here to build better habits.`,
         `Analyzing your past ${hi} — good habit. Apply those insights right now.`,
-      ])
+      ], seed)
 
     default:
       return `${n}ready when you are. Log your first meal to get started.`
@@ -423,10 +439,17 @@ function buildMessage(mood, ctx, lang) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Public hook — instant, no API, two-layer system
+// Public hook — instant, memoized, no flash on re-render
 // ─────────────────────────────────────────────────────────────
 export function useCoachMessage(ctx, lang) {
-  if (!ctx || !ctx.mood) return { message: '', loading: false }
-  const message = buildMessage(ctx.mood, ctx, lang)
+  const seed = ctx ? buildSeed(ctx) : 0
+
+  // Memoize: only recompute when mood, seed, or lang changes
+  // This prevents the random pick from changing on every re-render
+  const message = useMemo(() => {
+    if (!ctx || !ctx.mood) return ''
+    return buildMessage(ctx.mood, ctx, lang, seed)
+  }, [ctx?.mood, seed, lang])
+
   return { message, loading: false }
 }
