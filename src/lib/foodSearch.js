@@ -1,14 +1,52 @@
-// ─────────────────────────────────────────────────────────────
-// foodSearch.js — Food search via USDA FoodData Central
-//
-// Open Food Facts removed — blocked by CORS in browsers.
-// USDA FoodData Central works fine from the browser (no CORS issues).
-// ─────────────────────────────────────────────────────────────
 
-const USDA_BASE = 'https://api.nal.usda.gov/fdc/v1'
-const USDA_KEY  = 'DEMO_KEY' // free tier: 30 req/hour. Get your key at fdc.nal.usda.gov/api-key-signup
+// ─── French food term mapping ───────────────────────────────
+// When searching in French, translate common terms to English for USDA
+const FR_TO_EN = {
+  'poulet':     'chicken',      'boeuf':      'beef',         'porc':       'pork',
+  'saumon':     'salmon',       'thon':       'tuna',         'oeuf':       'egg',
+  'oeufs':      'eggs',         'riz':        'rice',         'pâtes':      'pasta',
+  'pain':       'bread',        'beurre':     'butter',       'lait':       'milk',
+  'fromage':    'cheese',       'yaourt':     'yogurt',       'pomme':      'apple',
+  'banane':     'banana',       'orange':     'orange',       'fraise':     'strawberry',
+  'tomate':     'tomato',       'salade':     'salad',        'carotte':    'carrot',
+  'brocoli':    'broccoli',     'avocat':     'avocado',      'amande':     'almond',
+  'noix':       'walnut',       'arachide':   'peanut',       'lentilles':  'lentils',
+  'pois chiche':'chickpeas',    'haricots':   'beans',        'épinards':   'spinach',
+  'patate douce':'sweet potato','quinoa':     'quinoa',       'avoine':     'oats',
+  'chocolat':   'chocolate',    'café':       'coffee',       'eau':        'water',
+  'jus':        'juice',        'yaourt grec':'greek yogurt', 'crème':      'cream',
+  'crevettes':  'shrimp',       'saumon fumé':'smoked salmon','dinde':      'turkey',
+  'agneau':     'lamb',         'veau':       'veal',         'canard':     'duck',
+  'feta':       'feta',         'mozzarella': 'mozzarella',   'parmesan':   'parmesan',
+  'concombre':  'cucumber',     'courgette':  'zucchini',     'aubergine':  'eggplant',
+  'poivron':    'bell pepper',  'champignon': 'mushroom',     'oignon':     'onion',
+  'ail':        'garlic',       'citron':     'lemon',        'mangue':     'mango',
+  'ananas':     'pineapple',    'raisin':     'grape',        'poire':      'pear',
+  'pêche':      'peach',        'cerise':     'cherry',       'framboise':  'raspberry',
+  'myrtille':   'blueberry',    'kiwi':       'kiwi',         'pastèque':   'watermelon',
+  'melon':      'melon',        'noix de coco':'coconut',     'dattes':     'dates',
+  'figues':     'figs',         'pruneaux':   'prunes',
+  // Arabic/Middle Eastern (common in Qatar)
+  'shawarma':   'shawarma',     'falafel':    'falafel',      'houmous':    'hummus',
+  'tabboulé':   'tabbouleh',    'kebab':      'kebab',        'pita':       'pita bread',
+}
 
-export async function searchUSDA(query, limit = 25) {
+function translateQuery(query, lang) {
+  if (lang !== 'fr') return query
+  const lower = query.toLowerCase().trim()
+  // Direct match
+  if (FR_TO_EN[lower]) return FR_TO_EN[lower]
+  // Partial match
+  for (const [fr, en] of Object.entries(FR_TO_EN)) {
+    if (lower.includes(fr)) return lower.replace(fr, en)
+  }
+  return query // fallback: search as-is (USDA often understands French food names)
+}
+
+ // free tier: 30 req/hour. Get your key at fdc.nal.usda.gov/api-key-signup
+
+export async function searchUSDA(query, limit = 25, lang = 'en') {
+  query = translateQuery(query, lang)
   try {
     const res = await fetch(
       `${USDA_BASE}/foods/search?query=${encodeURIComponent(query)}&pageSize=${limit}&api_key=${USDA_KEY}&dataType=Foundation,SR%20Legacy,Survey%20(FNDDS)`,
@@ -43,15 +81,56 @@ export async function searchUSDA(query, limit = 25) {
 }
 
 // Combined search — USDA first, local fallback if no results
-export async function searchFoods(query) {
+export async function searchFoods(query, lang = 'en') {
   if (!query || query.trim().length < 2) return LOCAL_DB.slice(0, 20)
 
-  const usda = await searchUSDA(query, 25)
+  // Translate French queries to English for USDA
+  const searchQuery = translateQuery(query)
+  const usda = await searchUSDA(searchQuery, 25)
   if (usda.length > 0) return usda
 
   // Fallback to local DB
-  return LOCAL_DB.filter(f => f.name.toLowerCase().includes(query.toLowerCase())).slice(0, 20)
+  // Search local DB with both original and translated query
+  const translated = translateQuery(query)
+  return LOCAL_DB.filter(f =>
+    f.name.toLowerCase().includes(query.toLowerCase()) ||
+    f.name.toLowerCase().includes(translated.toLowerCase())
+  ).slice(0, 20)
 }
+
+
+// ── French/Arabic local foods ────────────────────────────────
+export const LOCAL_DB_FR = [
+  { id:'fr1',  name:'Poulet grillé (100g)',           cal:165, p:31, c:0,  f:4,  fiber:0, sugar:0, sodium:74,  serving:'100g', source:'Local' },
+  { id:'fr2',  name:'Riz cuit (100g)',                cal:206, p:4,  c:45, f:0,  fiber:0, sugar:0, sodium:1,   serving:'100g', source:'Local' },
+  { id:'fr3',  name:'Pâtes cuites (100g)',            cal:158, p:6,  c:31, f:1,  fiber:2, sugar:0, sodium:1,   serving:'100g', source:'Local' },
+  { id:'fr4',  name:'Pain complet (1 tranche)',       cal:81,  p:4,  c:14, f:1,  fiber:2, sugar:2, sodium:146, serving:'38g',  source:'Local' },
+  { id:'fr5',  name:'Yaourt grec nature (150g)',      cal:100, p:17, c:6,  f:1,  fiber:0, sugar:6, sodium:60,  serving:'150g', source:'Local' },
+  { id:'fr6',  name:'Oeuf entier (1 gros)',           cal:72,  p:6,  c:0,  f:5,  fiber:0, sugar:0, sodium:71,  serving:'50g',  source:'Local' },
+  { id:'fr7',  name:'Saumon (100g)',                  cal:208, p:20, c:0,  f:13, fiber:0, sugar:0, sodium:59,  serving:'100g', source:'Local' },
+  { id:'fr8',  name:'Thon en boîte (100g)',           cal:116, p:26, c:0,  f:1,  fiber:0, sugar:0, sodium:320, serving:'100g', source:'Local' },
+  { id:'fr9',  name:'Avocat (demi)',                  cal:120, p:1,  c:6,  f:11, fiber:5, sugar:0, sodium:5,   serving:'68g',  source:'Local' },
+  { id:'fr10', name:'Fromage blanc (100g)',           cal:80,  p:8,  c:4,  f:3,  fiber:0, sugar:4, sodium:45,  serving:'100g', source:'Local' },
+  { id:'fr11', name:'Amandes (30g)',                  cal:174, p:6,  c:6,  f:15, fiber:4, sugar:1, sodium:0,   serving:'30g',  source:'Local' },
+  { id:'fr12', name:'Banane (1 moyenne)',             cal:105, p:1,  c:27, f:0,  fiber:3, sugar:14,sodium:1,   serving:'118g', source:'Local' },
+  { id:'fr13', name:'Pomme (1 moyenne)',              cal:95,  p:0,  c:25, f:0,  fiber:4, sugar:19,sodium:2,   serving:'182g', source:'Local' },
+  { id:'fr14', name:"Flocons d'avoine (50g)",        cal:188, p:6,  c:32, f:4,  fiber:5, sugar:1, sodium:2,   serving:'50g',  source:'Local' },
+  { id:'fr15', name:'Lait entier (250ml)',            cal:149, p:8,  c:12, f:8,  fiber:0, sugar:12,sodium:107, serving:'250ml',source:'Local' },
+  { id:'fr16', name:'Beurre de cacahuète (2 c. à s.)',cal:188,p:8,  c:6,  f:16, fiber:2, sugar:3, sodium:152, serving:'32g',  source:'Local' },
+  { id:'fr17', name:'Lentilles cuites (100g)',        cal:116, p:9,  c:20, f:0,  fiber:8, sugar:2, sodium:2,   serving:'100g', source:'Local' },
+  { id:'fr18', name:'Pois chiches cuits (100g)',      cal:164, p:9,  c:27, f:3,  fiber:8, sugar:5, sodium:7,   serving:'100g', source:'Local' },
+  { id:'fr19', name:'Quinoa cuit (100g)',             cal:222, p:8,  c:39, f:4,  fiber:5, sugar:2, sodium:13,  serving:'100g', source:'Local' },
+  { id:'fr20', name:'Patate douce (150g)',            cal:130, p:3,  c:30, f:0,  fiber:4, sugar:6, sodium:41,  serving:'150g', source:'Local' },
+  // Arabic/Qatari foods
+  { id:'ar1',  name:'Shawarma poulet (250g)',         cal:430, p:28, c:42, f:16, fiber:3, sugar:4, sodium:820, serving:'250g', source:'Local' },
+  { id:'ar2',  name:'Falafel (3 pièces)',             cal:222, p:9,  c:22, f:12, fiber:5, sugar:2, sodium:390, serving:'90g',  source:'Local' },
+  { id:'ar3',  name:'Houmous (2 c. à s.)',            cal:70,  p:2,  c:6,  f:5,  fiber:2, sugar:0, sodium:142, serving:'30g',  source:'Local' },
+  { id:'ar4',  name:'Tabboulé (100g)',                cal:107, p:2,  c:12, f:6,  fiber:3, sugar:2, sodium:180, serving:'100g', source:'Local' },
+  { id:'ar5',  name:'Pain pita (1 pièce)',            cal:165, p:5,  c:33, f:1,  fiber:1, sugar:1, sodium:322, serving:'60g',  source:'Local' },
+  { id:'ar6',  name:'Labneh (2 c. à s.)',             cal:60,  p:4,  c:3,  f:4,  fiber:0, sugar:2, sodium:200, serving:'30g',  source:'Local' },
+  { id:'ar7',  name:'Kebab agneau (200g)',            cal:420, p:30, c:5,  f:32, fiber:1, sugar:2, sodium:580, serving:'200g', source:'Local' },
+  { id:'ar8',  name:'Makbous poulet (400g)',          cal:620, p:36, c:68, f:18, fiber:4, sugar:4, sodium:700, serving:'400g', source:'Local' },
+]
 
 // ── Local fallback DB — common foods, instant results ────────
 export const LOCAL_DB = [
