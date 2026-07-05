@@ -483,33 +483,17 @@ function MealsSection({ foodLogs, isToday }) {
 // ─────────────────────────────────────────────────────────────
 function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday, onOpenWorkout }) {
   const { t } = useTranslation()
-  const DAYS = getDays(t)
-  const dayName  = DAYS[new Date(selectedDate + 'T00:00:00').getDay()]
-  const dayIndex = DAYS.indexOf(dayName)
 
-  // Parse structured planned workout from schedule JSONB
-  const plannedEntries = savedPlans.flatMap(plan => {
-    if (!plan.chosen_days || !plan.schedule) return []
-    const chosen = plan.chosen_days || []
-    if (!chosen.includes(dayIndex)) return []
-    const entry = plan.schedule[String(dayIndex)]
-    if (!entry) return []
-    return [{ planTitle: plan.title, ...entry }]
+  // Map JS getDay() (0=Sun) to our day keys
+  const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat']
+  const dayKey = DAY_KEYS[new Date(selectedDate + 'T12:00:00').getDay()]
+
+  // Plans scheduled for today using new schedule.days format
+  const scheduledToday = savedPlans.filter(plan => {
+    if (!plan.schedule?.days?.length) return false
+    return plan.schedule.days.includes(dayKey)
   })
 
-  // Fallback: text-based match if old plan format
-  const textEntries = savedPlans.flatMap(plan => {
-    if (plan.chosen_days?.length) return []   // already handled above
-    if (!plan.content) return []
-    const lines = plan.content.split('\n').map(l => l.trim()).filter(Boolean)
-    const match = lines.find(l =>
-      l.toLowerCase().includes(dayName.toLowerCase()) ||
-      new RegExp(`day\\s*${dayIndex + 1}\\b`, 'i').test(l)
-    )
-    return match ? [{ planTitle: plan.title, name: match, exercises: [] }] : []
-  })
-
-  const allPlanned = [...plannedEntries, ...textEntries]
   const totalCalBurned = workoutLogs.reduce((s, w) => s + (w.calories_burned  || 0), 0)
   const totalMinutes   = workoutLogs.reduce((s, w) => s + (w.duration_minutes || 0), 0)
 
@@ -524,65 +508,35 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday, onOpen
         )}
       </div>
 
-      {allPlanned.map((p, i) => {
-        const isRest = (p.name || '').toLowerCase().includes('rest')
-        return (
-          <div
-            key={i}
-            style={{
-              borderRadius: 16, marginBottom: 10, overflow: 'hidden',
-              border: `1px solid ${isRest ? C.border : C.purple + '55'}`,
-              background: isRest ? C.surfaceLight : `linear-gradient(135deg, ${C.purple}18 0%, ${C.surface} 100%)`,
-            }}
-          >
-            <div style={{ padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 13, flexShrink: 0,
-                background: isRest ? C.surfaceLight : C.purple + '28',
-                border: `1px solid ${isRest ? C.border : C.purple + '44'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-              }}>
-                {isRest ? '🛌' : '💪'}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 10, color: C.purple, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>
-                  Planned · {p.planTitle}
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{p.name || dayName}</div>
-                {p.exercises?.length > 0 && (
-                  <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>{p.exercises.length} exercises</div>
-                )}
-              </div>
-              {!isRest && p.exercises?.length > 0 && (
-                <Pill color={C.purple} bg={C.purple + '22'}>{p.exercises.length} ex</Pill>
-              )}
+      {/* Scheduled plans for today */}
+      {scheduledToday.map((plan, i) => (
+        <div key={i} style={{ borderRadius: 16, marginBottom: 10, overflow: 'hidden', border: `1px solid ${C.purple}44`, background: `linear-gradient(135deg, ${C.purple}12 0%, ${C.surface} 100%)` }}>
+          <div style={{ padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, background: C.purple + '28', border: `1px solid ${C.purple}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+              💪
             </div>
-            {p.exercises?.length > 0 && !isRest && (
-              <div style={{ borderTop: `1px solid ${C.purple}22`, padding: '10px 16px 14px' }}>
-                {p.exercises.map((ex, j) => (
-                  <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: j < p.exercises.length - 1 ? `1px solid ${C.border}` : 'none' }}>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, background: C.purple + '28', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: C.purple }}>{j + 1}</div>
-                    <div style={{ fontSize: 13, color: C.text, flex: 1 }}>{typeof ex === 'string' ? ex : ex.name}</div>
-                    {ex.sets && <div style={{ fontSize: 11, color: C.textMuted }}>{ex.sets}×{ex.reps || ex.duration}</div>}
-                  </div>
-                ))}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 10, color: C.purple, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>
+                Scheduled today{plan.schedule?.time ? ` · ${plan.schedule.time}` : ''}
               </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{plan.name}</div>
+              <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>{plan.exercises?.length || 0} exercises</div>
+            </div>
+            {isToday && (
+              <button onClick={onOpenWorkout}
+                style={{ padding: '8px 14px', borderRadius: 12, background: C.purple, border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                Start
+              </button>
             )}
           </div>
-        )
-      })}
+        </div>
+      ))}
 
+      {/* Logged workouts */}
       {workoutLogs.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {workoutLogs.map(w => (
-            <div
-              key={w.id}
-              style={{
-                background: C.surface, border: `1px solid ${C.green}33`,
-                borderRadius: 14, padding: '13px 16px',
-                display: 'flex', alignItems: 'center', gap: 12,
-              }}
-            >
+            <div key={w.id} style={{ background: C.surface, border: `1px solid ${C.green}33`, borderRadius: 14, padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 42, height: 42, borderRadius: 12, background: C.greenLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>💪</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{w.workout_name}</div>
@@ -594,7 +548,7 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday, onOpen
             </div>
           ))}
         </div>
-      ) : (
+      ) : scheduledToday.length === 0 ? (
         <div style={{ background: C.surfaceLight, borderRadius: 14, padding: '22px 16px', textAlign: 'center', border: `1px dashed ${C.border}` }}>
           <div style={{ fontSize: 24, marginBottom: 8 }}>🏃</div>
           <div style={{ fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: isToday ? 14 : 4 }}>
@@ -606,7 +560,7 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday, onOpen
             </button>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -973,7 +927,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
     Promise.all([
       supabase.from('food_logs').select('*').eq('user_id', userId).eq('log_date', selectedDate),
       supabase.from('workout_logs').select('*').eq('user_id', userId).eq('log_date', selectedDate),
-      supabase.from('saved_plans').select('*').eq('user_id', userId).eq('is_active', true).limit(5),
+      supabase.from('workout_plans').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
       supabase.from('daily_stats').select('*').eq('user_id', userId).eq('log_date', selectedDate).maybeSingle(),
       supabase.from('water_logs').select('cups, amount_ml').eq('user_id', userId).eq('log_date', selectedDate).maybeSingle(),
     ]).then(([food, workout, plans, stats, water]) => {

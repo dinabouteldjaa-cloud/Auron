@@ -1179,6 +1179,75 @@ function WorkoutHistoryCard({ log, onDelete }) {
 }
 
 // ─────────────────────────────────────────────
+// Today workout tab — shows scheduled plans + logs
+// ─────────────────────────────────────────────
+function TodayWorkoutTab({ userId, timezone, today, logs, logsLoading, onStartEmpty, onStartPlan, onDelete }) {
+  const [plans,   setPlans]   = useState([])
+  const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat']
+  const todayKey = DAY_KEYS[new Date(today + 'T12:00:00').getDay()]
+
+  useEffect(() => {
+    if (!userId) return
+    supabase.from('workout_plans').select('*').eq('user_id', userId)
+      .then(({ data }) => setPlans(data || []))
+  }, [userId])
+
+  const scheduledToday = plans.filter(p => p.schedule?.days?.includes(todayKey))
+
+  return (
+    <div>
+      {/* Scheduled plans */}
+      {scheduledToday.length > 0 && (
+        <div style={{ marginBottom:16 }}>
+          <Label>Scheduled for today</Label>
+          {scheduledToday.map(plan => (
+            <div key={plan.id} style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.purple}44`, padding:'14px 16px', marginBottom:10, boxShadow:C.shadowCard }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10 }}>
+                <div style={{ width:44, height:44, borderRadius:13, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>📋</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{plan.name}</div>
+                  <div style={{ fontSize:12, color:C.purple }}>
+                    {plan.exercises?.length||0} exercises{plan.schedule?.time ? ` · ${plan.schedule.time}` : ''}
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => onStartPlan(plan)}
+                style={{ width:'100%', padding:'11px', borderRadius:12, background:C.purple, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>
+                ▶ Start now
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button onClick={onStartEmpty}
+        style={{ width:'100%', padding:16, borderRadius:20, background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:20, display:'flex', alignItems:'center', justifyContent:'center', gap:10, boxShadow:C.shadowStrong }}>
+        🏋️ Start empty workout
+      </button>
+
+      {logsLoading ? (
+        <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>Loading…</div>
+      ) : logs.length > 0 ? (
+        <>
+          <Label>Today's workouts</Label>
+          {logs.map(log => <WorkoutHistoryCard key={log.id} log={log} onDelete={onDelete} />)}
+        </>
+      ) : (
+        <Card style={{ textAlign:'center', padding:'32px 20px' }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>🏃</div>
+          <div style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:6 }}>
+            {scheduledToday.length > 0 ? 'Ready when you are!' : 'No workouts logged today'}
+          </div>
+          <div style={{ fontSize:13, color:C.textMuted }}>
+            {scheduledToday.length > 0 ? 'Tap "Start now" above to begin your scheduled workout.' : 'Browse the Library or your Plans to get started'}
+          </div>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────
 // Main WorkoutTab
 // ─────────────────────────────────────────────
 export default function WorkoutTab({ userId, profile }) {
@@ -1247,23 +1316,16 @@ export default function WorkoutTab({ userId, profile }) {
       )}
 
       {tab==='log' && (
-        <div>
-          <button onClick={() => setSession({ name:'', exercises:[], fromLibrary:false })}
-            style={{ width:'100%', padding:16, borderRadius:20, background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, border:'none', color:'#fff', fontSize:16, fontWeight:700, cursor:'pointer', marginBottom:20, display:'flex', alignItems:'center', justifyContent:'center', gap:10, boxShadow:C.shadowStrong }}>
-            🏋️ Start empty workout
-          </button>
-          {logsLoading ? <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>Loading…</div>
-            : logs.length > 0 ? (
-              <><Label>Today's workouts</Label>{logs.map(log=><WorkoutHistoryCard key={log.id} log={log} onDelete={deleteLog} />)}</>
-            ) : (
-              <Card style={{ textAlign:'center', padding:'32px 20px' }}>
-                <div style={{ fontSize:40, marginBottom:12 }}>🏃</div>
-                <div style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:6 }}>No workouts logged today</div>
-                <div style={{ fontSize:13, color:C.textMuted }}>Browse the Library or your Plans to get started</div>
-              </Card>
-            )
-          }
-        </div>
+        <TodayWorkoutTab
+          userId={userId}
+          timezone={timezone}
+          today={today}
+          logs={logs}
+          logsLoading={logsLoading}
+          onStartEmpty={() => setSession({ name:'', exercises:[], fromLibrary:false })}
+          onStartPlan={plan => setSession({ ...plan, fromLibrary: false })}
+          onDelete={deleteLog}
+        />
       )}
     </div>
   )
