@@ -307,7 +307,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 // Add food modal — live search via USDA + Open Food Facts
 // ─────────────────────────────────────────────
 function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescribe }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const MEAL_SLOTS = getMealSlotsNutrition(t)
   const [query,    setQuery]    = useState('')
   const [results,  setResults]  = useState(LOCAL_DB.slice(0, 20))
@@ -322,7 +322,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
     if (!query.trim()) { setResults(LOCAL_DB.slice(0, 20)); return }
     setLoading(true)
     debounceRef.current = setTimeout(async () => {
-      const res = await searchFoods(query)
+      const res = await searchFoods(query, lang)
       setResults(res)
       setLoading(false)
     }, 400)
@@ -432,16 +432,16 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
 
             {/* Search box */}
             <div style={{ position:'relative', marginBottom:12 }}>
-              <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t('cal.searchFood')} autoFocus
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t('food.searchPlaceholder')||t('cal.searchFood')} autoFocus
                 style={{ width:'100%', padding:'10px 14px 10px 38px', borderRadius:12, background:T.surfaceMid, border:`1px solid ${T.border}`, color:T.text, fontSize:14, outline:'none' }} />
               <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16 }}>🔍</span>
-              {loading && <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:11, color:T.purple }}>Searching…</span>}
+              {loading && <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:11, color:T.purple }}>{t('cal.loading')||'Searching…'}</span>}
             </div>
 
             {/* Source badge */}
             {query.length > 1 && !loading && (
               <div style={{ fontSize:11, color:T.textDim, marginBottom:8 }}>
-                {results.length} results · USDA + Open Food Facts
+                {results.length} {t('cal.resultsSource')||`${results.length} results · USDA`}
               </div>
             )}
 
@@ -474,10 +474,10 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
               )}
               {results.length > 0 && query.length > 1 && !loading && (
                 <div style={{ padding:'16px 0', textAlign:'center', borderTop:`1px solid ${T.divider}`, marginTop:8 }}>
-                  <div style={{ fontSize:12, color:T.textDim, marginBottom:10 }}>Can't find what you're looking for?</div>
+                  <div style={{ fontSize:12, color:T.textDim, marginBottom:10 }}>{t('food.cantFind')||"Can't find it?"}</div>
                   <button onClick={() => { onClose(); setTimeout(() => onDescribe?.(), 100) }}
                     style={{ padding:'9px 18px', borderRadius:20, background:T.purpleLight, border:`1px solid ${T.border}`, color:T.purple, fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                    ✨ Describe it — AI will estimate
+                    {t('food.describePrompt')||'✨ Describe it — AI will estimate'}
                   </button>
                 </div>
               )}

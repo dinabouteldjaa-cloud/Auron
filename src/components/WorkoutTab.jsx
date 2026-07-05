@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
+import { useTranslation } from '../lib/i18n.jsx'
 import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LEVEL_COLOR, getExercise } from '../lib/workoutData.js'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 
@@ -16,7 +17,7 @@ function Card({ children, style={} }) {
 function Label({ children }) {
   return <div style={{ fontSize:10.5, fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:12 }}>{children}</div>
 }
-function BackBtn({ onBack, label='Back' }) {
+function BackBtn({ onBack, label }) {
   return (
     <button onClick={onBack} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', color:C.textMuted, fontSize:14, cursor:'pointer', marginBottom:20, padding:0 }}>
       ‹ {label}
@@ -28,6 +29,7 @@ function BackBtn({ onBack, label='Back' }) {
 // How-to — no conditional return before hook
 // ─────────────────────────────────────────────
 function ExerciseHowTo({ name }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const data = getExercise(name)
   // Always render container but hide toggle if no data
@@ -36,7 +38,7 @@ function ExerciseHowTo({ name }) {
     <div style={{ marginTop:8, paddingLeft:0 }}>
       <button onClick={() => setOpen(o => !o)}
         style={{ background:'none', border:'none', color:C.purple, fontSize:12, fontWeight:600, cursor:'pointer', padding:0, display:'flex', alignItems:'center', gap:4 }}>
-        {open ? '▲ Hide how-to' : '▼ How to perform'}
+        {open ? t('workout.hideHowTo') : t('workout.howTo')}
       </button>
       {open && (
         <div style={{ marginTop:8, padding:'12px 14px', background:C.purpleLight, borderRadius:12 }}>
@@ -60,10 +62,11 @@ function ExerciseHowTo({ name }) {
 // Library tab — Sports → Workouts → Detail
 // ─────────────────────────────────────────────
 function LibraryTab({ onUseAsTemplate }) {
+  const { t } = useTranslation()
   const [sport,   setSport]   = useState(null)
   const [workout, setWorkout] = useState(null)
   const [search,  setSearch]  = useState('')
-  const [filter,  setFilter]  = useState('All') // All | Beginner | Intermediate | Advanced
+  const [filter,  setFilter]  = useState(t('workout.level.all')) // All | Beginner | Intermediate | Advanced
 
   // ── Workout detail ────────────────────────
   if (workout) {
@@ -101,11 +104,11 @@ function LibraryTab({ onUseAsTemplate }) {
 
         <button onClick={() => onUseAsTemplate({ ...workout, startNow:true })}
           style={{ width:'100%', padding:14, borderRadius:16, background:C.green, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:10 }}>
-          ▶ Start this workout now
+          {t('workout.startWorkoutNow')}
         </button>
         <button onClick={() => onUseAsTemplate({ ...workout, startNow:false })}
           style={{ width:'100%', padding:14, borderRadius:16, background:C.purpleLight, border:`1px solid ${C.purple}44`, color:C.purple, fontSize:15, fontWeight:700, cursor:'pointer' }}>
-          ✦ Save as my plan — edit first
+          {t('workout.saveAsTemplate')}
         </button>
       </div>
     )
@@ -114,7 +117,7 @@ function LibraryTab({ onUseAsTemplate }) {
   // ── Sport workouts list ───────────────────
   if (sport) {
     const s       = SPORTS.find(s => s.id === sport) || {}
-    const workouts = LIBRARY_WORKOUTS.filter(w => w.sport === sport && (filter === 'All' || w.level === filter))
+    const workouts = LIBRARY_WORKOUTS.filter(w => w.sport === sport && (filter === t('workout.level.all') || w.level === filter))
     return (
       <div>
         <BackBtn onBack={() => setSport(null)} />
@@ -124,14 +127,14 @@ function LibraryTab({ onUseAsTemplate }) {
         </div>
         {/* Level filter */}
         <div style={{ display:'flex', gap:6, marginBottom:16 }}>
-          {['All','Beginner','Intermediate','Advanced'].map(f => (
+          {[t('workout.level.all'),t('workout.level.beginner'),t('workout.level.intermediate'),t('workout.level.advanced')].map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{ padding:'6px 14px', borderRadius:20, fontSize:12, cursor:'pointer', border:`1px solid ${filter===f?C.purple:C.border}`, background:filter===f?C.purpleLight:'transparent', color:filter===f?C.purple:C.textMuted, fontWeight:filter===f?600:400 }}>
               {f}
             </button>
           ))}
         </div>
         {workouts.length === 0 ? (
-          <Card style={{ textAlign:'center', padding:'24px', color:C.textMuted }}>No {filter !== 'All' ? filter.toLowerCase() : ''} workouts in this category yet.</Card>
+          <Card style={{ textAlign:'center', padding:'24px', color:C.textMuted }}>No {filter !== t('workout.level.all') ? filter.toLowerCase() : ''} workouts in this category yet.</Card>
         ) : workouts.map(w => (
           <button key={w.id} onClick={() => setWorkout(w)}
             style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', marginBottom:10, boxShadow:C.shadowCard }}>
@@ -153,7 +156,7 @@ function LibraryTab({ onUseAsTemplate }) {
 
   // ── Sports grid with search ───────────────
   const allWorkouts = LIBRARY_WORKOUTS.filter(w =>
-    (filter === 'All' || w.level === filter) &&
+    (filter === t('workout.level.all') || w.level === filter) &&
     (search === '' || w.name.toLowerCase().includes(search.toLowerCase()) || w.muscles.toLowerCase().includes(search.toLowerCase()))
   )
   const showSearch = search.length > 0
@@ -163,11 +166,11 @@ function LibraryTab({ onUseAsTemplate }) {
       {/* Search + filter */}
       <div style={{ position:'relative', marginBottom:12 }}>
         <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16 }}>🔍</span>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workouts or muscles..."
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="{t('workout.searchPlaceholder')}"
           style={{ width:'100%', padding:'10px 14px 10px 38px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none' }} />
       </div>
       <div style={{ display:'flex', gap:6, marginBottom:16, overflowX:'auto' }}>
-        {['All','Beginner','Intermediate','Advanced'].map(f => (
+        {[t('workout.level.all'),t('workout.level.beginner'),t('workout.level.intermediate'),t('workout.level.advanced')].map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{ padding:'6px 14px', borderRadius:20, fontSize:12, cursor:'pointer', whiteSpace:'nowrap', border:`1px solid ${filter===f?C.purple:C.border}`, background:filter===f?C.purpleLight:'transparent', color:filter===f?C.purple:C.textMuted, fontWeight:filter===f?600:400 }}>
             {f}
           </button>
@@ -203,7 +206,7 @@ function LibraryTab({ onUseAsTemplate }) {
         <div>
           {SPORTS_CATEGORIES.map(cat => {
             const sportsInCat = cat.sports.filter(s => {
-              const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id && (filter==='All'||w.level===filter)).length
+              const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id && (filter===t('workout.level.all')||w.level===filter)).length
               return true // show all sports
             })
             return (
@@ -211,7 +214,7 @@ function LibraryTab({ onUseAsTemplate }) {
                 <Label>{cat.category}</Label>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
                   {sportsInCat.map(s => {
-                    const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id && (filter==='All'||w.level===filter)).length
+                    const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id && (filter===t('workout.level.all')||w.level===filter)).length
                     return (
                       <button key={s.id} onClick={() => setSport(s.id)}
                         style={{ padding:'14px 12px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:5 }}>
@@ -238,12 +241,12 @@ function LibraryTab({ onUseAsTemplate }) {
 // ─────────────────────────────────────────────
 function ExercisePickerModal({ onAdd, onClose }) {
   const [search,   setSearch]   = useState('')
-  const [category, setCategory] = useState('All')
+  const [category, setCategory] = useState(t('workout.level.all'))
   const all        = Object.entries(EXERCISES).map(([name, ex]) => ({ name, ...ex }))
-  const categories = ['All', ...new Set(all.map(e => e.category))]
+  const categories = [t('workout.level.all'), ...new Set(all.map(e => e.category))]
   const filtered   = search
     ? all.filter(e => e.name.toLowerCase().includes(search.toLowerCase()) || (e.muscles||'').toLowerCase().includes(search.toLowerCase()))
-    : category === 'All' ? all : all.filter(e => e.category === category)
+    : category === t('workout.level.all') ? all : all.filter(e => e.category === category)
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(26,26,46,0.6)', zIndex:300, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
@@ -253,7 +256,7 @@ function ExercisePickerModal({ onAdd, onClose }) {
           <div style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:12 }}>Add Exercise</div>
           <div style={{ position:'relative', marginBottom:10 }}>
             <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)' }}>🔍</span>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or muscle..." autoFocus
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="{t('workout.searchExPlaceholder')}" autoFocus
               style={{ width:'100%', padding:'10px 14px 10px 36px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none' }} />
           </div>
           {!search && (
@@ -298,6 +301,7 @@ const DAYS = [
 ]
 
 function PlanEditor({ plan, onSave, onCancel }) {
+  const { t } = useTranslation()
   const [name,       setName]       = useState(plan?.name || '')
   const [exercises,  setExercises]  = useState(
     (plan?.exercises || []).map(ex => ({
@@ -342,12 +346,12 @@ function PlanEditor({ plan, onSave, onCancel }) {
     <div>
       <BackBtn onBack={onCancel} />
       <div style={{ fontSize:20, fontWeight:700, color:C.text, marginBottom:20 }}>
-        {plan?.id ? 'Edit Plan' : 'New Plan'}
+        {plan?.id ? t('workout.editPlan') : t('workout.newPlan')}
       </div>
 
       {/* Name */}
       <div style={{ marginBottom:16 }}>
-        <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>Plan name *</div>
+        <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>{t('workout.planName')}</div>
         <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. My Push Day"
           style={{ width:'100%', padding:'11px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:15, fontWeight:600, outline:'none' }} />
       </div>
@@ -395,8 +399,8 @@ function PlanEditor({ plan, onSave, onCancel }) {
 
       {/* Notes */}
       <div style={{ marginBottom:20 }}>
-        <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>Plan notes</div>
-        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Optional..."
+        <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>{t('workout.planNotes')}</div>
+        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder={t('workout.optional')}
           style={{ width:'100%', padding:'10px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', lineHeight:1.5 }} />
       </div>
 
@@ -404,9 +408,9 @@ function PlanEditor({ plan, onSave, onCancel }) {
       <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.divider}`, padding:'16px', marginBottom:20 }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: schedEnabled ? 16 : 0 }}>
           <div>
-            <div style={{ fontSize:14, fontWeight:700, color:C.text }}>📅 Schedule</div>
+            <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{t('workout.scheduleTitle')}</div>
             <div style={{ fontSize:11, color:C.textMuted, marginTop:2 }}>
-              {schedEnabled ? 'Workout scheduled for specific days' : 'Save as template only — no schedule'}
+              {schedEnabled ? t('workout.scheduleEnabled') : t('workout.scheduleDisabled')}
             </div>
           </div>
           {/* Toggle */}
@@ -433,16 +437,16 @@ function PlanEditor({ plan, onSave, onCancel }) {
                 })}
               </div>
               {schedDays.length === 0 && (
-                <div style={{ fontSize:11, color:C.red, marginTop:6 }}>Select at least one day</div>
+                <div style={{ fontSize:11, color:C.red, marginTop:6 }}>{t('workout.selectAtLeastOne')}</div>
               )}
             </div>
 
             {/* Time picker */}
             <div>
-              <div style={{ fontSize:12, color:C.textMuted, fontWeight:500, marginBottom:8 }}>Time (optional)</div>
+              <div style={{ fontSize:12, color:C.textMuted, fontWeight:500, marginBottom:8 }}>{t('workout.scheduleTime')}</div>
               <input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)}
                 style={{ padding:'10px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:15, fontWeight:600, outline:'none', cursor:'pointer' }} />
-              <div style={{ fontSize:11, color:C.textDim, marginTop:6 }}>Leave blank to skip time reminder</div>
+              <div style={{ fontSize:11, color:C.textDim, marginTop:6 }}>{t('workout.scheduleTimeHint')}</div>
             </div>
           </>
         )}
@@ -450,7 +454,7 @@ function PlanEditor({ plan, onSave, onCancel }) {
 
       <button onClick={handleSave} disabled={!canSave}
         style={{ width:'100%', padding:14, borderRadius:16, background:canSave?C.purple:C.surfaceMid, border:'none', color:canSave?'#fff':C.textDim, fontSize:15, fontWeight:700, cursor:canSave?'pointer':'default' }}>
-        {plan?.id ? 'Save changes' : 'Create plan'}
+        {plan?.id ? t('workout.saveChanges') : t('workout.createPlan2')}
       </button>
 
       {showPicker && <ExercisePickerModal onAdd={addEx} onClose={() => setShowPicker(false)} />}
@@ -462,6 +466,7 @@ function PlanEditor({ plan, onSave, onCancel }) {
 // My Plans tab
 // ─────────────────────────────────────────────
 function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBuildWithAuron }) {
+  const { t } = useTranslation()
   const [plans,   setPlans]   = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
@@ -512,11 +517,11 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBui
     <div>
       <button onClick={() => setEditing('new')}
         style={{ width:'100%', padding:14, borderRadius:16, background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:10, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-        ✦ Create new plan
+        {t('workout.createPlan')}
       </button>
       <button onClick={onBuildWithAuron}
         style={{ width:'100%', padding:14, borderRadius:16, background:C.surface, border:`2px solid ${C.purple}`, color:C.purple, fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:20, display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:C.shadowCard }}>
-        ✨ Build with Coach Auron
+        {t('workout.buildWithAuron')}
       </button>
       {loading ? (
         <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>Loading…</div>
@@ -599,6 +604,7 @@ function RestTimer({ duration, onDone }) {
 // Number input sheet — slides up from bottom
 // ─────────────────────────────────────────────
 function NumberSheet({ label, value, onConfirm, onClose }) {
+  const { t } = useTranslation()
   const [val, setVal] = useState(String(value || ''))
   return (
     <div style={{ position:'fixed', inset:0, zIndex:400, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.4)' }}
@@ -768,7 +774,7 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration }) {
           ))}
           <button onClick={addSet}
             style={{ width:'100%', padding:'9px', marginTop:6, borderRadius:10, background:C.surfaceMid, border:`1px dashed ${C.border}`, color:C.textMuted, fontSize:13, fontWeight:500, cursor:'pointer' }}>
-            + Add set
+            {t('workout.addSet')}
           </button>
         </div>
 
@@ -785,6 +791,7 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration }) {
 // Fullscreen exercise view
 // ─────────────────────────────────────────────
 function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTogglePause, onSetDone, onPrev, onNext, onFinish, restSecs, saving, fmt, isLast }) {
+  const { t } = useTranslation()
   const data      = getExercise(exercise.name)
   const timed     = data.timed || exercise.timed
   const set       = exercise.sets[setIdx]
@@ -833,7 +840,7 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
         </button>
         <div style={{ fontSize:15, fontWeight:700, color:C.purple, fontVariantNumeric:'tabular-nums' }}>{fmt(elapsed)}</div>
         <button onClick={onTogglePause} style={{ background:C.purpleLight, border:'none', borderRadius:10, padding:'6px 14px', color:C.purple, fontSize:13, fontWeight:600, cursor:'pointer' }}>
-          {paused ? '▶ Resume' : '⏸ Pause'}
+          {paused ? t('workout.resume') : t('workout.pause')}
         </button>
       </div>
 
@@ -927,7 +934,7 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
       <div style={{ padding:'12px 20px 32px', background:C.pageBg||'#F0EFF8', borderTop:`1px solid ${C.divider}`, flexShrink:0 }}>
         <button onClick={handleDone}
           style={{ width:'100%', padding:'18px', borderRadius:20, background:`linear-gradient(135deg, ${C.green}, #1aad6b)`, border:'none', color:'#fff', fontSize:18, fontWeight:800, cursor:'pointer', letterSpacing:'0.02em', boxShadow:`0 6px 24px ${C.green}44` }}>
-          {isLast && setIdx === totalSets - 1 ? '🏁 Finish workout' : '✓ Done'}
+          {isLast && setIdx === totalSets - 1 ? t('workout.finishWorkout') : t('workout.doneMark')}
         </button>
         {/* Skip */}
         {!(isLast && setIdx === totalSets - 1) && (
@@ -945,6 +952,7 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
 // Active session — orchestrates fullscreen flow
 // ─────────────────────────────────────────────
 function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
+  const { t } = useTranslation()
   const fromLibrary = !!plan?.fromLibrary
 
   const initExercises = () => (plan?.exercises || []).map(ex => {
@@ -1054,11 +1062,11 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
 
         {/* Rest setting */}
         <div style={{ background:C.surface, borderRadius:14, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-          <span style={{ fontSize:13, color:C.textMuted, marginRight:4 }}>⏱ Rest between sets</span>
+          <span style={{ fontSize:13, color:C.textMuted, marginRight:4 }}>{t('workout.restBetween')}</span>
           {[0,30,45,60,90,120].map(s => (
             <button key={s} onClick={() => setRestSecs(s)}
               style={{ padding:'5px 12px', borderRadius:20, fontSize:12, cursor:'pointer', border:`1px solid ${restSecs===s?C.purple:C.border}`, background:restSecs===s?C.purpleLight:'transparent', color:restSecs===s?C.purple:C.textMuted, fontWeight:restSecs===s?700:400 }}>
-              {s===0?'Off':`${s}s`}
+              {s===0?t('workout.restOff'):`${s}s`}
             </button>
           ))}
         </div>
@@ -1080,13 +1088,13 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
         })}
         <button onClick={() => setShowPicker(true)}
           style={{ width:'100%', padding:12, borderRadius:14, background:C.purpleLight, border:`2px dashed ${C.purple}55`, color:C.purple, fontSize:14, fontWeight:600, cursor:'pointer', marginBottom:20 }}>
-          + Add exercise
+          {t('workout.addExercise')}
         </button>
 
         <div style={{ display:'flex', gap:10 }}>
           <button onClick={handleSave} disabled={saving}
             style={{ flex:1, padding:14, borderRadius:16, background:C.surfaceMid, border:'none', color:C.textMuted, fontSize:14, fontWeight:600, cursor:'pointer' }}>
-            {saving?'Saving…':'Log without timer'}
+            {saving?t('workout.saving'):t('workout.logWithoutTimer')}
           </button>
           <button onClick={beginWorkout}
             style={{ flex:2, padding:14, borderRadius:16, background:C.green, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', boxShadow:`0 4px 20px ${C.green}44` }}>
@@ -1107,14 +1115,14 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
     return (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'60vh', textAlign:'center', padding:24 }}>
         <div style={{ fontSize:64, marginBottom:16 }}>🏆</div>
-        <div style={{ fontSize:28, fontWeight:800, color:C.text, marginBottom:8 }}>Workout complete!</div>
+        <div style={{ fontSize:28, fontWeight:800, color:C.text, marginBottom:8 }}>{t('workout.allDone')}</div>
         <div style={{ fontSize:15, color:C.textMuted, marginBottom:8 }}>{fmt(elapsed)} · {doneSetsTotal} sets</div>
         {totalVol>0 && <div style={{ fontSize:13, color:C.textMuted, marginBottom:32 }}>{Math.round(totalVol)} kg total volume</div>}
-        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="Session notes (optional)..."
+        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="{t('workout.sessionNotes')}"
           style={{ width:'100%', maxWidth:360, padding:'12px 14px', borderRadius:14, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', marginBottom:16 }} />
         <button onClick={handleSave} disabled={saving}
           style={{ width:'100%', maxWidth:360, padding:16, borderRadius:18, background:C.purple, border:'none', color:'#fff', fontSize:16, fontWeight:700, cursor:saving?'default':'pointer' }}>
-          {saving?'Saving…':'Save workout'}
+          {saving?t('workout.saving'):t('workout.saveWorkout')}
         </button>
       </div>
     )
@@ -1187,6 +1195,7 @@ function WorkoutHistoryCard({ log, onDelete }) {
 // Today workout tab — shows scheduled plans + logs
 // ─────────────────────────────────────────────
 function TodayWorkoutTab({ userId, timezone, today, logs, logsLoading, onStartEmpty, onStartPlan, onDelete }) {
+  const { t } = useTranslation()
   const [plans,   setPlans]   = useState([])
   const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat']
   const todayKey = DAY_KEYS[new Date(today + 'T12:00:00').getDay()]
@@ -1236,10 +1245,10 @@ function TodayWorkoutTab({ userId, timezone, today, logs, logsLoading, onStartEm
         <Card style={{ textAlign:'center', padding:'32px 20px' }}>
           <div style={{ fontSize:40, marginBottom:12 }}>🏃</div>
           <div style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:6 }}>
-            {scheduledToday.length > 0 ? 'Ready when you are!' : 'No workouts logged today'}
+            {scheduledToday.length > 0 ? t('workout.readyStart') : t('workout.noWorkoutToday')}
           </div>
           <div style={{ fontSize:13, color:C.textMuted }}>
-            {scheduledToday.length > 0 ? 'Tap "Start now" above to begin your scheduled workout.' : 'Browse the Library or your Plans to get started'}
+            {scheduledToday.length > 0 ? 'Tap "Start now" above to begin your scheduled workout.' : t('workout.noWorkoutSub')}
           </div>
         </Card>
       )}
@@ -1251,6 +1260,7 @@ function TodayWorkoutTab({ userId, timezone, today, logs, logsLoading, onStartEm
 // Main WorkoutTab
 // ─────────────────────────────────────────────
 export default function WorkoutTab({ userId, profile }) {
+  const { t } = useTranslation()
   const timezone = profile?.timezone
   const today    = toUserDateStr(timezone)
 
@@ -1300,7 +1310,7 @@ export default function WorkoutTab({ userId, profile }) {
     <div>
       {/* Tab switcher */}
       <div style={{ display:'flex', gap:6, marginBottom:20, background:C.surfaceMid, borderRadius:14, padding:4 }}>
-        {[['library','📚 Library'],['plans','📋 My Plans'],['log','📅 Today']].map(([id,label]) => (
+        {[['library',t('workout.library')],['plans',t('workout.myPlans')],['log',t('workout.today')]].map(([id,label]) => (
           <button key={id} onClick={() => setTab(id)}
             style={{ flex:1, padding:'9px 4px', borderRadius:11, fontSize:12, fontWeight:tab===id?700:400, cursor:'pointer', border:'none', background:tab===id?C.surface:'transparent', color:tab===id?C.purple:C.textMuted, boxShadow:tab===id?C.shadowCard:'none', transition:'all 0.15s' }}>
             {label}

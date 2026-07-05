@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { AuronCharacter } from './CoachAuron'
 import { getExercise } from '../lib/workoutData.js'
+import { useTranslation } from '../lib/i18n.jsx'
 
 const C = T
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions'
@@ -51,7 +52,7 @@ function ProgressBar({ current, total }) {
 // ─────────────────────────────────────────────
 // Question screen
 // ─────────────────────────────────────────────
-function QuestionScreen({ q, value, onChange, onNext, onBack, idx, total }) {
+function QuestionScreen({q, value, onChange, onNext, onBack, idx, total }) {
   const canNext = q.type === 'text' ? true : q.type === 'multi' ? (value||[]).length > 0 : !!value
 
   return (
@@ -129,7 +130,7 @@ function QuestionScreen({ q, value, onChange, onNext, onBack, idx, total }) {
       <div style={{ padding:'12px 24px 36px', background:C.pageBg||'#F0EFF8', borderTop:`1px solid ${C.divider}`, flexShrink:0 }}>
         <button onClick={onNext} disabled={!canNext}
           style={{ width:'100%', padding:'16px', borderRadius:20, background:canNext?C.purple:C.surfaceMid, border:'none', color:canNext?'#fff':C.textDim, fontSize:16, fontWeight:700, cursor:canNext?'pointer':'default', transition:'all 0.15s' }}>
-          {idx === total-1 ? '✨ Build my plan' : 'Next →'}
+          {idx === total-1 ? t('workout.buildBtn')||'✨ Build my plan' : t('workout.nextBtn')||'Next →'}
         </button>
       </div>
     </div>
@@ -140,6 +141,7 @@ function QuestionScreen({ q, value, onChange, onNext, onBack, idx, total }) {
 // Generating
 // ─────────────────────────────────────────────
 function GeneratingScreen() {
+  const { t } = useTranslation()
   return (
     <div style={{ position:'fixed', inset:0, background:`linear-gradient(160deg, ${C.purpleDark||'#3D2B8E'} 0%, ${C.pageBg||'#F0EFF8'} 100%)`, zIndex:300, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, maxWidth:480, margin:'0 auto' }}>
       <AuronCharacter mood="workout" size="hero" />
@@ -162,7 +164,7 @@ function GeneratingScreen() {
 // ─────────────────────────────────────────────
 // Plan preview — editable days, separate workouts
 // ─────────────────────────────────────────────
-function PlanPreviewScreen({ plan, answers, onSave, onRegenerate, onEditRequest, onCancel, saving }) {
+function PlanPreviewScreen({plan, answers, onSave, onRegenerate, onEditRequest, onCancel, saving }) {
   // Editable day assignment — map each workout to a day
   const numWorkouts = plan.workouts?.length || 0
   const [assignedDays, setAssignedDays] = useState(() => {
