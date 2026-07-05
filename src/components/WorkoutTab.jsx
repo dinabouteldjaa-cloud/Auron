@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LEVEL_COLOR, getExercise } from '../lib/workoutData.js'
+import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 
 const C = T
 
@@ -460,7 +461,7 @@ function PlanEditor({ plan, onSave, onCancel }) {
 // ─────────────────────────────────────────────
 // My Plans tab
 // ─────────────────────────────────────────────
-function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed }) {
+function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBuildWithAuron }) {
   const [plans,   setPlans]   = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
@@ -510,8 +511,12 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed }) {
   return (
     <div>
       <button onClick={() => setEditing('new')}
-        style={{ width:'100%', padding:14, borderRadius:16, background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:20, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+        style={{ width:'100%', padding:14, borderRadius:16, background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:10, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
         ✦ Create new plan
+      </button>
+      <button onClick={onBuildWithAuron}
+        style={{ width:'100%', padding:14, borderRadius:16, background:C.surface, border:`2px solid ${C.purple}`, color:C.purple, fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:20, display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:C.shadowCard }}>
+        ✨ Build with Coach Auron
       </button>
       {loading ? (
         <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>Loading…</div>
@@ -1220,11 +1225,6 @@ function TodayWorkoutTab({ userId, timezone, today, logs, logsLoading, onStartEm
         </div>
       )}
 
-      <button onClick={onStartEmpty}
-        style={{ width:'100%', padding:16, borderRadius:20, background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:20, display:'flex', alignItems:'center', justifyContent:'center', gap:10, boxShadow:C.shadowStrong }}>
-        🏋️ Start empty workout
-      </button>
-
       {logsLoading ? (
         <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>Loading…</div>
       ) : logs.length > 0 ? (
@@ -1259,6 +1259,7 @@ export default function WorkoutTab({ userId, profile }) {
   const [logs,        setLogs]        = useState([])
   const [logsLoading, setLogsLoading] = useState(true)
   const [preloadPlan, setPreloadPlan] = useState(null)
+  const [showBuilder, setShowBuilder] = useState(false)
 
   useEffect(() => { fetchLogs() }, [userId])
 
@@ -1309,10 +1310,21 @@ export default function WorkoutTab({ userId, profile }) {
       {tab==='library' && <LibraryTab onUseAsTemplate={handleUseAsTemplate} />}
 
       {tab==='plans' && (
-        <MyPlansTab userId={userId}
-          onStartPlan={plan => setSession({ ...plan, fromLibrary: false })}
-          preloadPlan={preloadPlan}
-          onPreloadConsumed={() => setPreloadPlan(null)} />
+        <>
+          {showBuilder && (
+            <AuronWorkoutBuilder
+              userId={userId}
+              onClose={() => setShowBuilder(false)}
+              onPlanSaved={() => { setShowBuilder(false); setTab('plans') }}
+            />
+          )}
+          <MyPlansTab userId={userId}
+            onStartPlan={plan => setSession({ ...plan, fromLibrary: false })}
+            preloadPlan={preloadPlan}
+            onPreloadConsumed={() => setPreloadPlan(null)}
+            onBuildWithAuron={() => setShowBuilder(true)}
+          />
+        </>
       )}
 
       {tab==='log' && (
