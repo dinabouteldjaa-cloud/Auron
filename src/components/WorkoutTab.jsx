@@ -2,231 +2,209 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
+import {
+  EXERCISES, LIBRARY_WORKOUTS, SPORTS, LEVEL_COLOR,
+  getExercise,
+} from '../lib/workoutData.js'
 
-// ─────────────────────────────────────────────
-// Exercise library
-// ─────────────────────────────────────────────
-const EXERCISE_LIBRARY = {
-  Chest: [
-    { name:'Bench Press',        icon:'🏋️', muscles:'Chest, Triceps, Shoulders' },
-    { name:'Incline Bench Press',icon:'🏋️', muscles:'Upper Chest, Shoulders'   },
-    { name:'Decline Bench Press',icon:'🏋️', muscles:'Lower Chest'              },
-    { name:'Push Ups',           icon:'💪', muscles:'Chest, Triceps'           },
-    { name:'Chest Fly',          icon:'🦋', muscles:'Chest'                    },
-    { name:'Cable Crossover',    icon:'🦋', muscles:'Chest'                    },
-    { name:'Dips',               icon:'💪', muscles:'Chest, Triceps'           },
-    { name:'Pec Deck',           icon:'🦋', muscles:'Chest'                    },
-  ],
-  Back: [
-    { name:'Pull Ups',           icon:'💪', muscles:'Lats, Biceps'             },
-    { name:'Chin Ups',           icon:'💪', muscles:'Lats, Biceps'             },
-    { name:'Deadlift',           icon:'🏋️', muscles:'Full Back, Hamstrings'    },
-    { name:'Bent Over Row',      icon:'🏋️', muscles:'Back, Biceps'             },
-    { name:'T-Bar Row',          icon:'🏋️', muscles:'Mid Back'                 },
-    { name:'Lat Pulldown',       icon:'💪', muscles:'Lats'                     },
-    { name:'Seated Cable Row',   icon:'🚣', muscles:'Mid Back'                 },
-    { name:'Single Arm Row',     icon:'🏋️', muscles:'Back, Biceps'             },
-    { name:'Face Pull',          icon:'💪', muscles:'Rear Delts, Upper Back'   },
-    { name:'Hyperextension',     icon:'🏋️', muscles:'Lower Back'               },
-  ],
-  Legs: [
-    { name:'Squat',              icon:'🏋️', muscles:'Quads, Glutes, Hamstrings'},
-    { name:'Front Squat',        icon:'🏋️', muscles:'Quads'                   },
-    { name:'Romanian Deadlift',  icon:'🏋️', muscles:'Hamstrings, Glutes'       },
-    { name:'Leg Press',          icon:'🦵', muscles:'Quads, Glutes'            },
-    { name:'Lunges',             icon:'🦵', muscles:'Quads, Glutes'            },
-    { name:'Bulgarian Split Squat',icon:'🦵',muscles:'Quads, Glutes'           },
-    { name:'Leg Curl',           icon:'🦵', muscles:'Hamstrings'               },
-    { name:'Leg Extension',      icon:'🦵', muscles:'Quads'                    },
-    { name:'Calf Raises',        icon:'🦵', muscles:'Calves'                   },
-    { name:'Hip Thrust',         icon:'🦵', muscles:'Glutes'                   },
-    { name:'Step Ups',           icon:'🦵', muscles:'Quads, Glutes'            },
-  ],
-  Shoulders: [
-    { name:'Overhead Press',     icon:'🏋️', muscles:'Shoulders, Triceps'       },
-    { name:'Arnold Press',       icon:'🏋️', muscles:'All Delts'                },
-    { name:'Lateral Raise',      icon:'💪', muscles:'Side Delts'               },
-    { name:'Front Raise',        icon:'💪', muscles:'Front Delts'              },
-    { name:'Reverse Fly',        icon:'🦋', muscles:'Rear Delts'               },
-    { name:'Shrugs',             icon:'🏋️', muscles:'Traps'                    },
-    { name:'Cable Lateral Raise',icon:'💪', muscles:'Side Delts'               },
-  ],
-  Arms: [
-    { name:'Bicep Curl',         icon:'💪', muscles:'Biceps'                   },
-    { name:'Hammer Curl',        icon:'💪', muscles:'Biceps, Forearms'         },
-    { name:'Preacher Curl',      icon:'💪', muscles:'Biceps'                   },
-    { name:'Concentration Curl', icon:'💪', muscles:'Biceps'                   },
-    { name:'Tricep Pushdown',    icon:'💪', muscles:'Triceps'                  },
-    { name:'Skull Crushers',     icon:'🏋️', muscles:'Triceps'                  },
-    { name:'Overhead Tricep Ext',icon:'💪', muscles:'Triceps'                  },
-    { name:'Close Grip Bench',   icon:'🏋️', muscles:'Triceps, Chest'           },
-    { name:'Wrist Curl',         icon:'💪', muscles:'Forearms'                 },
-  ],
-  Core: [
-    { name:'Plank',              icon:'🧘', muscles:'Core',          timed:true },
-    { name:'Side Plank',         icon:'🧘', muscles:'Obliques',      timed:true },
-    { name:'Crunches',           icon:'💪', muscles:'Abs'                      },
-    { name:'Sit Ups',            icon:'💪', muscles:'Abs'                      },
-    { name:'Leg Raises',         icon:'🦵', muscles:'Lower Abs'                },
-    { name:'Russian Twist',      icon:'🔄', muscles:'Obliques'                 },
-    { name:'Ab Wheel Rollout',   icon:'⚙️', muscles:'Core'                     },
-    { name:'Hollow Hold',        icon:'🧘', muscles:'Core',          timed:true },
-    { name:'Mountain Climbers',  icon:'🏔️', muscles:'Core, Cardio',  timed:true },
-    { name:'Dead Bug',           icon:'🐛', muscles:'Core'                     },
-    { name:'Cable Crunch',       icon:'💪', muscles:'Abs'                      },
-  ],
-  Cardio: [
-    { name:'Running',            icon:'🏃', muscles:'Full Body',    timed:true },
-    { name:'Cycling',            icon:'🚴', muscles:'Legs, Cardio', timed:true },
-    { name:'Jump Rope',          icon:'🪢', muscles:'Full Body',    timed:true },
-    { name:'Swimming',           icon:'🏊', muscles:'Full Body',    timed:true },
-    { name:'Rowing Machine',     icon:'🚣', muscles:'Full Body',    timed:true },
-    { name:'HIIT',               icon:'⚡', muscles:'Full Body',    timed:true },
-    { name:'Walking',            icon:'🚶', muscles:'Legs',         timed:true },
-    { name:'Elliptical',         icon:'🏃', muscles:'Full Body',    timed:true },
-    { name:'Stair Climber',      icon:'🪜', muscles:'Legs, Cardio', timed:true },
-    { name:'Battle Ropes',       icon:'🔗', muscles:'Upper Body',   timed:true },
-  ],
-}
-
-const ALL_EXERCISES = Object.entries(EXERCISE_LIBRARY).flatMap(([cat, exs]) =>
-  exs.map(ex => ({ ...ex, category: cat }))
-)
-
-// ─────────────────────────────────────────────
-// Templates with full exercise objects
-// ─────────────────────────────────────────────
-const TEMPLATES = [
-  {
-    id: 'push', name:'Push Day', icon:'💪', tag:'Chest · Shoulders · Triceps',
-    color: T.purple, bgColor: 'rgba(108,92,231,0.08)',
-    exerciseNames: ['Bench Press','Overhead Press','Incline Bench Press','Lateral Raise','Tricep Pushdown','Chest Fly'],
-  },
-  {
-    id: 'pull', name:'Pull Day', icon:'🔙', tag:'Back · Biceps · Rear Delts',
-    color: T.blue, bgColor: 'rgba(74,144,226,0.08)',
-    exerciseNames: ['Pull Ups','Bent Over Row','Lat Pulldown','Bicep Curl','Face Pull','Single Arm Row'],
-  },
-  {
-    id: 'legs', name:'Leg Day', icon:'🦵', tag:'Quads · Hamstrings · Glutes',
-    color: T.green, bgColor: 'rgba(46,204,113,0.08)',
-    exerciseNames: ['Squat','Romanian Deadlift','Leg Press','Lunges','Leg Curl','Calf Raises'],
-  },
-  {
-    id: 'full', name:'Full Body', icon:'🏋️', tag:'All muscle groups',
-    color: T.amber, bgColor: 'rgba(245,166,35,0.08)',
-    exerciseNames: ['Squat','Bench Press','Bent Over Row','Overhead Press','Deadlift','Plank'],
-  },
-  {
-    id: 'upper', name:'Upper Body', icon:'💪', tag:'Chest · Back · Arms · Shoulders',
-    color: '#E040FB', bgColor: 'rgba(224,64,251,0.08)',
-    exerciseNames: ['Bench Press','Bent Over Row','Overhead Press','Bicep Curl','Tricep Pushdown','Lateral Raise'],
-  },
-  {
-    id: 'core', name:'Core & Abs', icon:'🧘', tag:'Core · Abs · Obliques',
-    color: T.red, bgColor: 'rgba(224,82,82,0.08)',
-    exerciseNames: ['Plank','Crunches','Leg Raises','Russian Twist','Ab Wheel Rollout','Side Plank'],
-  },
-  {
-    id: 'cardio', name:'Cardio', icon:'🏃', tag:'Endurance · Fat burn',
-    color: '#00BCD4', bgColor: 'rgba(0,188,212,0.08)',
-    exerciseNames: ['Running','Jump Rope','Mountain Climbers','Battle Ropes'],
-  },
-]
-
-function resolveTemplate(tmpl) {
-  return tmpl.exerciseNames.map(name => {
-    const ex = ALL_EXERCISES.find(e => e.name === name) || { name, icon:'💪', muscles:'', category:'General' }
-    return { ...ex, sets: [{ weight:'', reps:'', duration:'', done:false }] }
-  })
-}
-
-// ─────────────────────────────────────────────
-// Shared UI
-// ─────────────────────────────────────────────
 const C = T
+
+// ─────────────────────────────────────────────
+// Shared UI primitives
+// ─────────────────────────────────────────────
 function Card({ children, style={} }) {
   return <div style={{ background:C.surface, borderRadius:18, border:`1px solid ${C.divider}`, boxShadow:C.shadowCard, padding:'16px 18px', ...style }}>{children}</div>
 }
 function Label({ children }) {
   return <div style={{ fontSize:10.5, fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:12 }}>{children}</div>
 }
-
-// ─────────────────────────────────────────────
-// Template preview screen
-// ─────────────────────────────────────────────
-function TemplatePreview({ tmpl, onStart, onBack }) {
-  const exercises = resolveTemplate(tmpl)
+function BackBtn({ onBack, label='Back' }) {
   return (
-    <div>
-      {/* Back */}
-      <button onClick={onBack} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', color:C.textMuted, fontSize:14, cursor:'pointer', marginBottom:20, padding:0 }}>
-        ‹ Back
-      </button>
+    <button onClick={onBack} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', color:C.textMuted, fontSize:14, cursor:'pointer', marginBottom:20, padding:0 }}>
+      ‹ {label}
+    </button>
+  )
+}
 
-      {/* Header */}
-      <div style={{ background:`linear-gradient(135deg, ${tmpl.color}, ${tmpl.color}BB)`, borderRadius:20, padding:'24px 20px', marginBottom:20, color:'#fff' }}>
-        <div style={{ fontSize:36, marginBottom:8 }}>{tmpl.icon}</div>
-        <div style={{ fontSize:22, fontWeight:700 }}>{tmpl.name}</div>
-        <div style={{ fontSize:13, opacity:0.85, marginTop:4 }}>{tmpl.tag}</div>
-        <div style={{ display:'flex', gap:16, marginTop:16 }}>
-          <div><div style={{ fontSize:18, fontWeight:700 }}>{exercises.length}</div><div style={{ fontSize:11, opacity:0.7 }}>exercises</div></div>
-          <div><div style={{ fontSize:18, fontWeight:700 }}>~{exercises.length * 8}–{exercises.length * 12}</div><div style={{ fontSize:11, opacity:0.7 }}>minutes</div></div>
+// ─────────────────────────────────────────────
+// Exercise How-To expandable
+// ─────────────────────────────────────────────
+function ExerciseHowTo({ ex }) {
+  const [open, setOpen] = useState(false)
+  const data = getExercise(ex.name)
+  if (!data.howTo?.length) return null
+  return (
+    <div style={{ marginTop:8 }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ background:'none', border:'none', color:C.purple, fontSize:12, fontWeight:600, cursor:'pointer', padding:0, display:'flex', alignItems:'center', gap:4 }}>
+        {open ? '▲ Hide' : '▼ How to perform'}
+      </button>
+      {open && (
+        <div style={{ marginTop:10, padding:'12px 14px', background:C.purpleLight, borderRadius:12 }}>
+          <ol style={{ margin:0, padding:'0 0 0 18px', display:'flex', flexDirection:'column', gap:6 }}>
+            {data.howTo.map((step, i) => (
+              <li key={i} style={{ fontSize:12, color:C.text, lineHeight:1.5 }}>{step}</li>
+            ))}
+          </ol>
+          {data.tips && (
+            <div style={{ marginTop:10, fontSize:11, color:C.purple, fontStyle:'italic', borderTop:`1px solid ${C.border}`, paddingTop:8 }}>
+              💡 {data.tips}
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* Exercise list */}
-      <Label>Exercises in this workout</Label>
-      <Card style={{ marginBottom:20, padding:0, overflow:'hidden' }}>
-        {exercises.map((ex, i) => (
-          <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'13px 16px', borderBottom: i < exercises.length - 1 ? `1px solid ${C.divider}` : 'none' }}>
-            <div style={{ width:38, height:38, borderRadius:10, background:`${tmpl.color}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>
-              {ex.icon}
-            </div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
-              <div style={{ fontSize:11, color:C.textMuted }}>{ex.muscles} · {ex.timed ? 'Timed' : '3 sets × 8–12 reps'}</div>
-            </div>
-            <div style={{ fontSize:11, color:C.textDim }}>{ex.category}</div>
-          </div>
-        ))}
-      </Card>
-
-      <button onClick={() => onStart(exercises)}
-        style={{ width:'100%', padding:16, borderRadius:20, background:`linear-gradient(135deg, ${tmpl.color}, ${tmpl.color}BB)`, border:'none', color:'#fff', fontSize:16, fontWeight:700, cursor:'pointer', boxShadow:`0 4px 20px ${tmpl.color}44` }}>
-        🏋️ Start {tmpl.name}
-      </button>
+      )}
     </div>
   )
 }
 
 // ─────────────────────────────────────────────
-// Exercise picker modal
+// Library — Sports → Workouts → Detail
 // ─────────────────────────────────────────────
-function ExercisePicker({ onAdd, onClose }) {
+function LibraryTab({ onUseAsTemplate }) {
+  const [sport,   setSport]   = useState(null) // selected sport id
+  const [workout, setWorkout] = useState(null) // selected workout
+
+  // ── Workout detail ────────────────────────
+  if (workout) {
+    const exercises = workout.exercises.map(name => getExercise(name))
+    return (
+      <div>
+        <BackBtn onBack={() => setWorkout(null)} />
+        {/* Hero */}
+        <div style={{ background:`linear-gradient(135deg, ${SPORTS.find(s=>s.id===workout.sport)?.color||C.purple}, ${SPORTS.find(s=>s.id===workout.sport)?.color||C.purple}BB)`, borderRadius:20, padding:'22px 20px', marginBottom:20, color:'#fff' }}>
+          <div style={{ fontSize:32, marginBottom:8 }}>{workout.icon}</div>
+          <div style={{ fontSize:22, fontWeight:700 }}>{workout.name}</div>
+          <div style={{ fontSize:13, opacity:0.85, marginTop:4 }}>{workout.description}</div>
+          <div style={{ display:'flex', gap:16, marginTop:14, flexWrap:'wrap' }}>
+            {[
+              { label:'Duration', value:workout.duration },
+              { label:'Level',    value:workout.level    },
+              { label:'Muscles',  value:workout.muscles  },
+            ].map(s => (
+              <div key={s.label}>
+                <div style={{ fontSize:13, fontWeight:700 }}>{s.value}</div>
+                <div style={{ fontSize:10, opacity:0.7 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Exercise list with how-to */}
+        <Label>Exercises ({exercises.length})</Label>
+        <Card style={{ padding:0, overflow:'hidden', marginBottom:20 }}>
+          {exercises.map((ex, i) => (
+            <div key={i} style={{ padding:'14px 16px', borderBottom: i < exercises.length-1 ? `1px solid ${C.divider}` : 'none' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+                  {ex.icon}
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
+                  <div style={{ fontSize:11, color:C.textMuted }}>{ex.muscles}{ex.timed ? ' · Timed' : ' · Sets & Reps'}</div>
+                </div>
+              </div>
+              <ExerciseHowTo ex={ex} />
+            </div>
+          ))}
+        </Card>
+
+        {/* CTAs */}
+        <button onClick={() => onUseAsTemplate(workout)}
+          style={{ width:'100%', padding:14, borderRadius:16, background:C.purple, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:10 }}>
+          ✦ Use as template — add to My Plans
+        </button>
+        <button onClick={() => onUseAsTemplate({ ...workout, startNow:true })}
+          style={{ width:'100%', padding:14, borderRadius:16, background:C.greenLight, border:`1px solid ${C.green}44`, color:C.green, fontSize:15, fontWeight:700, cursor:'pointer' }}>
+          ▶ Start this workout now
+        </button>
+      </div>
+    )
+  }
+
+  // ── Sport workouts list ───────────────────
+  if (sport) {
+    const workouts = LIBRARY_WORKOUTS.filter(w => w.sport === sport)
+    const s = SPORTS.find(s => s.id === sport)
+    return (
+      <div>
+        <BackBtn onBack={() => setSport(null)} />
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
+          <span style={{ fontSize:32 }}>{s.icon}</span>
+          <div style={{ fontSize:22, fontWeight:700, color:C.text }}>{s.name}</div>
+        </div>
+        {workouts.length === 0 ? (
+          <Card style={{ textAlign:'center', padding:'30px 20px', color:C.textMuted }}>
+            Coming soon — more workouts being added.
+          </Card>
+        ) : (
+          workouts.map(w => (
+            <button key={w.id} onClick={() => setWorkout(w)}
+              style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', marginBottom:10, boxShadow:C.shadowCard }}>
+              <div style={{ width:50, height:50, borderRadius:14, background:`${s.color}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, flexShrink:0 }}>{w.icon}</div>
+              <div style={{ flex:1 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
+                  <span style={{ fontSize:15, fontWeight:700, color:C.text }}>{w.name}</span>
+                  <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:`${LEVEL_COLOR[w.level]}22`, color:LEVEL_COLOR[w.level], fontWeight:600 }}>{w.level}</span>
+                </div>
+                <div style={{ fontSize:12, color:C.textMuted }}>{w.muscles}</div>
+                <div style={{ fontSize:11, color:C.purple, marginTop:3 }}>⏱ {w.duration} · {w.exercises.length} exercises</div>
+              </div>
+              <span style={{ fontSize:20, color:C.textDim }}>›</span>
+            </button>
+          ))
+        )}
+      </div>
+    )
+  }
+
+  // ── Sports grid ───────────────────────────
+  return (
+    <div>
+      <Label>Choose a sport</Label>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+        {SPORTS.filter(s => s.id !== 'custom').map(s => {
+          const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id).length
+          return (
+            <button key={s.id} onClick={() => setSport(s.id)}
+              style={{ padding:'20px 16px', borderRadius:18, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:8 }}>
+              <span style={{ fontSize:32 }}>{s.icon}</span>
+              <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{s.name}</div>
+              <div style={{ fontSize:11, color:C.textMuted }}>{count} workout{count !== 1 ? 's' : ''}</div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────
+// My Plans — CRUD
+// ─────────────────────────────────────────────
+function ExercisePickerModal({ onAdd, onClose }) {
   const [search,   setSearch]   = useState('')
   const [category, setCategory] = useState('All')
-  const categories = ['All', ...Object.keys(EXERCISE_LIBRARY)]
-
+  const categories = ['All', ...new Set(Object.values(EXERCISES).map(e => e.category))]
+  const all = Object.entries(EXERCISES).map(([name, ex]) => ({ name, ...ex }))
   const filtered = search
-    ? ALL_EXERCISES.filter(e => e.name.toLowerCase().includes(search.toLowerCase()) || e.muscles.toLowerCase().includes(search.toLowerCase()))
-    : category === 'All' ? ALL_EXERCISES : (EXERCISE_LIBRARY[category] || []).map(e => ({ ...e, category }))
+    ? all.filter(e => e.name.toLowerCase().includes(search.toLowerCase()) || e.muscles.toLowerCase().includes(search.toLowerCase()))
+    : category === 'All' ? all : all.filter(e => e.category === category)
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(26,26,46,0.6)', zIndex:200, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background:C.surface, borderRadius:'22px 22px 0 0', width:'100%', maxWidth:480, maxHeight:'80vh', display:'flex', flexDirection:'column', boxShadow:C.shadowStrong }}>
+    <div style={{ position:'fixed', inset:0, background:'rgba(26,26,46,0.6)', zIndex:300, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background:C.surface, borderRadius:'22px 22px 0 0', width:'100%', maxWidth:480, maxHeight:'80vh', display:'flex', flexDirection:'column' }}>
         <div style={{ padding:'16px 20px 12px' }}>
           <div style={{ width:36, height:4, borderRadius:2, background:C.divider, margin:'0 auto 16px' }} />
           <div style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:12 }}>Add Exercise</div>
-          <div style={{ position:'relative', marginBottom:12 }}>
+          <div style={{ position:'relative', marginBottom:10 }}>
             <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)' }}>🔍</span>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search exercises or muscles..." autoFocus
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or muscle..." autoFocus
               style={{ width:'100%', padding:'10px 14px 10px 36px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none' }} />
           </div>
           {!search && (
             <div style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:4 }}>
               {categories.map(cat => (
-                <button key={cat} onClick={() => setCategory(cat)} style={{ padding:'6px 14px', borderRadius:20, fontSize:12, cursor:'pointer', whiteSpace:'nowrap', border:`1px solid ${category===cat ? C.purple : C.border}`, background:category===cat ? C.purpleLight : 'transparent', color:category===cat ? C.purple : C.textMuted, fontWeight:category===cat ? 600 : 400 }}>
+                <button key={cat} onClick={() => setCategory(cat)} style={{ padding:'6px 14px', borderRadius:20, fontSize:11, cursor:'pointer', whiteSpace:'nowrap', border:`1px solid ${category===cat?C.purple:C.border}`, background:category===cat?C.purpleLight:'transparent', color:category===cat?C.purple:C.textMuted, fontWeight:category===cat?600:400 }}>
                   {cat}
                 </button>
               ))}
@@ -234,14 +212,13 @@ function ExercisePicker({ onAdd, onClose }) {
           )}
         </div>
         <div style={{ overflowY:'auto', flex:1, padding:'0 20px 24px' }}>
-          {search && <div style={{ fontSize:11, color:C.textDim, marginBottom:8 }}>{filtered.length} results</div>}
           {filtered.map((ex, i) => (
             <button key={i} onClick={() => { onAdd(ex); onClose() }}
               style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 0', borderBottom:`1px solid ${C.divider}`, background:'none', border:'none', borderBottom:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left' }}>
               <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{ex.icon}</div>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:14, fontWeight:500, color:C.text }}>{ex.name}</div>
-                <div style={{ fontSize:11, color:C.textMuted }}>{ex.category} · {ex.muscles}{ex.timed ? ' · Timed' : ''}</div>
+                <div style={{ fontSize:11, color:C.textMuted }}>{ex.category} · {ex.muscles}</div>
               </div>
               <span style={{ fontSize:20, color:C.purple }}>+</span>
             </button>
@@ -252,25 +229,217 @@ function ExercisePicker({ onAdd, onClose }) {
   )
 }
 
+function PlanEditor({ plan, onSave, onCancel }) {
+  const [name,       setName]       = useState(plan?.name || '')
+  const [exercises,  setExercises]  = useState(plan?.exercises || [])
+  const [showPicker, setShowPicker] = useState(false)
+  const [notes,      setNotes]      = useState(plan?.notes || '')
+
+  const addExercise = (ex) => setExercises(prev => [...prev, { name:ex.name, icon:ex.icon, muscles:ex.muscles, timed:ex.timed||false, sets:3, reps:ex.timed?30:10, notes:'' }])
+  const removeEx    = (i)  => setExercises(prev => prev.filter((_,j) => j!==i))
+  const updateEx    = (i, field, val) => setExercises(prev => prev.map((e,j) => j===i ? {...e, [field]:val} : e))
+  const moveUp      = (i)  => { if(i===0) return; const a=[...exercises]; [a[i-1],a[i]]=[a[i],a[i-1]]; setExercises(a) }
+  const moveDown    = (i)  => { if(i===exercises.length-1) return; const a=[...exercises]; [a[i],a[i+1]]=[a[i+1],a[i]]; setExercises(a) }
+
+  return (
+    <div>
+      <BackBtn onBack={onCancel} />
+      <div style={{ fontSize:20, fontWeight:700, color:C.text, marginBottom:20 }}>
+        {plan ? 'Edit Plan' : 'New Plan'}
+      </div>
+
+      {/* Name */}
+      <div style={{ marginBottom:16 }}>
+        <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>Plan name *</div>
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. My Push Day"
+          style={{ width:'100%', padding:'11px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:15, fontWeight:600, outline:'none' }} />
+      </div>
+
+      {/* Exercises */}
+      <Label>Exercises ({exercises.length})</Label>
+      {exercises.map((ex, i) => (
+        <div key={i} style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, padding:'12px 14px', marginBottom:8 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
+            <span style={{ fontSize:20 }}>{ex.icon}</span>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
+              <div style={{ fontSize:11, color:C.textMuted }}>{ex.muscles}</div>
+            </div>
+            <div style={{ display:'flex', gap:4 }}>
+              <button onClick={() => moveUp(i)}   style={{ padding:'4px 8px', borderRadius:8, background:C.surfaceMid, border:'none', color:C.textMuted, cursor:'pointer', fontSize:12 }}>↑</button>
+              <button onClick={() => moveDown(i)} style={{ padding:'4px 8px', borderRadius:8, background:C.surfaceMid, border:'none', color:C.textMuted, cursor:'pointer', fontSize:12 }}>↓</button>
+              <button onClick={() => removeEx(i)} style={{ padding:'4px 8px', borderRadius:8, background:C.redLight,   border:'none', color:C.red,      cursor:'pointer', fontSize:12 }}>✕</button>
+            </div>
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>Sets</div>
+              <input type="number" value={ex.sets} onChange={e => updateEx(i,'sets',e.target.value)}
+                style={{ width:'100%', padding:'7px 10px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none', textAlign:'center' }} />
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>{ex.timed ? 'Sec' : 'Reps'}</div>
+              <input type="number" value={ex.reps} onChange={e => updateEx(i,'reps',e.target.value)}
+                style={{ width:'100%', padding:'7px 10px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none', textAlign:'center' }} />
+            </div>
+            <div style={{ flex:2 }}>
+              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>Note</div>
+              <input value={ex.notes||''} onChange={e => updateEx(i,'notes',e.target.value)} placeholder="Optional"
+                style={{ width:'100%', padding:'7px 10px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none' }} />
+            </div>
+          </div>
+        </div>
+      ))}
+
+      <button onClick={() => setShowPicker(true)}
+        style={{ width:'100%', padding:12, borderRadius:14, background:C.purpleLight, border:`2px dashed ${C.purple}55`, color:C.purple, fontSize:14, fontWeight:600, cursor:'pointer', marginBottom:16 }}>
+        + Add exercise
+      </button>
+
+      {/* Plan notes */}
+      <div style={{ marginBottom:20 }}>
+        <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>Plan notes</div>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Optional notes..."
+          style={{ width:'100%', padding:'10px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', lineHeight:1.5 }} />
+      </div>
+
+      <button onClick={() => onSave({ name:name.trim(), exercises, notes:notes.trim() })} disabled={!name.trim() || exercises.length===0}
+        style={{ width:'100%', padding:14, borderRadius:16, background:name.trim()&&exercises.length>0?C.purple:C.surfaceMid, border:'none', color:name.trim()&&exercises.length>0?'#fff':C.textDim, fontSize:15, fontWeight:700, cursor:name.trim()&&exercises.length>0?'pointer':'default' }}>
+        {plan ? 'Save changes' : 'Create plan'}
+      </button>
+
+      {showPicker && <ExercisePickerModal onAdd={addExercise} onClose={() => setShowPicker(false)} />}
+    </div>
+  )
+}
+
+function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed }) {
+  const [plans,   setPlans]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(null)  // null | 'new' | plan object
+  const consumedRef = useRef(false)
+
+  useEffect(() => { fetchPlans() }, [userId])
+
+  // Auto-open editor when coming from library "Use as template"
+  useEffect(() => {
+    if (preloadPlan && !consumedRef.current) {
+      consumedRef.current = true
+      setEditing({ preload: preloadPlan })
+      onPreloadConsumed?.()
+    }
+  }, [preloadPlan])
+
+  const fetchPlans = async () => {
+    if (!userId) return
+    const { data } = await supabase.from('workout_plans').select('*').eq('user_id', userId).order('created_at', { ascending:false })
+    setPlans(data || [])
+    setLoading(false)
+  }
+
+  const savePlan = async (data) => {
+    const planData = editing?.id
+      ? { ...data, updated_at: new Date().toISOString() }
+      : { user_id: userId, ...data, created_at: new Date().toISOString() }
+
+    if (editing?.id) {
+      await supabase.from('workout_plans').update(planData).eq('id', editing.id)
+    } else {
+      await supabase.from('workout_plans').insert(planData)
+    }
+    setEditing(null)
+    fetchPlans()
+  }
+
+  const deletePlan = async (id) => {
+    await supabase.from('workout_plans').delete().eq('id', id)
+    setPlans(prev => prev.filter(p => p.id !== id))
+  }
+
+  // ── Plan editor ───────────────────────────
+  if (editing) {
+    const initialPlan = editing.preload
+      ? { name: editing.preload.name, exercises: editing.preload.exercises.map(name => {
+          const ex = { name, ...{ icon:'💪', muscles:'', timed:false, ...( Object.values(EXERCISES).find(e=>e.name===name)||{}) } }
+          return { name:ex.name, icon:ex.icon, muscles:ex.muscles, timed:ex.timed||false, sets:3, reps:ex.timed?30:10, notes:'' }
+        }), notes: '' }
+      : editing.id ? editing
+      : null
+
+    return (
+      <PlanEditor
+        plan={initialPlan}
+        onSave={savePlan}
+        onCancel={() => setEditing(null)}
+      />
+    )
+  }
+
+  return (
+    <div>
+      <button onClick={() => setEditing('new')}
+        style={{ width:'100%', padding:14, borderRadius:16, background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:20, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+        ✦ Create new plan
+      </button>
+
+      {loading ? (
+        <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>Loading…</div>
+      ) : plans.length === 0 ? (
+        <Card style={{ textAlign:'center', padding:'32px 20px' }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>📋</div>
+          <div style={{ fontSize:16, fontWeight:600, color:C.text, marginBottom:6 }}>No plans yet</div>
+          <div style={{ fontSize:13, color:C.textMuted }}>Create your own or use a library workout as a template.</div>
+        </Card>
+      ) : (
+        plans.map(plan => (
+          <div key={plan.id} style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.divider}`, padding:'14px 16px', marginBottom:10, boxShadow:C.shadowCard }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10 }}>
+              <div style={{ width:44, height:44, borderRadius:13, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>📋</div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{plan.name}</div>
+                <div style={{ fontSize:12, color:C.textMuted }}>{plan.exercises?.length||0} exercises</div>
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={() => onStartPlan(plan)}
+                style={{ flex:2, padding:'10px', borderRadius:12, background:C.green, border:'none', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                ▶ Start
+              </button>
+              <button onClick={() => setEditing(plan)}
+                style={{ flex:1, padding:'10px', borderRadius:12, background:C.surfaceMid, border:'none', color:C.textMuted, fontSize:13, fontWeight:500, cursor:'pointer' }}>
+                Edit
+              </button>
+              <button onClick={() => deletePlan(plan.id)}
+                style={{ flex:1, padding:'10px', borderRadius:12, background:C.redLight, border:'none', color:C.red, fontSize:13, fontWeight:500, cursor:'pointer' }}>
+                Delete
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────
-// SetRow
+// Set row in active session
 // ─────────────────────────────────────────────
 function SetRow({ set, idx, onChange, onRemove, timed }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 0' }}>
-      <div style={{ width:26, height:26, borderRadius:'50%', background:set.done ? C.green : C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:set.done ? '#fff' : C.purple, flexShrink:0, cursor:'pointer' }}
-        onClick={() => onChange({ ...set, done:!set.done })}>
-        {set.done ? '✓' : idx+1}
+      <div style={{ width:26, height:26, borderRadius:'50%', background:set.done?C.green:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:set.done?'#fff':C.purple, flexShrink:0, cursor:'pointer' }}
+        onClick={() => onChange({...set, done:!set.done})}>
+        {set.done?'✓':idx+1}
       </div>
       {timed ? (
-        <input type="number" value={set.duration||''} onChange={e => onChange({...set, duration:e.target.value})}
+        <input type="number" value={set.duration||''} onChange={e => onChange({...set,duration:e.target.value})}
           placeholder="sec" style={{ flex:1, padding:'8px 10px', borderRadius:10, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none', textAlign:'center' }} />
       ) : (
         <>
-          <input type="number" value={set.weight||''} onChange={e => onChange({...set, weight:e.target.value})}
+          <input type="number" value={set.weight||''} onChange={e => onChange({...set,weight:e.target.value})}
             placeholder="kg" style={{ flex:1, padding:'8px 10px', borderRadius:10, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none', textAlign:'center' }} />
           <span style={{ color:C.textDim, fontSize:13 }}>×</span>
-          <input type="number" value={set.reps||''} onChange={e => onChange({...set, reps:e.target.value})}
+          <input type="number" value={set.reps||''} onChange={e => onChange({...set,reps:e.target.value})}
             placeholder="reps" style={{ flex:1, padding:'8px 10px', borderRadius:10, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none', textAlign:'center' }} />
         </>
       )}
@@ -279,86 +448,100 @@ function SetRow({ set, idx, onChange, onRemove, timed }) {
   )
 }
 
-// ─────────────────────────────────────────────
-// ExerciseCard in session
-// ─────────────────────────────────────────────
-function ExerciseCard({ ex, onUpdate, onRemove }) {
-  const timed    = ex.timed
+function SessionExerciseCard({ ex, onUpdate, onRemove }) {
+  const data    = getExercise(ex.name)
+  const timed   = data.timed || ex.timed
   const doneSets = ex.sets.filter(s => s.done).length
   const allDone  = doneSets === ex.sets.length && ex.sets.length > 0
 
-  const addSet = () => {
-    const prev = ex.sets[ex.sets.length - 1] || {}
-    onUpdate({ ...ex, sets: [...ex.sets, { weight:prev.weight||'', reps:prev.reps||'', duration:prev.duration||'', done:false }] })
-  }
-  const updateSet = (i, s) => { const sets=[...ex.sets]; sets[i]=s; onUpdate({...ex, sets}) }
-  const removeSet = (i)    => onUpdate({ ...ex, sets: ex.sets.filter((_,j) => j!==i) })
+  const addSet    = () => { const p=ex.sets[ex.sets.length-1]||{}; onUpdate({...ex, sets:[...ex.sets,{weight:p.weight||'',reps:p.reps||'',duration:p.duration||'',done:false}]}) }
+  const updateSet = (i,s) => { const sets=[...ex.sets]; sets[i]=s; onUpdate({...ex,sets}) }
+  const removeSet = (i)   => onUpdate({...ex, sets:ex.sets.filter((_,j)=>j!==i)})
 
   return (
-    <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${allDone ? C.green+'66' : C.divider}`, marginBottom:12, overflow:'hidden' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'13px 16px', background:allDone ? C.greenLight : 'transparent' }}>
-        <div style={{ width:42, height:42, borderRadius:12, background:allDone ? C.greenLight : C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{ex.icon}</div>
+    <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${allDone?C.green+'66':C.divider}`, marginBottom:12, overflow:'hidden' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'13px 16px', background:allDone?C.greenLight:'transparent' }}>
+        <div style={{ width:42, height:42, borderRadius:12, background:allDone?C.greenLight:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{data.icon||'💪'}</div>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{ex.name}</div>
-          <div style={{ fontSize:11, color:C.textMuted }}>{ex.muscles} · {doneSets}/{ex.sets.length} sets</div>
+          <div style={{ fontSize:11, color:C.textMuted }}>{data.muscles} · {doneSets}/{ex.sets.length} sets</div>
         </div>
         <button onClick={onRemove} style={{ background:'none', border:'none', color:C.textDim, fontSize:18, cursor:'pointer' }}>✕</button>
       </div>
       <div style={{ padding:'0 16px 12px' }}>
         <div style={{ display:'flex', gap:8, fontSize:10, color:C.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4, paddingLeft:34 }}>
-          {timed ? <span style={{ flex:1, textAlign:'center' }}>Duration (sec)</span> : <><span style={{ flex:1, textAlign:'center' }}>Weight (kg)</span><span style={{ width:16 }}/><span style={{ flex:1, textAlign:'center' }}>Reps</span></>}
-          <span style={{ width:24 }}/>
+          {timed ? <span style={{flex:1,textAlign:'center'}}>Duration (sec)</span> : <><span style={{flex:1,textAlign:'center'}}>Weight (kg)</span><span style={{width:16}}/><span style={{flex:1,textAlign:'center'}}>Reps</span></>}
+          <span style={{width:24}}/>
         </div>
-        {ex.sets.map((set, i) => (
-          <SetRow key={i} set={set} idx={i} timed={timed} onChange={s => updateSet(i,s)} onRemove={() => removeSet(i)} />
+        {ex.sets.map((set,i) => (
+          <SetRow key={i} set={set} idx={i} timed={timed} onChange={s=>updateSet(i,s)} onRemove={()=>removeSet(i)} />
         ))}
         <button onClick={addSet} style={{ width:'100%', padding:'8px', marginTop:8, borderRadius:10, background:C.purpleLight, border:`1px dashed ${C.purple}55`, color:C.purple, fontSize:13, fontWeight:600, cursor:'pointer' }}>
           + Add set
         </button>
       </div>
+      <ExerciseHowTo ex={data} />
+      {data.howTo?.length > 0 && <div style={{ height:8 }} />}
     </div>
   )
 }
 
 // ─────────────────────────────────────────────
-// Active session
+// Active session — timer only starts on Begin
 // ─────────────────────────────────────────────
-function WorkoutSession({ userId, timezone, selectedDate, initialExercises, onSave, onCancel }) {
-  const [name,       setName]       = useState('')
-  const [exercises,  setExercises]  = useState(initialExercises || [])
-  const [showPicker, setShowPicker] = useState(!initialExercises?.length)
-  const [startTime]                 = useState(Date.now())
-  const [elapsed,    setElapsed]    = useState(0)
+function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
+  // Build initial exercises from plan
+  const initExercises = () => (plan?.exercises || []).map(ex => {
+    const data = getExercise(typeof ex === 'string' ? ex : ex.name)
+    const sets  = parseInt(ex.sets) || 3
+    return {
+      name: data.name || ex,
+      timed: data.timed,
+      sets: Array.from({ length: sets }, () => ({
+        weight:'', reps: String(ex.reps||10), duration: String(ex.reps||30), done:false
+      })),
+    }
+  })
+
+  const [exercises,  setExercises]  = useState(initExercises)
+  const [name,       setName]       = useState(plan?.name || '')
   const [notes,      setNotes]      = useState('')
+  const [started,    setStarted]    = useState(false)
+  const [elapsed,    setElapsed]    = useState(0)
+  const [showPicker, setShowPicker] = useState(false)
   const [saving,     setSaving]     = useState(false)
+  const startRef = useRef(null)
 
   useEffect(() => {
-    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000)
+    if (!started) return
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000)
     return () => clearInterval(id)
-  }, [startTime])
+  }, [started])
 
+  const beginWorkout = () => { startRef.current = Date.now(); setStarted(true) }
   const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
 
-  const addExercise  = ex => setExercises(prev => [...prev, { ...ex, sets:[{ weight:'', reps:'', duration:'', done:false }] }])
+  const addExercise  = ex  => setExercises(prev => [...prev, { name:ex.name, timed:ex.timed||false, sets:[{weight:'',reps:'',duration:'',done:false}] }])
   const updateEx     = (i, ex) => setExercises(prev => prev.map((e,j) => j===i ? ex : e))
-  const removeEx     = i => setExercises(prev => prev.filter((_,j) => j!==i))
+  const removeEx     = i   => setExercises(prev => prev.filter((_,j) => j!==i))
 
-  const doneSets = exercises.reduce((s,e) => s + e.sets.filter(s => s.done).length, 0)
-  const totalVol = exercises.reduce((s,e) => s + e.sets.filter(s => s.done).reduce((sv,set) => sv + (parseFloat(set.weight)||0)*(parseInt(set.reps)||1), 0), 0)
+  const doneSets = exercises.reduce((s,e) => s+e.sets.filter(s=>s.done).length, 0)
+  const totalVol = exercises.reduce((s,e) => s+e.sets.filter(s=>s.done).reduce((sv,set) => sv+(parseFloat(set.weight)||0)*(parseInt(set.reps)||1),0),0)
+  const today    = toUserDateStr(timezone)
 
   const handleSave = async () => {
     setSaving(true)
-    const workoutName = name.trim() || exercises.map(e => e.name).join(', ').slice(0,60) || 'Workout'
-    const minutes     = Math.max(1, Math.round(elapsed/60))
+    const workoutName = name.trim() || exercises.map(e=>e.name).join(', ').slice(0,60) || 'Workout'
+    const minutes     = started ? Math.max(1, Math.round(elapsed/60)) : 0
     await supabase.from('workout_logs').insert({
-      user_id: userId, log_date: selectedDate,
-      workout_name: workoutName, workout_type: exercises[0]?.category || 'General',
-      duration_minutes: minutes, calories_burned: Math.round(minutes * 6),
+      user_id: userId, log_date: today,
+      workout_name: workoutName, workout_type: exercises[0] ? getExercise(exercises[0].name).category : 'General',
+      duration_minutes: minutes, calories_burned: Math.round(minutes*6),
       exercises: exercises.map(ex => ({
-        name: ex.name, category: ex.category,
-        sets: ex.sets.filter(s => s.done).map(s => ({ weight:parseFloat(s.weight)||null, reps:parseInt(s.reps)||null, duration:parseInt(s.duration)||null })),
+        name: ex.name, category: getExercise(ex.name).category,
+        sets: ex.sets.filter(s=>s.done).map(s=>({ weight:parseFloat(s.weight)||null, reps:parseInt(s.reps)||null, duration:parseInt(s.duration)||null })),
       })),
-      notes: notes.trim() || null,
+      notes: notes.trim()||null,
     })
     setSaving(false)
     onSave()
@@ -366,95 +549,94 @@ function WorkoutSession({ userId, timezone, selectedDate, initialExercises, onSa
 
   return (
     <div>
-      {/* Timer header */}
+      {/* Header */}
       <div style={{ background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, borderRadius:20, padding:'20px', marginBottom:16, color:'#fff' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <div style={{ fontSize:13, opacity:0.8 }}>Active workout</div>
-          <div style={{ fontSize:26, fontWeight:700, fontVariantNumeric:'tabular-nums' }}>{fmt(elapsed)}</div>
+          <div style={{ fontSize:13, opacity:0.8 }}>{started ? 'Active workout' : 'Ready to start'}</div>
+          <div style={{ fontSize:26, fontWeight:700, fontVariantNumeric:'tabular-nums' }}>
+            {started ? fmt(elapsed) : '00:00'}
+          </div>
         </div>
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Name your workout..."
-          style={{ width:'100%', background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:12, padding:'10px 14px', color:'#fff', fontSize:15, fontWeight:600, outline:'none' }} />
-        {exercises.length > 0 && (
-          <div style={{ display:'flex', gap:20, marginTop:14, fontSize:13 }}>
-            <div><span style={{ fontWeight:700 }}>{exercises.length}</span><span style={{ opacity:0.7 }}> exercises</span></div>
-            <div><span style={{ fontWeight:700 }}>{doneSets}</span><span style={{ opacity:0.7 }}> sets done</span></div>
-            {totalVol > 0 && <div><span style={{ fontWeight:700 }}>{Math.round(totalVol)}</span><span style={{ opacity:0.7 }}> kg total</span></div>}
+          style={{ width:'100%', background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:12, padding:'10px 14px', color:'#fff', fontSize:15, fontWeight:600, outline:'none', marginBottom: started ? 14 : 0 }} />
+        {started && (
+          <div style={{ display:'flex', gap:20, fontSize:13 }}>
+            <div><span style={{fontWeight:700}}>{exercises.length}</span><span style={{opacity:0.7}}> exercises</span></div>
+            <div><span style={{fontWeight:700}}>{doneSets}</span><span style={{opacity:0.7}}> sets done</span></div>
+            {totalVol>0 && <div><span style={{fontWeight:700}}>{Math.round(totalVol)}</span><span style={{opacity:0.7}}> kg total</span></div>}
           </div>
         )}
       </div>
 
-      {/* Exercise list */}
-      {exercises.map((ex, i) => (
-        <ExerciseCard key={i} ex={ex} onUpdate={ex => updateEx(i,ex)} onRemove={() => removeEx(i)} />
+      {/* Begin button — only shown before starting */}
+      {!started && (
+        <button onClick={beginWorkout}
+          style={{ width:'100%', padding:16, borderRadius:18, background:C.green, border:'none', color:'#fff', fontSize:16, fontWeight:700, cursor:'pointer', marginBottom:16, boxShadow:`0 4px 20px ${C.green}44` }}>
+          ▶ Begin workout — start timer
+        </button>
+      )}
+
+      {/* Exercises */}
+      {exercises.map((ex,i) => (
+        <SessionExerciseCard key={i} ex={ex} onUpdate={ex=>updateEx(i,ex)} onRemove={()=>removeEx(i)} />
       ))}
 
-      {/* Add exercise button */}
       <button onClick={() => setShowPicker(true)}
         style={{ width:'100%', padding:13, borderRadius:16, background:C.purpleLight, border:`2px dashed ${C.purple}55`, color:C.purple, fontSize:14, fontWeight:600, cursor:'pointer', marginBottom:12 }}>
         + Add exercise
       </button>
 
-      {/* Notes */}
-      <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Notes (optional)..."
+      <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Session notes (optional)..."
         style={{ width:'100%', padding:'10px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', marginBottom:14, lineHeight:1.5 }} />
 
-      {/* Actions */}
       <div style={{ display:'flex', gap:10 }}>
-        <button onClick={onCancel}
-          style={{ flex:1, padding:12, borderRadius:16, background:C.surfaceMid, border:'none', color:C.textMuted, fontSize:14, fontWeight:600, cursor:'pointer' }}>
-          Cancel
-        </button>
+        <button onClick={onCancel} style={{ flex:1, padding:12, borderRadius:16, background:C.surfaceMid, border:'none', color:C.textMuted, fontSize:14, fontWeight:600, cursor:'pointer' }}>Cancel</button>
         <button onClick={handleSave} disabled={saving}
-          style={{ flex:2, padding:12, borderRadius:16, background:C.green, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:saving ? 'default' : 'pointer' }}>
-          {saving ? 'Saving…' : `✓ Finish · ${fmt(elapsed)}`}
+          style={{ flex:2, padding:12, borderRadius:16, background:C.green, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:saving?'default':'pointer' }}>
+          {saving ? 'Saving…' : started ? `✓ Finish · ${fmt(elapsed)}` : '✓ Log workout (no timer)'}
         </button>
       </div>
 
-      {showPicker && <ExercisePicker onAdd={addExercise} onClose={() => setShowPicker(false)} />}
+      {showPicker && <ExercisePickerModal onAdd={addExercise} onClose={() => setShowPicker(false)} />}
     </div>
   )
 }
 
 // ─────────────────────────────────────────────
-// Workout history card
+// Workout log history card
 // ─────────────────────────────────────────────
 function WorkoutHistoryCard({ log, onDelete }) {
-  const [expanded,   setExpanded]   = useState(false)
-  const [confirming, setConfirming] = useState(false)
-
+  const [expanded, setExpanded] = useState(false)
+  const [confirm,  setConfirm]  = useState(false)
   return (
     <Card style={{ marginBottom:10 }}>
       <div style={{ display:'flex', alignItems:'center', gap:12 }}>
         <div style={{ width:44, height:44, borderRadius:13, background:C.greenLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>💪</div>
-        <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ flex:1 }}>
           <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{log.workout_name}</div>
           <div style={{ fontSize:12, color:C.textMuted, marginTop:2 }}>
-            {[log.duration_minutes && `${log.duration_minutes} min`, log.calories_burned && `${log.calories_burned} kcal`, log.workout_type].filter(Boolean).join(' · ')}
+            {[log.duration_minutes&&`${log.duration_minutes} min`, log.calories_burned&&`${log.calories_burned} kcal`].filter(Boolean).join(' · ')}
           </div>
         </div>
         <div style={{ display:'flex', gap:6 }}>
-          {log.exercises?.length > 0 && (
-            <button onClick={() => setExpanded(e => !e)} style={{ padding:'6px 12px', borderRadius:10, background:C.purpleLight, border:'none', color:C.purple, fontSize:12, cursor:'pointer' }}>
+          {log.exercises?.length>0 && (
+            <button onClick={() => setExpanded(e=>!e)} style={{ padding:'6px 12px', borderRadius:10, background:C.purpleLight, border:'none', color:C.purple, fontSize:12, cursor:'pointer' }}>
               {expanded ? '▲' : `${log.exercises.length} ex`}
             </button>
           )}
-          {!confirming
-            ? <button onClick={() => setConfirming(true)} style={{ padding:'6px 10px', borderRadius:10, background:C.redLight, border:'none', color:C.red, fontSize:12, cursor:'pointer' }}>✕</button>
+          {!confirm
+            ? <button onClick={() => setConfirm(true)} style={{ padding:'6px 10px', borderRadius:10, background:C.redLight, border:'none', color:C.red, fontSize:12, cursor:'pointer' }}>✕</button>
             : <button onClick={() => onDelete(log.id)} style={{ padding:'6px 10px', borderRadius:10, background:C.red, border:'none', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>Delete?</button>
           }
         </div>
       </div>
-      {expanded && log.exercises?.length > 0 && (
+      {expanded && log.exercises?.length>0 && (
         <div style={{ marginTop:12, borderTop:`1px solid ${C.divider}`, paddingTop:12 }}>
-          {log.exercises.map((ex, i) => (
-            <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:8 }}>
+          {log.exercises.map((ex,i) => (
+            <div key={i} style={{ display:'flex', gap:10, marginBottom:8 }}>
               <div style={{ fontSize:13, fontWeight:600, color:C.text, minWidth:140 }}>{ex.name}</div>
-              <div style={{ fontSize:12, color:C.textMuted, flexWrap:'wrap' }}>
-                {ex.sets?.map((s,j) => (
-                  <span key={j} style={{ marginRight:8 }}>
-                    {s.weight ? `${s.weight}kg×${s.reps}` : s.duration ? `${s.duration}s` : `×${s.reps}`}
-                  </span>
-                ))}
+              <div style={{ fontSize:12, color:C.textMuted }}>
+                {ex.sets?.map((s,j) => <span key={j} style={{ marginRight:8 }}>{s.weight?`${s.weight}kg×${s.reps}`:s.duration?`${s.duration}s`:`×${s.reps}`}</span>)}
               </div>
             </div>
           ))}
@@ -468,25 +650,23 @@ function WorkoutHistoryCard({ log, onDelete }) {
 // Main WorkoutTab
 // ─────────────────────────────────────────────
 export default function WorkoutTab({ userId, profile }) {
-  const timezone     = profile?.timezone
-  const today        = toUserDateStr(timezone)
+  const timezone  = profile?.timezone
+  const today     = toUserDateStr(timezone)
 
-  const [view,       setView]        = useState('home') // home | preview | session
-  const [logs,       setLogs]        = useState([])
-  const [loading,    setLoading]     = useState(true)
-  const [previewTmpl,setPreviewTmpl] = useState(null)
-  const [sessionExs, setSessionExs]  = useState(null) // null = empty, array = pre-loaded
+  const [tab,       setTab]       = useState('library') // library | plans | log
+  const [session,   setSession]   = useState(null)      // null | plan object
+  const [logs,      setLogs]      = useState([])
+  const [logsLoading, setLogsLoading] = useState(true)
+  const [preloadPlan, setPreloadPlan] = useState(null)  // from library "use as template"
 
   useEffect(() => { fetchLogs() }, [userId])
 
   const fetchLogs = async () => {
     if (!userId) return
-    setLoading(true)
-    const { data } = await supabase
-      .from('workout_logs').select('*').eq('user_id', userId).eq('log_date', today)
-      .order('created_at', { ascending:false })
+    setLogsLoading(true)
+    const { data } = await supabase.from('workout_logs').select('*').eq('user_id', userId).eq('log_date', today).order('created_at', { ascending:false })
     setLogs(data || [])
-    setLoading(false)
+    setLogsLoading(false)
   }
 
   const deleteLog = async (id) => {
@@ -494,94 +674,79 @@ export default function WorkoutTab({ userId, profile }) {
     setLogs(prev => prev.filter(l => l.id !== id))
   }
 
-  const startEmpty   = () => { setSessionExs(null);     setView('session') }
-  const startFromTmpl = (exercises) => { setSessionExs(exercises); setView('session') }
-  const previewTmplFn = (tmpl) => { setPreviewTmpl(tmpl); setView('preview') }
-
-  const totalMinutes = logs.reduce((s,l) => s+(l.duration_minutes||0), 0)
-  const totalCal     = logs.reduce((s,l) => s+(l.calories_burned||0),  0)
-
-  // ── Template preview ────────────────────────
-  if (view === 'preview' && previewTmpl) {
-    return (
-      <TemplatePreview
-        tmpl={previewTmpl}
-        onBack={() => setView('home')}
-        onStart={(exercises) => startFromTmpl(exercises)}
-      />
-    )
+  // Handle "Use as template" from library
+  const handleUseAsTemplate = (workout) => {
+    if (workout.startNow) {
+      // Start directly
+      setSession({ name: workout.name, exercises: workout.exercises })
+    } else {
+      // Open My Plans with pre-filled editor
+      setPreloadPlan({ name: workout.name, exercises: workout.exercises })
+      setTab('plans')
+    }
   }
 
-  // ── Active session ──────────────────────────
-  if (view === 'session') {
+  // ── Active session ────────────────────────
+  if (session) {
     return (
       <WorkoutSession
-        userId={userId} timezone={timezone} selectedDate={today}
-        initialExercises={sessionExs}
-        onSave={() => { fetchLogs(); setView('home') }}
-        onCancel={() => setView('home')}
+        userId={userId}
+        timezone={timezone}
+        plan={session}
+        onSave={() => { fetchLogs(); setSession(null) }}
+        onCancel={() => setSession(null)}
       />
     )
   }
 
-  // ── Home ────────────────────────────────────
   return (
     <div>
-      {/* Today's summary */}
-      {logs.length > 0 && (
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:20 }}>
-          {[
-            { label:'Workouts', value:logs.length,   color:C.purple },
-            { label:'Minutes',  value:totalMinutes,  color:C.green  },
-            { label:'Kcal',     value:totalCal,      color:C.amber  },
-          ].map(s => (
-            <Card key={s.label} style={{ padding:'12px 14px', textAlign:'center' }}>
-              <div style={{ fontSize:22, fontWeight:700, color:s.color }}>{s.value}</div>
-              <div style={{ fontSize:10, color:C.textMuted, marginTop:2 }}>{s.label}</div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Start empty workout */}
-      <button onClick={startEmpty}
-        style={{ width:'100%', padding:16, borderRadius:20, background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, border:'none', color:'#fff', fontSize:16, fontWeight:700, cursor:'pointer', marginBottom:24, display:'flex', alignItems:'center', justifyContent:'center', gap:10, boxShadow:C.shadowStrong }}>
-        <span style={{ fontSize:22 }}>🏋️</span> Start empty workout
-      </button>
-
-      {/* Templates */}
-      <Label>Workout templates</Label>
-      <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:24 }}>
-        {TEMPLATES.map(tmpl => (
-          <button key={tmpl.id} onClick={() => previewTmplFn(tmpl)}
-            style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard }}>
-            <div style={{ width:48, height:48, borderRadius:14, background:tmpl.bgColor, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
-              {tmpl.icon}
-            </div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{tmpl.name}</div>
-              <div style={{ fontSize:12, color:C.textMuted, marginTop:2 }}>{tmpl.tag}</div>
-              <div style={{ fontSize:11, color:tmpl.color, marginTop:4, fontWeight:500 }}>{tmpl.exerciseNames.length} exercises</div>
-            </div>
-            <span style={{ fontSize:20, color:C.textDim }}>›</span>
+      {/* Tab switcher */}
+      <div style={{ display:'flex', gap:8, marginBottom:20, background:C.surfaceMid, borderRadius:14, padding:4 }}>
+        {[['library','📚 Library'], ['plans','📋 My Plans'], ['log','📅 Today']].map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)} style={{ flex:1, padding:'9px 4px', borderRadius:11, fontSize:12, fontWeight:tab===id?700:400, cursor:'pointer', border:'none', background:tab===id?C.surface:'transparent', color:tab===id?C.purple:C.textMuted, boxShadow:tab===id?C.shadowCard:'none', transition:'all 0.15s' }}>
+            {label}
           </button>
         ))}
       </div>
 
-      {/* Today's logs */}
-      {loading ? (
-        <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>Loading…</div>
-      ) : logs.length > 0 ? (
+      {/* Library */}
+      {tab === 'library' && (
+        <LibraryTab onUseAsTemplate={handleUseAsTemplate} />
+      )}
+
+      {/* My Plans */}
+      {tab === 'plans' && (
+        <MyPlansTab
+          userId={userId}
+          onStartPlan={plan => setSession(plan)}
+          preloadPlan={preloadPlan}
+          onPreloadConsumed={() => setPreloadPlan(null)}
+        />
+      )}
+
+      {/* Today's log */}
+      {tab === 'log' && (
         <div>
-          <Label>Today's workouts</Label>
-          {logs.map(log => <WorkoutHistoryCard key={log.id} log={log} onDelete={deleteLog} />)}
+          <button onClick={() => setSession({ name:'', exercises:[] })}
+            style={{ width:'100%', padding:16, borderRadius:20, background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, border:'none', color:'#fff', fontSize:16, fontWeight:700, cursor:'pointer', marginBottom:20, display:'flex', alignItems:'center', justifyContent:'center', gap:10, boxShadow:C.shadowStrong }}>
+            🏋️ Start empty workout
+          </button>
+          {logsLoading ? (
+            <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>Loading…</div>
+          ) : logs.length > 0 ? (
+            <>
+              <Label>Today's workouts</Label>
+              {logs.map(log => <WorkoutHistoryCard key={log.id} log={log} onDelete={deleteLog} />)}
+            </>
+          ) : (
+            <Card style={{ textAlign:'center', padding:'32px 20px' }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>🏃</div>
+              <div style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:6 }}>No workouts logged today</div>
+              <div style={{ fontSize:13, color:C.textMuted }}>Browse the Library or your Plans to get started</div>
+            </Card>
+          )}
         </div>
-      ) : (
-        <Card style={{ textAlign:'center', padding:'28px 20px' }}>
-          <div style={{ fontSize:36, marginBottom:10 }}>🏃</div>
-          <div style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:6 }}>No workouts yet today</div>
-          <div style={{ fontSize:13, color:C.textMuted }}>Pick a template above or start an empty workout</div>
-        </Card>
       )}
     </div>
   )
