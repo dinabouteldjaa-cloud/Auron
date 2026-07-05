@@ -559,3 +559,133 @@ export const LEVEL_COLOR = {
   Intermediate: '#F5A623',
   Advanced:     '#E05252',
 }
+
+// ── Additional exercises ─────────────────────
+Object.assign(EXERCISES, {
+  // PILATES
+  'The Hundred': { icon:'🧘', muscles:'Core, Breathing', category:'Pilates', timed:true,
+    howTo:['Lie on back, legs in tabletop position','Lift head and shoulders, extend legs to 45°','Pump arms up and down in small pulses','Inhale for 5 pulses, exhale for 5 pulses','Complete 10 full breath cycles (100 pumps)'],
+    tips:'Keep lower back pressed into mat. The smaller the movement, the harder it works.' },
+  'Roll Up': { icon:'🧘', muscles:'Abs, Spine Flexibility', category:'Pilates', timed:false,
+    howTo:['Lie flat, arms overhead','Slowly peel spine off mat one vertebra at a time','Reach forward toward toes','Roll back down with same control'],
+    tips:'Move slowly — this is spine articulation, not a sit up.' },
+  'Single Leg Stretch': { icon:'🧘', muscles:'Core, Hip Flexors', category:'Pilates', timed:false,
+    howTo:['Lie on back, bring both knees to chest','Extend one leg, hug the other','Switch legs in rhythmic alternation','Keep head and shoulders lifted'],
+    tips:'Stabilise your pelvis — avoid rocking side to side.' },
+  // CROSSFIT
+  'Box Jump': { icon:'📦', muscles:'Quads, Glutes, Power', category:'CrossFit', timed:false,
+    howTo:['Stand facing box, feet shoulder-width','Swing arms back, bend knees','Explode upward, pulling knees up','Land softly with bent knees','Step or jump back down'],
+    tips:'Land quietly — loud landing = wasted energy.' },
+  'Burpee': { icon:'⚡', muscles:'Full Body, Cardio', category:'CrossFit', timed:true,
+    howTo:['Stand, drop hands to floor','Jump feet back to push-up position','Perform push up (optional)','Jump feet forward to hands','Jump up with arms overhead'],
+    tips:'The burpee is a full body conditioning move. Maintain steady pace over max speed.' },
+  'Kettlebell Swing': { icon:'🔔', muscles:'Glutes, Hamstrings, Core', category:'CrossFit', timed:false,
+    howTo:['Stand with feet slightly wider than hips, kettlebell in front','Hinge at hips, swing bell between legs','Drive hips forward explosively','Bell swings to chest height','Let bell fall back, hinge and repeat'],
+    tips:'This is a hip hinge, not a squat. Power comes from the hips.' },
+  'Thruster': { icon:'🏋️', muscles:'Full Body, Quads, Shoulders', category:'CrossFit', timed:false,
+    howTo:['Hold bar at shoulder height, squat depth','Drive up from squat explosively','Use momentum to press bar overhead','Lower bar back to shoulders as you descend'],
+    tips:'The squat and press should feel like one fluid movement.' },
+  'Wall Ball': { icon:'🏀', muscles:'Full Body, Quads', category:'CrossFit', timed:true,
+    howTo:['Stand 1m from wall holding medicine ball at chest','Squat to parallel depth','Explode up, throw ball to target on wall','Catch ball, immediately descend into squat'],
+    tips:'Keep your chest up in the squat. Don\'t let the ball pull you forward.' },
+  // STRETCHING
+  'Hamstring Stretch': { icon:'🤸', muscles:'Hamstrings', category:'Stretching', timed:true,
+    howTo:['Sit or lie on back','Bring one leg up, hold behind thigh or calf','Keep knee as straight as possible','Hold 30–60 seconds each side'],
+    tips:'Never force the stretch. Breathe deeply and relax into it.' },
+  'Hip Flexor Stretch': { icon:'🤸', muscles:'Hip Flexors, Quads', category:'Stretching', timed:true,
+    howTo:['Kneel with one knee on floor','Shift hips forward until stretch is felt in front hip','Keep torso upright','Hold 30–60 seconds each side'],
+    tips:'Great after sitting all day or heavy leg training.' },
+  'Chest Opener': { icon:'🤸', muscles:'Chest, Shoulders, Posture', category:'Stretching', timed:true,
+    howTo:['Clasp hands behind back','Squeeze shoulder blades together','Lift arms slightly, open chest','Hold 20–30 seconds'],
+    tips:'Do this after any pushing workout or desk work.' },
+  'Pigeon Pose': { icon:'🕊️', muscles:'Hip Flexors, Glutes, IT Band', category:'Stretching', timed:true,
+    howTo:['From downward dog, bring one knee forward behind wrist','Extend opposite leg behind you','Lower hips toward floor','Hold or fold forward for deeper stretch'],
+    tips:'One of the best hip openers. Stay for 1–2 minutes each side.' },
+  // HIIT EXERCISES
+  'Jump Squat': { icon:'⚡', muscles:'Quads, Glutes, Power', category:'HIIT', timed:false,
+    howTo:['Stand feet shoulder-width','Lower into squat position','Explode up jumping off ground','Land softly, immediately lower into next squat'],
+    tips:'Land with soft knees — absorb impact through legs, not joints.' },
+  'High Knees': { icon:'🏃', muscles:'Core, Hip Flexors, Cardio', category:'HIIT', timed:true,
+    howTo:['Run in place','Drive knees up to hip height alternately','Pump arms in opposition','Stay on balls of feet'],
+    tips:'The higher the knees, the harder the core works.' },
+  'Jumping Jacks': { icon:'⭐', muscles:'Full Body, Cardio', category:'HIIT', timed:true,
+    howTo:['Start standing, feet together arms at sides','Jump feet apart while raising arms overhead','Jump back to starting position','Repeat continuously'],
+    tips:'Classic warm-up move. Keep a steady rhythm.' },
+  // MARTIAL ARTS
+  'Kata Practice': { icon:'🥋', muscles:'Full Body, Coordination', category:'Martial Arts', timed:true,
+    howTo:['Stand in ready stance','Perform sequence of prescribed techniques','Each movement should be deliberate','Finish in starting position'],
+    tips:'Kata means "form" — focus on precision over speed.' },
+  'Roundhouse Kick': { icon:'🦵', muscles:'Legs, Core, Hip Flexors', category:'Martial Arts', timed:false,
+    howTo:['Stand in fighting stance','Raise knee of kicking leg to side','Pivot on standing foot, rotate hip','Extend leg in arc, kick with shin or instep','Retract leg, return to stance'],
+    tips:'Power comes from hip rotation, not just the leg.' },
+  // SPORTS-SPECIFIC
+  'Basketball Dribbling': { icon:'🏀', muscles:'Coordination, Hands, Agility', category:'Basketball', timed:true,
+    howTo:['Bounce ball with fingertips, not palm','Keep ball below waist height','Stay in athletic stance, knees bent','Practice with both hands alternately'],
+    tips:'Great ball handlers rarely look at the ball.' },
+  'Tennis Forehand': { icon:'🎾', muscles:'Shoulder, Core, Wrist', category:'Tennis', timed:false,
+    howTo:['Turn sideways to net, non-dominant shoulder forward','Swing racket back','Step forward, rotate hips and shoulders','Make contact in front of body','Follow through over shoulder'],
+    tips:'The follow-through determines spin and control.' },
+  'Football Sprint': { icon:'⚽', muscles:'Speed, Legs, Acceleration', category:'Football', timed:true,
+    howTo:['Drive off back foot, lean forward','Pump arms aggressively','Lift knees, push off balls of feet','Maintain lean through acceleration phase','Gradually upright as reaching top speed'],
+    tips:'90% of football is played in short explosive bursts under 30m.' },
+  'Golf Swing': { icon:'⛳', muscles:'Core, Shoulders, Rotation', category:'Golf', timed:false,
+    howTo:['Address ball, feet shoulder-width, slight knee bend','Takeaway: club, arms and shoulders together','Coil torso, weight shifts to trail side','Downswing: hips lead, drop club into slot','Impact: weight forward, face square, follow through'],
+    tips:'Grip pressure should be like holding a small bird — firm but gentle.' },
+  // DANCE
+  'Zumba Basic Step': { icon:'💃', muscles:'Full Body, Cardio, Coordination', category:'Dance', timed:true,
+    howTo:['Step side to side with hip sway','Add arm movements matching the beat','Let music guide your rhythm','Combine steps into flowing sequences'],
+    tips:'Don\'t overthink it — just move to the music and have fun.' },
+  // CALISTHENICS
+  'Handstand Hold': { icon:'🤸', muscles:'Shoulders, Core, Balance', category:'Calisthenics', timed:true,
+    howTo:['Place hands shoulder-width on floor','Kick up to handstand against wall first','Engage core and glutes','Point toes, body in straight line','Work toward wall-free balance'],
+    tips:'Start against a wall. Master it there before going freestanding.' },
+  'L-Sit': { icon:'💪', muscles:'Core, Triceps, Hip Flexors', category:'Calisthenics', timed:true,
+    howTo:['Sit on floor, place hands beside hips','Push down, lift body off floor','Extend legs parallel to ground','Hold position with straight legs'],
+    tips:'Use parallettes or dip bars to start. Extremely challenging move.' },
+  'Pistol Squat': { icon:'🦵', muscles:'Quads, Balance, Glutes', category:'Calisthenics', timed:false,
+    howTo:['Stand on one leg, extend other leg forward','Lower slowly on single leg to full depth','Keep heel on ground, torso upright','Drive back up through heel'],
+    tips:'Use TRX or hold a door frame when learning. Builds incredible leg strength.' },
+  // ROWING
+  'Rowing Machine': { icon:'🚣', muscles:'Full Body, Back, Legs', category:'Rowing', timed:true,
+    howTo:['Sit in machine, feet strapped, grip handle','Start with legs bent, arms extended (catch)','Drive legs first, lean back slightly, pull handle to lower ribs','Extend arms, lean forward, bend legs (recover)'],
+    tips:'Legs 60%, back 20%, arms 20% — legs do most of the work.' },
+  // GYMNASTICS
+  'Cartwheel': { icon:'🤸', muscles:'Full Body, Coordination', category:'Gymnastics', timed:false,
+    howTo:['Start with dominant foot forward, arms raised','Step and plant lead hand, then trail hand','Kick legs up and over in wheel motion','Land feet apart, arms up'],
+    tips:'Keep arms straight and locked. Look at your hands throughout.' },
+})
+
+// Add more sports
+const newSports = [
+  { id:'pilates',     name:'Pilates',      icon:'🧘', color:'#A29BFE' },
+  { id:'crossfit',    name:'CrossFit',     icon:'🔥', color:'#E05252' },
+  { id:'stretching',  name:'Stretching',   icon:'🤸', color:'#00BCD4' },
+  { id:'hiit',        name:'HIIT',         icon:'⚡', color:'#F5A623' },
+  { id:'martial',     name:'Martial Arts', icon:'🥋', color:'#2D3436' },
+  { id:'basketball',  name:'Basketball',   icon:'🏀', color:'#E67E22' },
+  { id:'football',    name:'Football',     icon:'⚽', color:'#27AE60' },
+  { id:'tennis',      name:'Tennis',       icon:'🎾', color:'#F1C40F' },
+  { id:'golf',        name:'Golf',         icon:'⛳', color:'#2ECC71' },
+  { id:'dance',       name:'Dance',        icon:'💃', color:'#E91E63' },
+  { id:'calisthenics',name:'Calisthenics', icon:'💪', color:'#6C5CE7' },
+  { id:'rowing',      name:'Rowing',       icon:'🚣', color:'#0984E3' },
+  { id:'gymnastics',  name:'Gymnastics',   icon:'🤸', color:'#9B59B6' },
+  { id:'running',     name:'Running',      icon:'🏃', color:'#2ECC71' },
+]
+newSports.forEach(s => { if (!SPORTS.find(e => e.id === s.id)) SPORTS.push(s) })
+
+// More library workouts
+const newWorkouts = [
+  { id:'pilates_core', sport:'pilates', name:'Core Pilates', icon:'🧘', level:'Beginner', duration:'30 min', muscles:'Core · Abs · Spine', description:'Low-impact Pilates session focusing on core strength and body awareness.', exercises:['The Hundred','Roll Up','Single Leg Stretch','Plank'] },
+  { id:'crossfit_wod', sport:'crossfit', name:'Classic WOD', icon:'🔥', level:'Advanced', duration:'20 min', muscles:'Full Body', description:'A classic CrossFit-style workout of the day. Go hard, rest when needed.', exercises:['Burpee','Kettlebell Swing','Box Jump','Thruster','Wall Ball'] },
+  { id:'full_stretch', sport:'stretching', name:'Full Body Stretch', icon:'🤸', level:'Beginner', duration:'20 min', muscles:'Full Body Flexibility', description:'A complete stretching routine to improve flexibility and reduce soreness.', exercises:['Hamstring Stretch','Hip Flexor Stretch','Chest Opener','Pigeon Pose','Child\'s Pose'] },
+  { id:'hiit_cardio', sport:'hiit', name:'HIIT Cardio Blast', icon:'⚡', level:'Intermediate', duration:'25 min', muscles:'Full Body, Cardio', description:'High intensity intervals with short rest. Maximum calorie burn in minimum time.', exercises:['Burpee','High Knees','Jump Squat','Jumping Jacks','Mountain Climbers','Jump Rope'] },
+  { id:'martial_basics', sport:'martial', name:'Martial Arts Basics', icon:'🥋', level:'Beginner', duration:'30 min', muscles:'Full Body, Coordination', description:'Fundamental techniques for beginners covering stances, punches and kicks.', exercises:['Shadow Boxing','Jab-Cross','Roundhouse Kick','Kata Practice'] },
+  { id:'run_30', sport:'running', name:'30-Min Easy Run', icon:'🏃', level:'Beginner', duration:'30 min', muscles:'Legs, Cardiovascular', description:'Steady comfortable pace to build your aerobic base. No stopping.', exercises:['Running'] },
+  { id:'run_interval', sport:'running', name:'Interval Training', icon:'🏃', level:'Intermediate', duration:'40 min', muscles:'Speed, Endurance', description:'Sprint and recovery intervals to build speed and endurance simultaneously.', exercises:['Running','High Knees','Walking'] },
+  { id:'cali_basics', sport:'calisthenics', name:'Calisthenics Basics', icon:'💪', level:'Beginner', duration:'35 min', muscles:'Full Body, Bodyweight', description:'Master your own bodyweight with these fundamental calisthenics movements.', exercises:['Push Ups','Pull Ups','Squat','Dips','Plank','Crunches'] },
+  { id:'cali_advanced', sport:'calisthenics', name:'Advanced Skills', icon:'💪', level:'Advanced', duration:'40 min', muscles:'Full Body Strength', description:'Elite calisthenics movements requiring exceptional strength and balance.', exercises:['Handstand Hold','L-Sit','Pistol Squat','Pull Ups','Dips'] },
+  { id:'row_endurance', sport:'rowing', name:'Rowing Endurance', icon:'🚣', level:'Intermediate', duration:'30 min', muscles:'Full Body, Back, Legs', description:'Sustained rowing machine session for full body conditioning and cardiovascular fitness.', exercises:['Rowing Machine'] },
+  { id:'dance_zumba', sport:'dance', name:'Zumba Flow', icon:'💃', level:'Beginner', duration:'45 min', muscles:'Full Body, Fun', description:'Dance your way to fitness. No experience needed — just move to the music!', exercises:['Zumba Basic Step','Jumping Jacks'] },
+]
+newWorkouts.forEach(w => { if (!LIBRARY_WORKOUTS.find(e => e.id === w.id)) LIBRARY_WORKOUTS.push(w) })
