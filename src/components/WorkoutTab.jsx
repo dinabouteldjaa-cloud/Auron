@@ -678,7 +678,167 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration }) {
 }
 
 // ─────────────────────────────────────────────
-// Active session
+// Fullscreen exercise view
+// ─────────────────────────────────────────────
+function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTogglePause, onSetDone, onPrev, onNext, onFinish, restSecs, saving, fmt, isLast }) {
+  const data      = getExercise(exercise.name)
+  const timed     = data.timed || exercise.timed
+  const set       = exercise.sets[setIdx]
+  const [showHow, setShowHow] = useState(false)
+  const [sheet,   setSheet]   = useState(null)
+  const [showRest,setShowRest]= useState(false)
+  const [weight,  setWeight]  = useState(set?.weight || '')
+  const [reps,    setReps]    = useState(set?.reps   || '')
+  const [dur,     setDur]     = useState(set?.duration || '')
+
+  // Sync local state when set changes
+  useEffect(() => {
+    setWeight(set?.weight || '')
+    setReps(set?.reps || '')
+    setDur(set?.duration || '')
+    setShowHow(false)
+    setShowRest(false)
+  }, [setIdx, exercise.name])
+
+  const handleDone = () => {
+    onSetDone({ weight, reps, duration: dur })
+    if (restSecs > 0 && !(isLast && setIdx === totalSets - 1)) setShowRest(true)
+    else if (!isLast || setIdx < totalSets - 1) {}
+  }
+
+  const doneCount = exercise.sets.filter(s => s.done).length
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:C.pageBg||'#F0EFF8', zIndex:200, display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto', overflow:'hidden' }}>
+      {showRest && (
+        <RestTimer duration={restSecs} onDone={() => { setShowRest(false); onNext?.() }} />
+      )}
+      {sheet && (
+        <NumberSheet
+          label={sheet==='weight'?'Weight (kg)':sheet==='reps'?'Reps':'Duration (sec)'}
+          value={sheet==='weight'?weight:sheet==='reps'?reps:dur}
+          onConfirm={v => { if(sheet==='weight') setWeight(v); else if(sheet==='reps') setReps(v); else setDur(v) }}
+          onClose={() => setSheet(null)}
+        />
+      )}
+
+      {/* Top bar */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px 8px', flexShrink:0 }}>
+        <button onClick={onFinish} style={{ background:'none', border:'none', color:C.textMuted, fontSize:14, cursor:'pointer', padding:0, display:'flex', alignItems:'center', gap:4 }}>
+          ✕ End
+        </button>
+        <div style={{ fontSize:15, fontWeight:700, color:C.purple, fontVariantNumeric:'tabular-nums' }}>{fmt(elapsed)}</div>
+        <button onClick={onTogglePause} style={{ background:C.purpleLight, border:'none', borderRadius:10, padding:'6px 14px', color:C.purple, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+          {paused ? '▶ Resume' : '⏸ Pause'}
+        </button>
+      </div>
+
+      {/* Progress dots */}
+      <div style={{ display:'flex', gap:6, padding:'0 20px 12px', flexShrink:0, overflowX:'auto' }}>
+        {exercise.sets.map((s, i) => (
+          <div key={i} style={{ width: i===setIdx?24:8, height:8, borderRadius:4, background:s.done?C.green:i===setIdx?C.purple:C.border, transition:'all 0.2s', flexShrink:0 }} />
+        ))}
+      </div>
+
+      {/* Main content — scrollable */}
+      <div style={{ flex:1, overflowY:'auto', padding:'0 24px' }}>
+        {/* Exercise name + icon */}
+        <div style={{ textAlign:'center', marginBottom:24 }}>
+          <div style={{ fontSize:56, marginBottom:12 }}>{data.icon||'💪'}</div>
+          <div style={{ fontSize:26, fontWeight:800, color:C.text, lineHeight:1.2, marginBottom:6 }}>{exercise.name}</div>
+          <div style={{ fontSize:13, color:C.textMuted }}>{data.muscles}</div>
+          <div style={{ fontSize:13, color:C.purple, fontWeight:600, marginTop:4 }}>
+            Set {setIdx+1} of {totalSets} · {doneCount} done
+          </div>
+        </div>
+
+        {/* Weight & Reps — big tap targets */}
+        {timed ? (
+          <div style={{ textAlign:'center', marginBottom:32 }}>
+            <div style={{ fontSize:13, color:C.textMuted, marginBottom:8, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>Duration</div>
+            <button onClick={() => setSheet('duration')}
+              style={{ background:C.surface, border:`2px solid ${C.purple}`, borderRadius:20, padding:'20px 40px', cursor:'pointer', boxShadow:C.shadowCard }}>
+              <span style={{ fontSize:52, fontWeight:800, color:dur?C.purple:C.textDim, fontVariantNumeric:'tabular-nums' }}>{dur||'—'}</span>
+              <span style={{ fontSize:20, color:C.textMuted, marginLeft:6 }}>sec</span>
+            </button>
+          </div>
+        ) : (
+          <div style={{ display:'flex', gap:16, justifyContent:'center', alignItems:'center', marginBottom:32 }}>
+            {/* Weight */}
+            <div style={{ textAlign:'center', flex:1 }}>
+              <div style={{ fontSize:11, color:C.textMuted, marginBottom:8, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>Weight</div>
+              <button onClick={() => setSheet('weight')}
+                style={{ width:'100%', background:C.surface, border:`2px solid ${weight?C.purple:C.border}`, borderRadius:18, padding:'18px 12px', cursor:'pointer', boxShadow:C.shadowCard }}>
+                <div style={{ fontSize:40, fontWeight:800, color:weight?C.purple:C.textDim, fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{weight||'—'}</div>
+                <div style={{ fontSize:13, color:C.textMuted, marginTop:4 }}>kg</div>
+              </button>
+            </div>
+
+            <div style={{ fontSize:28, color:C.border, fontWeight:300, flexShrink:0, marginTop:8 }}>×</div>
+
+            {/* Reps */}
+            <div style={{ textAlign:'center', flex:1 }}>
+              <div style={{ fontSize:11, color:C.textMuted, marginBottom:8, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>Reps</div>
+              <button onClick={() => setSheet('reps')}
+                style={{ width:'100%', background:C.surface, border:`2px solid ${reps?C.purple:C.border}`, borderRadius:18, padding:'18px 12px', cursor:'pointer', boxShadow:C.shadowCard }}>
+                <div style={{ fontSize:40, fontWeight:800, color:reps?C.purple:C.textDim, fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{reps||'—'}</div>
+                <div style={{ fontSize:13, color:C.textMuted, marginTop:4 }}>reps</div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* How to perform */}
+        {data.howTo?.length > 0 && (
+          <div style={{ marginBottom:24 }}>
+            <button onClick={() => setShowHow(h=>!h)}
+              style={{ width:'100%', background:C.surface, border:`1px solid ${C.divider}`, borderRadius:14, padding:'12px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:C.shadowCard }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ fontSize:16 }}>📋</span>
+                <span style={{ fontSize:14, fontWeight:600, color:C.text }}>How to perform</span>
+              </div>
+              <span style={{ color:C.purple, fontSize:16 }}>{showHow?'▲':'▼'}</span>
+            </button>
+            {showHow && (
+              <div style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, padding:'16px', marginTop:8 }}>
+                <ol style={{ margin:0, padding:'0 0 0 18px', display:'flex', flexDirection:'column', gap:10 }}>
+                  {data.howTo.map((step,i) => (
+                    <li key={i} style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>{step}</li>
+                  ))}
+                </ol>
+                {data.tips && (
+                  <div style={{ marginTop:12, fontSize:12, color:C.purple, fontStyle:'italic', borderTop:`1px solid ${C.divider}`, paddingTop:10 }}>
+                    💡 {data.tips}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={{ height:120 }} />
+      </div>
+
+      {/* Bottom action bar — fixed */}
+      <div style={{ padding:'12px 20px 32px', background:C.pageBg||'#F0EFF8', borderTop:`1px solid ${C.divider}`, flexShrink:0 }}>
+        <button onClick={handleDone}
+          style={{ width:'100%', padding:'18px', borderRadius:20, background:`linear-gradient(135deg, ${C.green}, #1aad6b)`, border:'none', color:'#fff', fontSize:18, fontWeight:800, cursor:'pointer', letterSpacing:'0.02em', boxShadow:`0 6px 24px ${C.green}44` }}>
+          {isLast && setIdx === totalSets - 1 ? '🏁 Finish workout' : '✓ Done'}
+        </button>
+        {/* Skip */}
+        {!(isLast && setIdx === totalSets - 1) && (
+          <button onClick={() => onNext?.()}
+            style={{ width:'100%', marginTop:8, padding:'10px', background:'none', border:'none', color:C.textMuted, fontSize:13, cursor:'pointer' }}>
+            Skip this set →
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────
+// Active session — orchestrates fullscreen flow
 // ─────────────────────────────────────────────
 function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   const fromLibrary = !!plan?.fromLibrary
@@ -688,9 +848,8 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
     const data  = getExercise(name)
     const count = parseInt(ex.sets) || 3
     return {
-      name,
-      timed: data.timed || false,
-      sets: Array.from({ length: count }, (_, i) => ({
+      name, timed: data.timed || false,
+      sets: Array.from({ length: count }, () => ({
         weight: '', reps: String(parseInt(ex.reps)||10), duration: String(parseInt(ex.reps)||30), done: false
       })),
     }
@@ -702,40 +861,60 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   const [started,    setStarted]    = useState(false)
   const [paused,     setPaused]     = useState(false)
   const [elapsed,    setElapsed]    = useState(0)
-  const [restSecs,   setRestSecs]   = useState(60)  // configurable rest duration
+  const [restSecs,   setRestSecs]   = useState(60)
   const [showPicker, setShowPicker] = useState(false)
   const [saving,     setSaving]     = useState(false)
+  // Fullscreen navigation state
+  const [activeEx,   setActiveEx]   = useState(0)  // exercise index
+  const [activeSet,  setActiveSet]  = useState(0)  // set index within exercise
   const startRef   = useRef(null)
   const pausedAt   = useRef(0)
   const pauseAccum = useRef(0)
 
   useEffect(() => {
     if (!started || paused) return
-    const id = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startRef.current - pauseAccum.current) / 1000))
-    }, 1000)
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current - pauseAccum.current) / 1000)), 1000)
     return () => clearInterval(id)
   }, [started, paused])
 
-  const beginWorkout = () => { startRef.current = Date.now(); setStarted(true) }
-  const togglePause  = () => {
-    if (!paused) {
-      pausedAt.current = Date.now()
-      setPaused(true)
-    } else {
-      pauseAccum.current += Date.now() - pausedAt.current
-      setPaused(false)
-    }
-  }
   const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
 
-  const addExercise = ex  => setExercises(prev => [...prev, { name:ex.name, timed:getExercise(ex.name).timed||false, sets:[{weight:'',reps:'',duration:'',done:false}] }])
-  const updateEx    = (i,ex) => setExercises(prev => prev.map((e,j)=>j===i?ex:e))
-  const removeEx    = i   => setExercises(prev => prev.filter((_,j)=>j!==i))
+  const beginWorkout = () => { startRef.current = Date.now(); setStarted(true) }
+  const togglePause  = () => {
+    if (!paused) { pausedAt.current = Date.now(); setPaused(true) }
+    else { pauseAccum.current += Date.now() - pausedAt.current; setPaused(false) }
+  }
 
-  const doneSets = exercises.reduce((s,e)=>s+e.sets.filter(s=>s.done).length,0)
-  const totalVol = exercises.reduce((s,e)=>s+e.sets.filter(s=>s.done).reduce((sv,set)=>sv+(parseFloat(set.weight)||0)*(parseInt(set.reps)||1),0),0)
-  const today    = toUserDateStr(timezone)
+  const addExercise  = ex => setExercises(prev => [...prev, { name:ex.name, timed:getExercise(ex.name).timed||false, sets:[{weight:'',reps:'',duration:'',done:false}] }])
+  const updateEx     = (i, ex) => setExercises(prev => prev.map((e,j)=>j===i?ex:e))
+  const removeEx     = i => setExercises(prev => prev.filter((_,j)=>j!==i))
+  const today        = toUserDateStr(timezone)
+  const doneSetsTotal = exercises.reduce((s,e)=>s+e.sets.filter(s=>s.done).length,0)
+  const totalVol      = exercises.reduce((s,e)=>s+e.sets.filter(s=>s.done).reduce((sv,set)=>sv+(parseFloat(set.weight)||0)*(parseInt(set.reps)||1),0),0)
+
+  // Mark current set done and advance
+  const handleSetDone = ({ weight, reps, duration }) => {
+    const ex   = exercises[activeEx]
+    const sets = ex.sets.map((s,i) => i===activeSet ? {...s, weight, reps, duration, done:true} : s)
+    updateEx(activeEx, { ...ex, sets })
+
+    // Advance to next set or next exercise
+    if (activeSet < ex.sets.length - 1) {
+      setActiveSet(s => s + 1)
+    } else if (activeEx < exercises.length - 1) {
+      setActiveEx(e => e + 1)
+      setActiveSet(0)
+    }
+    // If last exercise, last set — finish prompt handled in fullscreen
+  }
+
+  const handleNext = () => {
+    const ex = exercises[activeEx]
+    if (activeSet < ex.sets.length - 1) setActiveSet(s => s + 1)
+    else if (activeEx < exercises.length - 1) { setActiveEx(e=>e+1); setActiveSet(0) }
+  }
+
+  const isLastExAndSet = activeEx === exercises.length - 1 && activeSet === (exercises[activeEx]?.sets.length||1) - 1
 
   const handleSave = async () => {
     setSaving(true)
@@ -743,8 +922,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
     const minutes     = started ? Math.max(1, Math.round(elapsed/60)) : 0
     await supabase.from('workout_logs').insert({
       user_id: userId, log_date: today,
-      workout_name: workoutName,
-      workout_type: exercises[0] ? getExercise(exercises[0].name).category : 'General',
+      workout_name: workoutName, workout_type: exercises[0]?getExercise(exercises[0].name).category:'General',
       duration_minutes: minutes, calories_burned: Math.round(minutes*6),
       exercises: exercises.map(ex => ({
         name: ex.name, category: getExercise(ex.name).category,
@@ -756,86 +934,104 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
     onSave()
   }
 
-  return (
-    <div>
-      <BackBtn onBack={onCancel} label="Cancel workout" />
-
-      {/* Header */}
-      <div style={{ background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, borderRadius:20, padding:'20px', marginBottom:16, color:'#fff' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <div style={{ fontSize:13, opacity:0.8 }}>
-            {!started ? 'Ready to start' : paused ? '⏸ Paused' : '● Active'}
-          </div>
-          <div style={{ fontSize:26, fontWeight:700, fontVariantNumeric:'tabular-nums' }}>{fmt(elapsed)}</div>
+  // ── Pre-start screen ─────────────────────────
+  if (!started) {
+    return (
+      <div>
+        <BackBtn onBack={onCancel} label="Cancel" />
+        <div style={{ background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, borderRadius:20, padding:'24px 20px', marginBottom:20, color:'#fff' }}>
+          {fromLibrary
+            ? <div style={{ fontSize:22, fontWeight:800 }}>{name}</div>
+            : <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name your workout..."
+                style={{ width:'100%', background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:12, padding:'12px 14px', color:'#fff', fontSize:18, fontWeight:700, outline:'none' }} />
+          }
+          <div style={{ fontSize:13, opacity:0.75, marginTop:8 }}>{exercises.length} exercises</div>
         </div>
-        {fromLibrary
-          ? <div style={{ fontSize:18, fontWeight:700 }}>{name}</div>
-          : <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name your workout..."
-              style={{ width:'100%', background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:12, padding:'10px 14px', color:'#fff', fontSize:15, fontWeight:600, outline:'none' }} />
-        }
-        {started && (
-          <div style={{ display:'flex', gap:20, fontSize:13, marginTop:14 }}>
-            <div><span style={{fontWeight:700}}>{exercises.length}</span><span style={{opacity:0.7}}> exercises</span></div>
-            <div><span style={{fontWeight:700}}>{doneSets}</span><span style={{opacity:0.7}}> sets done</span></div>
-            {totalVol>0&&<div><span style={{fontWeight:700}}>{Math.round(totalVol)}</span><span style={{opacity:0.7}}> kg total</span></div>}
-          </div>
-        )}
-      </div>
 
-      {/* Top action buttons — always visible */}
-      {!started ? (
-        <div style={{ display:'flex', gap:10, marginBottom:20 }}>
-          <button onClick={handleSave} disabled={saving}
-            style={{ flex:1, padding:13, borderRadius:16, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.textMuted, fontSize:13, fontWeight:600, cursor:'pointer' }}>
-            ✓ Log without timer
-          </button>
-          <button onClick={beginWorkout}
-            style={{ flex:2, padding:13, borderRadius:16, background:C.green, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:`0 4px 16px ${C.green}44` }}>
-            ▶ Begin — start timer
-          </button>
+        {/* Rest setting */}
+        <div style={{ background:C.surface, borderRadius:14, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+          <span style={{ fontSize:13, color:C.textMuted, marginRight:4 }}>⏱ Rest between sets</span>
+          {[0,30,45,60,90,120].map(s => (
+            <button key={s} onClick={() => setRestSecs(s)}
+              style={{ padding:'5px 12px', borderRadius:20, fontSize:12, cursor:'pointer', border:`1px solid ${restSecs===s?C.purple:C.border}`, background:restSecs===s?C.purpleLight:'transparent', color:restSecs===s?C.purple:C.textMuted, fontWeight:restSecs===s?700:400 }}>
+              {s===0?'Off':`${s}s`}
+            </button>
+          ))}
         </div>
-      ) : (
-        <div style={{ display:'flex', gap:10, marginBottom:16 }}>
-          <button onClick={togglePause}
-            style={{ flex:1, padding:12, borderRadius:16, background:C.surfaceMid, border:'none', color:C.textMuted, fontSize:13, fontWeight:600, cursor:'pointer' }}>
-            {paused ? '▶ Resume' : '⏸ Pause'}
-          </button>
-          <button onClick={handleSave} disabled={saving}
-            style={{ flex:2, padding:12, borderRadius:16, background:C.green, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:saving?'default':'pointer' }}>
-            {saving ? 'Saving…' : `✓ Finish · ${fmt(elapsed)}`}
-          </button>
-        </div>
-      )}
 
-      {/* Rest duration setting */}
-      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, padding:'10px 14px', background:C.surfaceMid, borderRadius:12 }}>
-        <span style={{ fontSize:13, color:C.textMuted, flex:1 }}>⏱ Rest between sets</span>
-        {[0, 30, 45, 60, 90, 120].map(s => (
-          <button key={s} onClick={() => setRestSecs(s)}
-            style={{ padding:'5px 10px', borderRadius:8, fontSize:12, cursor:'pointer', border:`1px solid ${restSecs===s?C.purple:C.border}`, background:restSecs===s?C.purpleLight:'transparent', color:restSecs===s?C.purple:C.textMuted, fontWeight:restSecs===s?700:400 }}>
-            {s===0?'Off':`${s}s`}
-          </button>
-        ))}
-      </div>
-
-      {/* Exercises */}
-      {exercises.map((ex,i) => (
-        <SessionExCard key={i} ex={ex} restDuration={started?restSecs:0}
-          onUpdate={ex=>updateEx(i,ex)} onRemove={()=>removeEx(i)} />
-      ))}
-
-      {!fromLibrary && (
+        {/* Exercise list preview */}
+        <Label>Exercises</Label>
+        {exercises.map((ex,i) => {
+          const data = getExercise(ex.name)
+          return (
+            <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 14px', background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, marginBottom:8 }}>
+              <span style={{ fontSize:20 }}>{data.icon||'💪'}</span>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
+                <div style={{ fontSize:11, color:C.textMuted }}>{ex.sets.length} sets · {data.muscles}</div>
+              </div>
+              <button onClick={() => removeEx(i)} style={{ background:'none', border:'none', color:C.textDim, fontSize:16, cursor:'pointer' }}>✕</button>
+            </div>
+          )
+        })}
         <button onClick={() => setShowPicker(true)}
-          style={{ width:'100%', padding:13, borderRadius:16, background:C.purpleLight, border:`2px dashed ${C.purple}55`, color:C.purple, fontSize:14, fontWeight:600, cursor:'pointer', marginBottom:12 }}>
+          style={{ width:'100%', padding:12, borderRadius:14, background:C.purpleLight, border:`2px dashed ${C.purple}55`, color:C.purple, fontSize:14, fontWeight:600, cursor:'pointer', marginBottom:20 }}>
           + Add exercise
         </button>
-      )}
 
-      <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Session notes (optional)..."
-        style={{ width:'100%', padding:'10px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', lineHeight:1.5 }} />
+        <div style={{ display:'flex', gap:10 }}>
+          <button onClick={handleSave} disabled={saving}
+            style={{ flex:1, padding:14, borderRadius:16, background:C.surfaceMid, border:'none', color:C.textMuted, fontSize:14, fontWeight:600, cursor:'pointer' }}>
+            {saving?'Saving…':'Log without timer'}
+          </button>
+          <button onClick={beginWorkout}
+            style={{ flex:2, padding:14, borderRadius:16, background:C.green, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', boxShadow:`0 4px 20px ${C.green}44` }}>
+            ▶ Begin workout
+          </button>
+        </div>
+        {showPicker && <ExercisePickerModal onAdd={addExercise} onClose={() => setShowPicker(false)} />}
+      </div>
+    )
+  }
 
-      {showPicker && <ExercisePickerModal onAdd={addExercise} onClose={() => setShowPicker(false)} />}
-    </div>
+  // ── Active — fullscreen exercise view ────────
+  if (exercises.length === 0) return null
+
+  // If last set of last exercise just done — show finish prompt
+  const allDone = exercises.every(ex => ex.sets.every(s => s.done))
+  if (allDone) {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'60vh', textAlign:'center', padding:24 }}>
+        <div style={{ fontSize:64, marginBottom:16 }}>🏆</div>
+        <div style={{ fontSize:28, fontWeight:800, color:C.text, marginBottom:8 }}>Workout complete!</div>
+        <div style={{ fontSize:15, color:C.textMuted, marginBottom:8 }}>{fmt(elapsed)} · {doneSetsTotal} sets</div>
+        {totalVol>0 && <div style={{ fontSize:13, color:C.textMuted, marginBottom:32 }}>{Math.round(totalVol)} kg total volume</div>}
+        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="Session notes (optional)..."
+          style={{ width:'100%', maxWidth:360, padding:'12px 14px', borderRadius:14, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', marginBottom:16 }} />
+        <button onClick={handleSave} disabled={saving}
+          style={{ width:'100%', maxWidth:360, padding:16, borderRadius:18, background:C.purple, border:'none', color:'#fff', fontSize:16, fontWeight:700, cursor:saving?'default':'pointer' }}>
+          {saving?'Saving…':'Save workout'}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <FullscreenExercise
+      exercise={exercises[activeEx]}
+      setIdx={activeSet}
+      totalSets={exercises[activeEx].sets.length}
+      elapsed={elapsed}
+      paused={paused}
+      onTogglePause={togglePause}
+      onSetDone={handleSetDone}
+      onNext={handleNext}
+      onFinish={() => { setStarted(false) }}
+      restSecs={restSecs}
+      saving={saving}
+      fmt={fmt}
+      isLast={activeEx===exercises.length-1}
+    />
   )
 }
 
