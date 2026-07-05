@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import { useRef } from 'react'
 
 // ─────────────────────────────────────────────────────────────
 // useCoachMessage — Two-layer coaching system
@@ -439,17 +439,26 @@ function buildMessage(mood, ctx, lang, seed) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Public hook — instant, memoized, no flash on re-render
+// Public hook — instant, stable, zero flash
+// Uses a ref to lock the message between renders
 // ─────────────────────────────────────────────────────────────
 export function useCoachMessage(ctx, lang) {
-  const seed = ctx ? buildSeed(ctx) : 0
+  const messageRef = useRef('')
+  const seedRef    = useRef(null)
+  const moodRef    = useRef(null)
+  const langRef    = useRef(null)
 
-  // Memoize: only recompute when mood, seed, or lang changes
-  // This prevents the random pick from changing on every re-render
-  const message = useMemo(() => {
-    if (!ctx || !ctx.mood) return ''
-    return buildMessage(ctx.mood, ctx, lang, seed)
-  }, [ctx?.mood, seed, lang])
+  if (!ctx || !ctx.mood) return { message: '', loading: false }
 
-  return { message, loading: false }
+  const seed = buildSeed(ctx)
+
+  // Only recompute if seed, mood, or lang actually changed
+  if (seed !== seedRef.current || ctx.mood !== moodRef.current || lang !== langRef.current) {
+    messageRef.current = buildMessage(ctx.mood, ctx, lang, seed)
+    seedRef.current    = seed
+    moodRef.current    = ctx.mood
+    langRef.current    = lang
+  }
+
+  return { message: messageRef.current, loading: false }
 }
