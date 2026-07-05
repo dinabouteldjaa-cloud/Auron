@@ -613,63 +613,6 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
     </div>
   )
 }
-  // Build initial exercises from plan
-  const initExercises = () => (plan?.exercises || []).map(ex => {
-    const data = getExercise(typeof ex === 'string' ? ex : ex.name)
-    const sets  = parseInt(ex.sets) || 3
-    return {
-      name: data.name || ex,
-      timed: data.timed,
-      sets: Array.from({ length: sets }, () => ({
-        weight:'', reps: String(ex.reps||10), duration: String(ex.reps||30), done:false
-      })),
-    }
-  })
-
-  const [exercises,  setExercises]  = useState(initExercises)
-  const [name,       setName]       = useState(plan?.name || '')
-  const [notes,      setNotes]      = useState('')
-  const [started,    setStarted]    = useState(false)
-  const [elapsed,    setElapsed]    = useState(0)
-  const [showPicker, setShowPicker] = useState(false)
-  const [saving,     setSaving]     = useState(false)
-  const startRef = useRef(null)
-
-  useEffect(() => {
-    if (!started) return
-    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000)
-    return () => clearInterval(id)
-  }, [started])
-
-  const beginWorkout = () => { startRef.current = Date.now(); setStarted(true) }
-  const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
-
-  const addExercise  = ex  => setExercises(prev => [...prev, { name:ex.name, timed:ex.timed||false, sets:[{weight:'',reps:'',duration:'',done:false}] }])
-  const updateEx     = (i, ex) => setExercises(prev => prev.map((e,j) => j===i ? ex : e))
-  const removeEx     = i   => setExercises(prev => prev.filter((_,j) => j!==i))
-
-  const doneSets = exercises.reduce((s,e) => s+e.sets.filter(s=>s.done).length, 0)
-  const totalVol = exercises.reduce((s,e) => s+e.sets.filter(s=>s.done).reduce((sv,set) => sv+(parseFloat(set.weight)||0)*(parseInt(set.reps)||1),0),0)
-  const today    = toUserDateStr(timezone)
-
-  const handleSave = async () => {
-    setSaving(true)
-    const workoutName = name.trim() || exercises.map(e=>e.name).join(', ').slice(0,60) || 'Workout'
-    const minutes     = started ? Math.max(1, Math.round(elapsed/60)) : 0
-    await supabase.from('workout_logs').insert({
-      user_id: userId, log_date: today,
-      workout_name: workoutName, workout_type: exercises[0] ? getExercise(exercises[0].name).category : 'General',
-      duration_minutes: minutes, calories_burned: Math.round(minutes*6),
-      exercises: exercises.map(ex => ({
-        name: ex.name, category: getExercise(ex.name).category,
-        sets: ex.sets.filter(s=>s.done).map(s=>({ weight:parseFloat(s.weight)||null, reps:parseInt(s.reps)||null, duration:parseInt(s.duration)||null })),
-      })),
-      notes: notes.trim()||null,
-    })
-    setSaving(false)
-    onSave()
-  }
-
 
 // ─────────────────────────────────────────────
 // Workout log history card
