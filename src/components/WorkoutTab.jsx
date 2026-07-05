@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
-import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, LEVEL_COLOR, getExercise } from '../lib/workoutData.js'
+import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LEVEL_COLOR, getExercise } from '../lib/workoutData.js'
 
 const C = T
 
@@ -198,22 +198,34 @@ function LibraryTab({ onUseAsTemplate }) {
           {allWorkouts.length === 0 && <Card style={{ textAlign:'center', padding:24, color:C.textMuted }}>No workouts found for "{search}"</Card>}
         </div>
       ) : (
-        /* Sports grid */
+      /* Sports categorized grid */
         <div>
-          <Label>Sports & categories</Label>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-            {SPORTS.filter(s => s.id !== 'custom').map(s => {
+          {SPORTS_CATEGORIES.map(cat => {
+            const sportsInCat = cat.sports.filter(s => {
               const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id && (filter==='All'||w.level===filter)).length
-              return (
-                <button key={s.id} onClick={() => setSport(s.id)}
-                  style={{ padding:'20px 16px', borderRadius:18, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:6 }}>
-                  <span style={{ fontSize:32 }}>{s.icon}</span>
-                  <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{s.name}</div>
-                  <div style={{ fontSize:11, color:count>0?C.purple:C.textMuted }}>{count} workout{count!==1?'s':''}</div>
-                </button>
-              )
-            })}
-          </div>
+              return true // show all sports
+            })
+            return (
+              <div key={cat.category} style={{ marginBottom:24 }}>
+                <Label>{cat.category}</Label>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                  {sportsInCat.map(s => {
+                    const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id && (filter==='All'||w.level===filter)).length
+                    return (
+                      <button key={s.id} onClick={() => setSport(s.id)}
+                        style={{ padding:'14px 12px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:5 }}>
+                        <span style={{ fontSize:26 }}>{s.icon}</span>
+                        <div style={{ fontSize:13, fontWeight:700, color:C.text, lineHeight:1.2 }}>{s.name}</div>
+                        <div style={{ fontSize:10, color:count>0?C.purple:C.textDim }}>
+                          {count>0 ? `${count} workout${count!==1?'s':''}` : 'Coming soon'}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
