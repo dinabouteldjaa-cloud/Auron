@@ -490,6 +490,129 @@ function SessionExerciseCard({ ex, onUpdate, onRemove }) {
 // Active session — timer only starts on Begin
 // ─────────────────────────────────────────────
 function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
+  const fromLibrary = plan?.fromLibrary === true
+
+  const initExercises = () => (plan?.exercises || []).map(ex => {
+    const data = getExercise(typeof ex === 'string' ? ex : ex.name)
+    const sets = parseInt(ex.sets) || 3
+    return {
+      name: data.name || (typeof ex === 'string' ? ex : ex.name),
+      timed: data.timed,
+      sets: Array.from({ length: sets }, () => ({
+        weight:'', reps: String(ex.reps||10), duration: String(ex.reps||30), done:false
+      })),
+    }
+  })
+
+  const [exercises,  setExercises]  = useState(initExercises)
+  const [name,       setName]       = useState(plan?.name || '')
+  const [notes,      setNotes]      = useState('')
+  const [started,    setStarted]    = useState(false)
+  const [elapsed,    setElapsed]    = useState(0)
+  const [showPicker, setShowPicker] = useState(false)
+  const [saving,     setSaving]     = useState(false)
+  const startRef = useRef(null)
+
+  useEffect(() => {
+    if (!started) return
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000)
+    return () => clearInterval(id)
+  }, [started])
+
+  const beginWorkout = () => { startRef.current = Date.now(); setStarted(true) }
+  const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
+
+  const addExercise = ex  => setExercises(prev => [...prev, { name:ex.name, timed:ex.timed||false, sets:[{weight:'',reps:'',duration:'',done:false}] }])
+  const updateEx    = (i, ex) => setExercises(prev => prev.map((e,j) => j===i ? ex : e))
+  const removeEx    = i   => setExercises(prev => prev.filter((_,j) => j!==i))
+
+  const doneSets = exercises.reduce((s,e) => s+e.sets.filter(s=>s.done).length, 0)
+  const totalVol = exercises.reduce((s,e) => s+e.sets.filter(s=>s.done).reduce((sv,set) => sv+(parseFloat(set.weight)||0)*(parseInt(set.reps)||1),0),0)
+  const today    = toUserDateStr(timezone)
+
+  const handleSave = async () => {
+    setSaving(true)
+    const workoutName = name.trim() || exercises.map(e=>e.name).join(', ').slice(0,60) || 'Workout'
+    const minutes     = started ? Math.max(1, Math.round(elapsed/60)) : 0
+    await supabase.from('workout_logs').insert({
+      user_id: userId, log_date: today,
+      workout_name: workoutName, workout_type: exercises[0] ? getExercise(exercises[0].name).category : 'General',
+      duration_minutes: minutes, calories_burned: Math.round(minutes*6),
+      exercises: exercises.map(ex => ({
+        name: ex.name, category: getExercise(ex.name).category,
+        sets: ex.sets.filter(s=>s.done).map(s=>({ weight:parseFloat(s.weight)||null, reps:parseInt(s.reps)||null, duration:parseInt(s.duration)||null })),
+      })),
+      notes: notes.trim()||null,
+    })
+    setSaving(false)
+    onSave()
+  }
+
+  return (
+    <div>
+      {/* Back button */}
+      <BackBtn onBack={onCancel} label="Cancel workout" />
+
+      {/* Header */}
+      <div style={{ background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, borderRadius:20, padding:'20px', marginBottom:16, color:'#fff' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <div style={{ fontSize:13, opacity:0.8 }}>{started ? 'Active workout' : 'Ready to start'}</div>
+          <div style={{ fontSize:26, fontWeight:700, fontVariantNumeric:'tabular-nums' }}>
+            {started ? fmt(elapsed) : '00:00'}
+          </div>
+        </div>
+        {/* Only show name input for custom/empty workouts, not library ones */}
+        {fromLibrary ? (
+          <div style={{ fontSize:18, fontWeight:700 }}>{name}</div>
+        ) : (
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Name your workout..."
+            style={{ width:'100%', background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:12, padding:'10px 14px', color:'#fff', fontSize:15, fontWeight:600, outline:'none' }} />
+        )}
+        {started && (
+          <div style={{ display:'flex', gap:20, fontSize:13, marginTop:14 }}>
+            <div><span style={{fontWeight:700}}>{exercises.length}</span><span style={{opacity:0.7}}> exercises</span></div>
+            <div><span style={{fontWeight:700}}>{doneSets}</span><span style={{opacity:0.7}}> sets done</span></div>
+            {totalVol>0 && <div><span style={{fontWeight:700}}>{Math.round(totalVol)}</span><span style={{opacity:0.7}}> kg total</span></div>}
+          </div>
+        )}
+      </div>
+
+      {/* Action buttons — always visible at top */}
+      {!started ? (
+        <div style={{ display:'flex', gap:10, marginBottom:20 }}>
+          <button onClick={handleSave} disabled={saving}
+            style={{ flex:1, padding:13, borderRadius:16, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.textMuted, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+            ✓ Log without timer
+          </button>
+          <button onClick={beginWorkout}
+            style={{ flex:2, padding:13, borderRadius:16, background:C.green, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:`0 4px 16px ${C.green}44` }}>
+            ▶ Begin — start timer
+          </button>
+        </div>
+      ) : (
+        <button onClick={handleSave} disabled={saving}
+          style={{ width:'100%', padding:13, borderRadius:16, background:C.green, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:saving?'default':'pointer', marginBottom:16 }}>
+          {saving ? 'Saving…' : `✓ Finish workout · ${fmt(elapsed)}`}
+        </button>
+      )}
+
+      {/* Exercises */}
+      {exercises.map((ex,i) => (
+        <SessionExerciseCard key={i} ex={ex} onUpdate={ex=>updateEx(i,ex)} onRemove={()=>removeEx(i)} />
+      ))}
+
+      <button onClick={() => setShowPicker(true)}
+        style={{ width:'100%', padding:13, borderRadius:16, background:C.purpleLight, border:`2px dashed ${C.purple}55`, color:C.purple, fontSize:14, fontWeight:600, cursor:'pointer', marginBottom:12 }}>
+        + Add exercise
+      </button>
+
+      <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Session notes (optional)..."
+        style={{ width:'100%', padding:'10px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', lineHeight:1.5 }} />
+
+      {showPicker && <ExercisePickerModal onAdd={addExercise} onClose={() => setShowPicker(false)} />}
+    </div>
+  )
+}
   // Build initial exercises from plan
   const initExercises = () => (plan?.exercises || []).map(ex => {
     const data = getExercise(typeof ex === 'string' ? ex : ex.name)
@@ -547,60 +670,6 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
     onSave()
   }
 
-  return (
-    <div>
-      {/* Header */}
-      <div style={{ background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, borderRadius:20, padding:'20px', marginBottom:16, color:'#fff' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <div style={{ fontSize:13, opacity:0.8 }}>{started ? 'Active workout' : 'Ready to start'}</div>
-          <div style={{ fontSize:26, fontWeight:700, fontVariantNumeric:'tabular-nums' }}>
-            {started ? fmt(elapsed) : '00:00'}
-          </div>
-        </div>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Name your workout..."
-          style={{ width:'100%', background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:12, padding:'10px 14px', color:'#fff', fontSize:15, fontWeight:600, outline:'none', marginBottom: started ? 14 : 0 }} />
-        {started && (
-          <div style={{ display:'flex', gap:20, fontSize:13 }}>
-            <div><span style={{fontWeight:700}}>{exercises.length}</span><span style={{opacity:0.7}}> exercises</span></div>
-            <div><span style={{fontWeight:700}}>{doneSets}</span><span style={{opacity:0.7}}> sets done</span></div>
-            {totalVol>0 && <div><span style={{fontWeight:700}}>{Math.round(totalVol)}</span><span style={{opacity:0.7}}> kg total</span></div>}
-          </div>
-        )}
-      </div>
-
-      {/* Begin button — only shown before starting */}
-      {!started && (
-        <button onClick={beginWorkout}
-          style={{ width:'100%', padding:16, borderRadius:18, background:C.green, border:'none', color:'#fff', fontSize:16, fontWeight:700, cursor:'pointer', marginBottom:16, boxShadow:`0 4px 20px ${C.green}44` }}>
-          ▶ Begin workout — start timer
-        </button>
-      )}
-
-      {/* Exercises */}
-      {exercises.map((ex,i) => (
-        <SessionExerciseCard key={i} ex={ex} onUpdate={ex=>updateEx(i,ex)} onRemove={()=>removeEx(i)} />
-      ))}
-
-      <button onClick={() => setShowPicker(true)}
-        style={{ width:'100%', padding:13, borderRadius:16, background:C.purpleLight, border:`2px dashed ${C.purple}55`, color:C.purple, fontSize:14, fontWeight:600, cursor:'pointer', marginBottom:12 }}>
-        + Add exercise
-      </button>
-
-      <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Session notes (optional)..."
-        style={{ width:'100%', padding:'10px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', marginBottom:14, lineHeight:1.5 }} />
-
-      <div style={{ display:'flex', gap:10 }}>
-        <button onClick={onCancel} style={{ flex:1, padding:12, borderRadius:16, background:C.surfaceMid, border:'none', color:C.textMuted, fontSize:14, fontWeight:600, cursor:'pointer' }}>Cancel</button>
-        <button onClick={handleSave} disabled={saving}
-          style={{ flex:2, padding:12, borderRadius:16, background:C.green, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:saving?'default':'pointer' }}>
-          {saving ? 'Saving…' : started ? `✓ Finish · ${fmt(elapsed)}` : '✓ Log workout (no timer)'}
-        </button>
-      </div>
-
-      {showPicker && <ExercisePickerModal onAdd={addExercise} onClose={() => setShowPicker(false)} />}
-    </div>
-  )
-}
 
 // ─────────────────────────────────────────────
 // Workout log history card
@@ -677,10 +746,8 @@ export default function WorkoutTab({ userId, profile }) {
   // Handle "Use as template" from library
   const handleUseAsTemplate = (workout) => {
     if (workout.startNow) {
-      // Start directly
-      setSession({ name: workout.name, exercises: workout.exercises })
+      setSession({ name: workout.name, exercises: workout.exercises, fromLibrary: true })
     } else {
-      // Open My Plans with pre-filled editor
       setPreloadPlan({ name: workout.name, exercises: workout.exercises })
       setTab('plans')
     }
