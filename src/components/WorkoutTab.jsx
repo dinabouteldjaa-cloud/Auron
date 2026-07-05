@@ -286,6 +286,16 @@ function ExercisePickerModal({ onAdd, onClose }) {
 // ─────────────────────────────────────────────
 // Plan editor (My Plans)
 // ─────────────────────────────────────────────
+const DAYS = [
+  { key:'mon', label:'Mon' },
+  { key:'tue', label:'Tue' },
+  { key:'wed', label:'Wed' },
+  { key:'thu', label:'Thu' },
+  { key:'fri', label:'Fri' },
+  { key:'sat', label:'Sat' },
+  { key:'sun', label:'Sun' },
+]
+
 function PlanEditor({ plan, onSave, onCancel }) {
   const [name,       setName]       = useState(plan?.name || '')
   const [exercises,  setExercises]  = useState(
@@ -302,25 +312,46 @@ function PlanEditor({ plan, onSave, onCancel }) {
   const [showPicker, setShowPicker] = useState(false)
   const [notes,      setNotes]      = useState(plan?.notes || '')
 
-  const addEx  = ex  => setExercises(prev => [...prev, { name:ex.name, icon:ex.icon||'💪', muscles:ex.muscles||'', timed:ex.timed||false, sets:3, reps:ex.timed?30:10, notes:'' }])
-  const removeEx = i => setExercises(prev => prev.filter((_,j)=>j!==i))
-  const updateEx = (i,f,v) => setExercises(prev => prev.map((e,j)=>j===i?{...e,[f]:v}:e))
-  const moveUp   = i => { if(i===0)return; const a=[...exercises]; [a[i-1],a[i]]=[a[i],a[i-1]]; setExercises(a) }
-  const moveDown = i => { if(i===exercises.length-1)return; const a=[...exercises]; [a[i],a[i+1]]=[a[i+1],a[i]]; setExercises(a) }
+  // Schedule
+  const initSched = plan?.schedule || null
+  const [schedEnabled, setSchedEnabled] = useState(!!initSched)
+  const [schedDays,    setSchedDays]    = useState(initSched?.days || [])
+  const [schedTime,    setSchedTime]    = useState(initSched?.time || '08:00')
 
-  const canSave = name.trim() && exercises.length > 0
+  const toggleDay = day => setSchedDays(prev =>
+    prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+  )
+
+  const addEx    = ex  => setExercises(prev => [...prev, { name:ex.name, icon:ex.icon||'💪', muscles:ex.muscles||'', timed:ex.timed||false, sets:3, reps:ex.timed?30:10, notes:'' }])
+  const removeEx = i   => setExercises(prev => prev.filter((_,j)=>j!==i))
+  const updateEx = (i,f,v) => setExercises(prev => prev.map((e,j)=>j===i?{...e,[f]:v}:e))
+  const moveUp   = i   => { if(i===0)return; const a=[...exercises]; [a[i-1],a[i]]=[a[i],a[i-1]]; setExercises(a) }
+  const moveDown = i   => { if(i===exercises.length-1)return; const a=[...exercises]; [a[i],a[i+1]]=[a[i+1],a[i]]; setExercises(a) }
+
+  const canSave  = name.trim() && exercises.length > 0
+
+  const handleSave = () => {
+    const schedule = schedEnabled && schedDays.length > 0
+      ? { days: schedDays, time: schedTime, active: true }
+      : null
+    onSave({ name: name.trim(), exercises, notes: notes.trim(), schedule })
+  }
 
   return (
     <div>
       <BackBtn onBack={onCancel} />
-      <div style={{ fontSize:20, fontWeight:700, color:C.text, marginBottom:20 }}>{plan?.id ? 'Edit Plan' : 'New Plan'}</div>
+      <div style={{ fontSize:20, fontWeight:700, color:C.text, marginBottom:20 }}>
+        {plan?.id ? 'Edit Plan' : 'New Plan'}
+      </div>
 
+      {/* Name */}
       <div style={{ marginBottom:16 }}>
         <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>Plan name *</div>
         <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. My Push Day"
           style={{ width:'100%', padding:'11px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:15, fontWeight:600, outline:'none' }} />
       </div>
 
+      {/* Exercises */}
       <Label>Exercises ({exercises.length})</Label>
       {exercises.map((ex, i) => (
         <div key={i} style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, padding:'12px 14px', marginBottom:8 }}>
@@ -337,29 +368,90 @@ function PlanEditor({ plan, onSave, onCancel }) {
             </div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            <div style={{ flex:1 }}><div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>Sets</div>
-              <input type="number" value={ex.sets} onChange={e=>updateEx(i,'sets',e.target.value)} style={{ width:'100%', padding:'7px 8px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', textAlign:'center' }} /></div>
-            <div style={{ flex:1 }}><div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>{ex.timed?'Sec':'Reps'}</div>
-              <input type="number" value={ex.reps} onChange={e=>updateEx(i,'reps',e.target.value)} style={{ width:'100%', padding:'7px 8px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', textAlign:'center' }} /></div>
-            <div style={{ flex:2 }}><div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>Note</div>
-              <input value={ex.notes||''} onChange={e=>updateEx(i,'notes',e.target.value)} placeholder="Optional" style={{ width:'100%', padding:'7px 8px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:12, outline:'none' }} /></div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>Sets</div>
+              <input type="number" value={ex.sets} onChange={e=>updateEx(i,'sets',e.target.value)}
+                style={{ width:'100%', padding:'7px 8px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', textAlign:'center' }} />
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>{ex.timed?'Sec':'Reps'}</div>
+              <input type="number" value={ex.reps} onChange={e=>updateEx(i,'reps',e.target.value)}
+                style={{ width:'100%', padding:'7px 8px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', textAlign:'center' }} />
+            </div>
+            <div style={{ flex:2 }}>
+              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>Note</div>
+              <input value={ex.notes||''} onChange={e=>updateEx(i,'notes',e.target.value)} placeholder="Optional"
+                style={{ width:'100%', padding:'7px 8px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:12, outline:'none' }} />
+            </div>
           </div>
         </div>
       ))}
 
       <button onClick={() => setShowPicker(true)}
-        style={{ width:'100%', padding:12, borderRadius:14, background:C.purpleLight, border:`2px dashed ${C.purple}55`, color:C.purple, fontSize:14, fontWeight:600, cursor:'pointer', marginBottom:14 }}>
+        style={{ width:'100%', padding:12, borderRadius:14, background:C.purpleLight, border:`2px dashed ${C.purple}55`, color:C.purple, fontSize:14, fontWeight:600, cursor:'pointer', marginBottom:16 }}>
         + Add exercise
       </button>
-      <div style={{ marginBottom:16 }}>
+
+      {/* Notes */}
+      <div style={{ marginBottom:20 }}>
         <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>Plan notes</div>
         <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder="Optional..."
           style={{ width:'100%', padding:'10px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', lineHeight:1.5 }} />
       </div>
-      <button onClick={() => onSave({ name:name.trim(), exercises, notes:notes.trim() })} disabled={!canSave}
+
+      {/* Schedule section */}
+      <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.divider}`, padding:'16px', marginBottom:20 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: schedEnabled ? 16 : 0 }}>
+          <div>
+            <div style={{ fontSize:14, fontWeight:700, color:C.text }}>📅 Schedule</div>
+            <div style={{ fontSize:11, color:C.textMuted, marginTop:2 }}>
+              {schedEnabled ? 'Workout scheduled for specific days' : 'Save as template only — no schedule'}
+            </div>
+          </div>
+          {/* Toggle */}
+          <div onClick={() => setSchedEnabled(e => !e)}
+            style={{ width:48, height:28, borderRadius:14, background:schedEnabled?C.purple:C.border, cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+            <div style={{ width:22, height:22, borderRadius:'50%', background:'#fff', position:'absolute', top:3, left: schedEnabled?23:3, transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }} />
+          </div>
+        </div>
+
+        {schedEnabled && (
+          <>
+            {/* Day picker */}
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:12, color:C.textMuted, fontWeight:500, marginBottom:8 }}>Days</div>
+              <div style={{ display:'flex', gap:6 }}>
+                {DAYS.map(d => {
+                  const active = schedDays.includes(d.key)
+                  return (
+                    <button key={d.key} onClick={() => toggleDay(d.key)}
+                      style={{ flex:1, padding:'9px 0', borderRadius:10, border:`1px solid ${active?C.purple:C.border}`, background:active?C.purple:'transparent', color:active?'#fff':C.textMuted, fontSize:11, fontWeight:active?700:400, cursor:'pointer', transition:'all 0.15s' }}>
+                      {d.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {schedDays.length === 0 && (
+                <div style={{ fontSize:11, color:C.red, marginTop:6 }}>Select at least one day</div>
+              )}
+            </div>
+
+            {/* Time picker */}
+            <div>
+              <div style={{ fontSize:12, color:C.textMuted, fontWeight:500, marginBottom:8 }}>Time (optional)</div>
+              <input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)}
+                style={{ padding:'10px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:15, fontWeight:600, outline:'none', cursor:'pointer' }} />
+              <div style={{ fontSize:11, color:C.textDim, marginTop:6 }}>Leave blank to skip time reminder</div>
+            </div>
+          </>
+        )}
+      </div>
+
+      <button onClick={handleSave} disabled={!canSave}
         style={{ width:'100%', padding:14, borderRadius:16, background:canSave?C.purple:C.surfaceMid, border:'none', color:canSave?'#fff':C.textDim, fontSize:15, fontWeight:700, cursor:canSave?'pointer':'default' }}>
         {plan?.id ? 'Save changes' : 'Create plan'}
       </button>
+
       {showPicker && <ExercisePickerModal onAdd={addEx} onClose={() => setShowPicker(false)} />}
     </div>
   )
@@ -436,6 +528,13 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed }) {
             <div style={{ flex:1 }}>
               <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{plan.name}</div>
               <div style={{ fontSize:12, color:C.textMuted }}>{plan.exercises?.length||0} exercises</div>
+              {plan.schedule?.days?.length > 0 && (
+                <div style={{ fontSize:11, color:C.purple, marginTop:3, display:'flex', alignItems:'center', gap:4 }}>
+                  <span>📅</span>
+                  <span>{plan.schedule.days.map(d => d.charAt(0).toUpperCase() + d.slice(1, 3)).join(' · ')}</span>
+                  {plan.schedule.time && <span>at {plan.schedule.time}</span>}
+                </div>
+              )}
             </div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
