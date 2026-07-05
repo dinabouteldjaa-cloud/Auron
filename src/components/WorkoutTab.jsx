@@ -450,77 +450,176 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed }) {
 }
 
 // ─────────────────────────────────────────────
-// Set row — read-only when coming from library
+// Rest Timer — shown between sets when needed
 // ─────────────────────────────────────────────
-function SetRow({ set, idx, onChange, onRemove, timed, readOnly }) {
-  const bg = set.done ? C.green : C.purpleLight
+function RestTimer({ duration, onDone }) {
+  const [remaining, setRemaining] = useState(duration)
+  useEffect(() => {
+    if (remaining <= 0) { onDone?.(); return }
+    const id = setInterval(() => setRemaining(r => { if (r <= 1) { onDone?.(); clearInterval(id); return 0 } return r - 1 }), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const pct = (remaining / duration) * 100
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 0' }}>
-      <div onClick={() => !readOnly && onChange({...set, done:!set.done})}
-        style={{ width:26, height:26, borderRadius:'50%', background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:set.done?'#fff':C.purple, flexShrink:0, cursor:readOnly?'default':'pointer' }}>
-        {set.done?'✓':idx+1}
+    <div style={{ background:C.purpleLight, borderRadius:12, padding:'12px 16px', marginTop:6, display:'flex', alignItems:'center', gap:12 }}>
+      <div style={{ position:'relative', width:40, height:40, flexShrink:0 }}>
+        <svg viewBox="0 0 40 40" style={{ width:40, height:40, transform:'rotate(-90deg)' }}>
+          <circle cx="20" cy="20" r="17" fill="none" stroke={C.border} strokeWidth="3" />
+          <circle cx="20" cy="20" r="17" fill="none" stroke={C.purple} strokeWidth="3"
+            strokeDasharray={`${2*Math.PI*17}`} strokeDashoffset={`${2*Math.PI*17*(1-pct/100)}`}
+            strokeLinecap="round" style={{ transition:'stroke-dashoffset 1s linear' }} />
+        </svg>
+        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:C.purple }}>{remaining}</div>
       </div>
-      {timed ? (
-        <div style={{ flex:1, padding:'8px 10px', borderRadius:10, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, textAlign:'center' }}>
-          {set.duration||'—'} sec
-        </div>
-      ) : (
-        <>
-          <div style={{ flex:1, padding:'8px 10px', borderRadius:10, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, textAlign:'center' }}>
-            {set.weight||'—'} kg
-          </div>
-          <span style={{ color:C.textDim, fontSize:13 }}>×</span>
-          <div style={{ flex:1, padding:'8px 10px', borderRadius:10, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, textAlign:'center' }}>
-            {set.reps||'—'} reps
-          </div>
-        </>
-      )}
-      {!readOnly && <button onClick={onRemove} style={{ background:'none', border:'none', color:C.textDim, fontSize:16, cursor:'pointer', padding:'0 4px' }}>✕</button>}
+      <div style={{ flex:1 }}>
+        <div style={{ fontSize:13, fontWeight:600, color:C.text }}>Rest time</div>
+        <div style={{ fontSize:11, color:C.textMuted }}>{remaining}s remaining</div>
+      </div>
+      <button onClick={onDone} style={{ padding:'6px 14px', borderRadius:10, background:C.purple, border:'none', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>Skip</button>
     </div>
   )
 }
 
 // ─────────────────────────────────────────────
-// Session exercise card
+// SetRow — tap circle to mark done, inline edit weight/reps
 // ─────────────────────────────────────────────
-function SessionExCard({ ex, onUpdate, onRemove, fromLibrary }) {
+function SetRow({ set, idx, onChange, onRemove, timed }) {
+  const [editing, setEditing] = useState(null) // null | 'weight' | 'reps' | 'duration'
+
+  const handleDone = () => {
+    onChange({ ...set, done: !set.done })
+    if (!set.done) setEditing(null)
+  }
+
+  const InputPop = ({ field, value, unit, onConfirm }) => (
+    <div style={{ position:'fixed', inset:0, zIndex:400, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.3)' }}
+      onClick={() => setEditing(null)}>
+      <div onClick={e => e.stopPropagation()} style={{ background:C.surface, borderRadius:'20px 20px 0 0', padding:'24px 20px 32px', width:'100%', maxWidth:400 }}>
+        <div style={{ fontSize:14, fontWeight:600, color:C.textMuted, marginBottom:12, textAlign:'center' }}>{field === 'weight' ? 'Weight (kg)' : field === 'reps' ? 'Reps' : 'Duration (sec)'}</div>
+        <input type="number" defaultValue={value} autoFocus
+          onKeyDown={e => { if (e.key === 'Enter') { onConfirm(e.target.value); setEditing(null) } }}
+          style={{ width:'100%', padding:'14px', borderRadius:14, background:C.surfaceMid, border:`1px solid ${C.purple}`, color:C.text, fontSize:24, fontWeight:700, outline:'none', textAlign:'center' }}
+          onBlur={e => { onConfirm(e.target.value); setEditing(null) }} />
+        <div style={{ fontSize:11, color:C.textDim, textAlign:'center', marginTop:8 }}>Tap outside or press Enter to confirm</div>
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:`1px solid ${C.divider}` }}>
+        {/* Set number / done circle */}
+        <div onClick={handleDone} style={{ width:32, height:32, borderRadius:'50%', background:set.done?C.green:C.surfaceMid, border:`2px solid ${set.done?C.green:C.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:set.done?'#fff':C.textMuted, flexShrink:0, cursor:'pointer', transition:'all 0.15s' }}>
+          {set.done ? '✓' : idx+1}
+        </div>
+
+        {timed ? (
+          /* Timed exercise */
+          <button onClick={() => setEditing('duration')}
+            style={{ flex:1, padding:'8px 12px', borderRadius:10, background:set.done?C.greenLight:C.surfaceMid, border:'none', cursor:'pointer', textAlign:'center' }}>
+            <span style={{ fontSize:18, fontWeight:700, color:set.done?C.green:C.text }}>{set.duration||'—'}</span>
+            <span style={{ fontSize:12, color:C.textMuted }}> sec</span>
+          </button>
+        ) : (
+          /* Weight × Reps */
+          <div style={{ flex:1, display:'flex', alignItems:'center', gap:6 }}>
+            <button onClick={() => setEditing('weight')}
+              style={{ flex:1, padding:'8px 10px', borderRadius:10, background:set.done?C.greenLight:C.surfaceMid, border:'none', cursor:'pointer', textAlign:'center' }}>
+              <span style={{ fontSize:18, fontWeight:700, color:set.done?C.green:set.weight?C.text:C.textDim }}>{set.weight||'—'}</span>
+              <span style={{ fontSize:11, color:C.textMuted }}> kg</span>
+            </button>
+            <span style={{ color:C.textDim, fontSize:14, fontWeight:600 }}>×</span>
+            <button onClick={() => setEditing('reps')}
+              style={{ flex:1, padding:'8px 10px', borderRadius:10, background:set.done?C.greenLight:C.surfaceMid, border:'none', cursor:'pointer', textAlign:'center' }}>
+              <span style={{ fontSize:18, fontWeight:700, color:set.done?C.green:set.reps?C.text:C.textDim }}>{set.reps||'—'}</span>
+              <span style={{ fontSize:11, color:C.textMuted }}> reps</span>
+            </button>
+          </div>
+        )}
+
+        <button onClick={onRemove} style={{ background:'none', border:'none', color:C.textDim, fontSize:16, cursor:'pointer', padding:'0 2px', flexShrink:0 }}>✕</button>
+      </div>
+
+      {/* Inline editor popups */}
+      {editing === 'weight'   && <InputPop field="weight"   value={set.weight}   unit="kg"  onConfirm={v => onChange({...set, weight:v})} />}
+      {editing === 'reps'     && <InputPop field="reps"     value={set.reps}     unit="reps" onConfirm={v => onChange({...set, reps:v})} />}
+      {editing === 'duration' && <InputPop field="duration" value={set.duration} unit="sec" onConfirm={v => onChange({...set, duration:v})} />}
+    </>
+  )
+}
+
+// ─────────────────────────────────────────────
+// Session exercise card — clean, tap to fill
+// ─────────────────────────────────────────────
+function SessionExCard({ ex, onUpdate, onRemove, restDuration }) {
   const data     = getExercise(ex.name)
   const timed    = data.timed || ex.timed
+  const [showRest, setShowRest] = useState(false)
   const doneSets = ex.sets.filter(s => s.done).length
   const allDone  = doneSets === ex.sets.length && ex.sets.length > 0
 
-  const addSet    = () => { const p=ex.sets[ex.sets.length-1]||{}; onUpdate({...ex, sets:[...ex.sets,{weight:p.weight||'',reps:p.reps||'',duration:p.duration||'',done:false}]}) }
-  const updateSet = (i,s) => { const sets=[...ex.sets]; sets[i]=s; onUpdate({...ex,sets}) }
-  const removeSet = i => onUpdate({...ex, sets:ex.sets.filter((_,j)=>j!==i)})
+  const addSet = () => {
+    const p = ex.sets[ex.sets.length-1] || {}
+    onUpdate({ ...ex, sets:[...ex.sets, { weight:p.weight||'', reps:p.reps||'', duration:p.duration||'', done:false }] })
+  }
+  const updateSet = (i, s) => {
+    const sets = [...ex.sets]
+    const wasDone = sets[i].done
+    sets[i] = s
+    onUpdate({ ...ex, sets })
+    // Show rest timer when marking a set as done
+    if (!wasDone && s.done && restDuration > 0) setShowRest(true)
+  }
+  const removeSet = i => onUpdate({ ...ex, sets: ex.sets.filter((_,j)=>j!==i) })
 
   return (
-    <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${allDone?C.green+'66':C.divider}`, marginBottom:12, overflow:'hidden' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'13px 16px', background:allDone?C.greenLight:'transparent' }}>
-        <div style={{ width:42, height:42, borderRadius:12, background:allDone?C.greenLight:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{data.icon||'💪'}</div>
+    <div style={{ background:C.surface, borderRadius:18, border:`1px solid ${allDone?C.green+'66':C.divider}`, marginBottom:14, overflow:'hidden' }}>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background:allDone?C.greenLight:'transparent' }}>
+        <div style={{ width:44, height:44, borderRadius:13, background:allDone?C.greenLight:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
+          {data.icon||'💪'}
+        </div>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{ex.name}</div>
-          <div style={{ fontSize:11, color:C.textMuted }}>{data.muscles} · {doneSets}/{ex.sets.length} sets</div>
+          <div style={{ fontSize:11, color:C.textMuted }}>
+            {data.muscles}
+            <span style={{ color:allDone?C.green:doneSets>0?C.amber:C.textDim }}> · {doneSets}/{ex.sets.length} sets</span>
+          </div>
         </div>
-        {!fromLibrary && <button onClick={onRemove} style={{ background:'none', border:'none', color:C.textDim, fontSize:18, cursor:'pointer' }}>✕</button>}
+        <button onClick={onRemove} style={{ background:'none', border:'none', color:C.textDim, fontSize:18, cursor:'pointer', padding:'0 4px' }}>✕</button>
       </div>
-      <div style={{ padding:'0 16px 12px' }}>
-        <div style={{ display:'flex', gap:8, fontSize:10, color:C.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4, paddingLeft:34 }}>
+
+      {/* Sets */}
+      <div style={{ padding:'4px 16px 4px' }}>
+        {/* Column labels */}
+        <div style={{ display:'flex', gap:10, paddingLeft:42, paddingBottom:4 }}>
           {timed
-            ? <span style={{flex:1,textAlign:'center'}}>Duration (sec)</span>
-            : <><span style={{flex:1,textAlign:'center'}}>Weight (kg)</span><span style={{width:16}}/><span style={{flex:1,textAlign:'center'}}>Reps</span></>}
-          {!fromLibrary && <span style={{width:24}}/>}
+            ? <div style={{ flex:1, fontSize:10, color:C.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textAlign:'center' }}>Duration</div>
+            : <>
+                <div style={{ flex:1, fontSize:10, color:C.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textAlign:'center' }}>Weight</div>
+                <div style={{ width:20 }} />
+                <div style={{ flex:1, fontSize:10, color:C.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textAlign:'center' }}>Reps</div>
+              </>
+          }
+          <div style={{ width:24 }} />
         </div>
         {ex.sets.map((set,i) => (
-          <SetRow key={i} set={set} idx={i} timed={timed} readOnly={false}
-            onChange={s=>updateSet(i,s)} onRemove={()=>removeSet(i)} />
+          <SetRow key={i} set={set} idx={i} timed={timed}
+            onChange={s => updateSet(i,s)} onRemove={() => removeSet(i)} />
         ))}
-        <button onClick={addSet} style={{ width:'100%', padding:'8px', marginTop:8, borderRadius:10, background:C.purpleLight, border:`1px dashed ${C.purple}55`, color:C.purple, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+        {/* Rest timer */}
+        {showRest && restDuration > 0 && (
+          <RestTimer duration={restDuration} onDone={() => setShowRest(false)} />
+        )}
+        <button onClick={addSet}
+          style={{ width:'100%', padding:'9px', marginTop:8, marginBottom:4, borderRadius:10, background:C.purpleLight, border:`1px dashed ${C.purple}55`, color:C.purple, fontSize:13, fontWeight:600, cursor:'pointer' }}>
           + Add set
         </button>
       </div>
-      <div style={{ padding:'0 16px' }}>
+
+      {/* How to */}
+      <div style={{ padding:'4px 16px 12px' }}>
         <ExerciseHowTo name={ex.name} />
-        {data.howTo?.length > 0 && <div style={{ height:12 }} />}
       </div>
     </div>
   )
@@ -551,6 +650,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   const [started,    setStarted]    = useState(false)
   const [paused,     setPaused]     = useState(false)
   const [elapsed,    setElapsed]    = useState(0)
+  const [restSecs,   setRestSecs]   = useState(60)  // configurable rest duration
   const [showPicker, setShowPicker] = useState(false)
   const [saving,     setSaving]     = useState(false)
   const startRef   = useRef(null)
@@ -655,9 +755,20 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
         </div>
       )}
 
+      {/* Rest duration setting */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, padding:'10px 14px', background:C.surfaceMid, borderRadius:12 }}>
+        <span style={{ fontSize:13, color:C.textMuted, flex:1 }}>⏱ Rest between sets</span>
+        {[0, 30, 45, 60, 90, 120].map(s => (
+          <button key={s} onClick={() => setRestSecs(s)}
+            style={{ padding:'5px 10px', borderRadius:8, fontSize:12, cursor:'pointer', border:`1px solid ${restSecs===s?C.purple:C.border}`, background:restSecs===s?C.purpleLight:'transparent', color:restSecs===s?C.purple:C.textMuted, fontWeight:restSecs===s?700:400 }}>
+            {s===0?'Off':`${s}s`}
+          </button>
+        ))}
+      </div>
+
       {/* Exercises */}
       {exercises.map((ex,i) => (
-        <SessionExCard key={i} ex={ex} fromLibrary={fromLibrary}
+        <SessionExCard key={i} ex={ex} restDuration={started?restSecs:0}
           onUpdate={ex=>updateEx(i,ex)} onRemove={()=>removeEx(i)} />
       ))}
 
