@@ -206,9 +206,6 @@ export default function App() {
     medication: (
       <MedicationTab userId={uid} />
     ),
-    medication: (
-      <MedicationTab userId={uid} />
-    ),
     profile: (
       <ProfileTab
         user={session.user} profile={profile} updateProfile={updateProfile}
