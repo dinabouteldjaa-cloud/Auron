@@ -450,178 +450,230 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed }) {
 }
 
 // ─────────────────────────────────────────────
-// Rest Timer — shown between sets when needed
+// Rest Timer — fullscreen overlay
 // ─────────────────────────────────────────────
 function RestTimer({ duration, onDone }) {
   const [remaining, setRemaining] = useState(duration)
   useEffect(() => {
-    if (remaining <= 0) { onDone?.(); return }
-    const id = setInterval(() => setRemaining(r => { if (r <= 1) { onDone?.(); clearInterval(id); return 0 } return r - 1 }), 1000)
+    const id = setInterval(() => setRemaining(r => {
+      if (r <= 1) { clearInterval(id); onDone?.(); return 0 }
+      return r - 1
+    }), 1000)
     return () => clearInterval(id)
   }, [])
   const pct = (remaining / duration) * 100
+  const r = 54
+  const circ = 2 * Math.PI * r
   return (
-    <div style={{ background:C.purpleLight, borderRadius:12, padding:'12px 16px', marginTop:6, display:'flex', alignItems:'center', gap:12 }}>
-      <div style={{ position:'relative', width:40, height:40, flexShrink:0 }}>
-        <svg viewBox="0 0 40 40" style={{ width:40, height:40, transform:'rotate(-90deg)' }}>
-          <circle cx="20" cy="20" r="17" fill="none" stroke={C.border} strokeWidth="3" />
-          <circle cx="20" cy="20" r="17" fill="none" stroke={C.purple} strokeWidth="3"
-            strokeDasharray={`${2*Math.PI*17}`} strokeDashoffset={`${2*Math.PI*17*(1-pct/100)}`}
+    <div style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(26,20,50,0.92)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:24 }}>
+      <div style={{ fontSize:16, fontWeight:600, color:'rgba(255,255,255,0.7)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Rest</div>
+      <div style={{ position:'relative', width:160, height:160 }}>
+        <svg viewBox="0 0 120 120" style={{ width:160, height:160, transform:'rotate(-90deg)' }}>
+          <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
+          <circle cx="60" cy="60" r={r} fill="none" stroke={C.purple} strokeWidth="6"
+            strokeDasharray={circ} strokeDashoffset={circ * (1 - pct/100)}
             strokeLinecap="round" style={{ transition:'stroke-dashoffset 1s linear' }} />
         </svg>
-        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:C.purple }}>{remaining}</div>
+        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ fontSize:52, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{remaining}</div>
+          <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', marginTop:4 }}>seconds</div>
+        </div>
       </div>
-      <div style={{ flex:1 }}>
-        <div style={{ fontSize:13, fontWeight:600, color:C.text }}>Rest time</div>
-        <div style={{ fontSize:11, color:C.textMuted }}>{remaining}s remaining</div>
+      <div style={{ display:'flex', gap:12 }}>
+        <button onClick={() => setRemaining(r => Math.max(0, r - 15))}
+          style={{ padding:'10px 20px', borderRadius:20, background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', fontSize:14, cursor:'pointer' }}>-15s</button>
+        <button onClick={onDone}
+          style={{ padding:'10px 32px', borderRadius:20, background:C.purple, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>Skip rest</button>
+        <button onClick={() => setRemaining(r => r + 15)}
+          style={{ padding:'10px 20px', borderRadius:20, background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', fontSize:14, cursor:'pointer' }}>+15s</button>
       </div>
-      <button onClick={onDone} style={{ padding:'6px 14px', borderRadius:10, background:C.purple, border:'none', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer' }}>Skip</button>
     </div>
   )
 }
 
 // ─────────────────────────────────────────────
-// SetRow — tap circle to mark done, inline edit weight/reps
+// Number input sheet — slides up from bottom
 // ─────────────────────────────────────────────
-function SetRow({ set, idx, onChange, onRemove, timed }) {
-  const [editing, setEditing] = useState(null) // null | 'weight' | 'reps' | 'duration'
-
-  const handleDone = () => {
-    onChange({ ...set, done: !set.done })
-    if (!set.done) setEditing(null)
-  }
-
-  const InputPop = ({ field, value, unit, onConfirm }) => (
-    <div style={{ position:'fixed', inset:0, zIndex:400, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.3)' }}
-      onClick={() => setEditing(null)}>
-      <div onClick={e => e.stopPropagation()} style={{ background:C.surface, borderRadius:'20px 20px 0 0', padding:'24px 20px 32px', width:'100%', maxWidth:400 }}>
-        <div style={{ fontSize:14, fontWeight:600, color:C.textMuted, marginBottom:12, textAlign:'center' }}>{field === 'weight' ? 'Weight (kg)' : field === 'reps' ? 'Reps' : 'Duration (sec)'}</div>
-        <input type="number" defaultValue={value} autoFocus
-          onKeyDown={e => { if (e.key === 'Enter') { onConfirm(e.target.value); setEditing(null) } }}
-          style={{ width:'100%', padding:'14px', borderRadius:14, background:C.surfaceMid, border:`1px solid ${C.purple}`, color:C.text, fontSize:24, fontWeight:700, outline:'none', textAlign:'center' }}
-          onBlur={e => { onConfirm(e.target.value); setEditing(null) }} />
-        <div style={{ fontSize:11, color:C.textDim, textAlign:'center', marginTop:8 }}>Tap outside or press Enter to confirm</div>
+function NumberSheet({ label, value, onConfirm, onClose }) {
+  const [val, setVal] = useState(String(value || ''))
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:400, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.4)' }}
+      onClick={onClose}>
+      <div onClick={e => e.stopPropagation()}
+        style={{ background:C.surface, borderRadius:'24px 24px 0 0', padding:'20px 24px 40px', width:'100%', maxWidth:420 }}>
+        <div style={{ width:40, height:4, borderRadius:2, background:C.divider, margin:'0 auto 20px' }} />
+        <div style={{ fontSize:13, color:C.textMuted, textAlign:'center', marginBottom:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>{label}</div>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:16, marginBottom:24 }}>
+          <button onClick={() => setVal(v => String(Math.max(0, (parseFloat(v)||0) - 1)))}
+            style={{ width:44, height:44, borderRadius:'50%', background:C.surfaceMid, border:'none', fontSize:22, color:C.purple, cursor:'pointer', fontWeight:700 }}>−</button>
+          <div style={{ fontSize:48, fontWeight:800, color:C.text, minWidth:120, textAlign:'center', fontVariantNumeric:'tabular-nums' }}>
+            {val || '0'}
+          </div>
+          <button onClick={() => setVal(v => String((parseFloat(v)||0) + 1))}
+            style={{ width:44, height:44, borderRadius:'50%', background:C.surfaceMid, border:'none', fontSize:22, color:C.purple, cursor:'pointer', fontWeight:700 }}>+</button>
+        </div>
+        {/* Quick values */}
+        <div style={{ display:'flex', gap:8, justifyContent:'center', marginBottom:20 }}>
+          {(label.includes('kg') ? [20,40,60,80,100] : label.includes('sec') ? [20,30,45,60,90] : [6,8,10,12,15]).map(n => (
+            <button key={n} onClick={() => setVal(String(n))}
+              style={{ padding:'6px 12px', borderRadius:20, background:String(val)===String(n)?C.purpleLight:C.surfaceMid, border:`1px solid ${String(val)===String(n)?C.purple:C.border}`, color:String(val)===String(n)?C.purple:C.textMuted, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+              {n}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => { onConfirm(val); onClose() }}
+          style={{ width:'100%', padding:14, borderRadius:16, background:C.purple, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer' }}>
+          Confirm
+        </button>
       </div>
     </div>
   )
+}
+
+// ─────────────────────────────────────────────
+// SetRow — clean row, tap weight/reps to edit
+// ─────────────────────────────────────────────
+function SetRow({ set, idx, onChange, onRemove, timed, onDone }) {
+  const [sheet, setSheet] = useState(null) // null | 'weight' | 'reps' | 'duration'
+
+  const markDone = () => {
+    const newDone = !set.done
+    onChange({ ...set, done: newDone })
+    if (newDone) onDone?.()
+  }
+
+  const bgRow = set.done
+    ? 'rgba(46,204,113,0.06)'
+    : idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.01)'
 
   return (
     <>
-      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:`1px solid ${C.divider}` }}>
-        {/* Set number / done circle */}
-        <div onClick={handleDone} style={{ width:32, height:32, borderRadius:'50%', background:set.done?C.green:C.surfaceMid, border:`2px solid ${set.done?C.green:C.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:set.done?'#fff':C.textMuted, flexShrink:0, cursor:'pointer', transition:'all 0.15s' }}>
-          {set.done ? '✓' : idx+1}
+      <div style={{ display:'flex', alignItems:'center', gap:0, background:bgRow, borderRadius:10, marginBottom:2 }}>
+        {/* Set badge */}
+        <div style={{ width:44, display:'flex', alignItems:'center', justifyContent:'center', paddingLeft:4 }}>
+          <div style={{ width:28, height:28, borderRadius:'50%', background:set.done?C.green:C.surfaceMid, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:set.done?'#fff':C.textMuted }}>
+            {set.done ? '✓' : idx+1}
+          </div>
         </div>
 
         {timed ? (
-          /* Timed exercise */
-          <button onClick={() => setEditing('duration')}
-            style={{ flex:1, padding:'8px 12px', borderRadius:10, background:set.done?C.greenLight:C.surfaceMid, border:'none', cursor:'pointer', textAlign:'center' }}>
-            <span style={{ fontSize:18, fontWeight:700, color:set.done?C.green:C.text }}>{set.duration||'—'}</span>
-            <span style={{ fontSize:12, color:C.textMuted }}> sec</span>
+          <button onClick={() => setSheet('duration')}
+            style={{ flex:1, padding:'12px 8px', background:'none', border:'none', cursor:'pointer', textAlign:'center' }}>
+            <span style={{ fontSize:20, fontWeight:700, color:set.done?C.green:set.duration?C.text:C.textDim }}>
+              {set.duration || '—'}
+            </span>
+            <span style={{ fontSize:12, color:C.textMuted }}> s</span>
           </button>
         ) : (
-          /* Weight × Reps */
-          <div style={{ flex:1, display:'flex', alignItems:'center', gap:6 }}>
-            <button onClick={() => setEditing('weight')}
-              style={{ flex:1, padding:'8px 10px', borderRadius:10, background:set.done?C.greenLight:C.surfaceMid, border:'none', cursor:'pointer', textAlign:'center' }}>
-              <span style={{ fontSize:18, fontWeight:700, color:set.done?C.green:set.weight?C.text:C.textDim }}>{set.weight||'—'}</span>
-              <span style={{ fontSize:11, color:C.textMuted }}> kg</span>
+          <div style={{ flex:1, display:'flex', alignItems:'center' }}>
+            <button onClick={() => setSheet('weight')}
+              style={{ flex:1, padding:'12px 6px', background:'none', border:'none', cursor:'pointer', textAlign:'center' }}>
+              <span style={{ fontSize:20, fontWeight:700, color:set.done?C.green:set.weight?C.text:C.textDim }}>
+                {set.weight || '—'}
+              </span>
+              <span style={{ fontSize:12, color:C.textMuted }}> kg</span>
             </button>
-            <span style={{ color:C.textDim, fontSize:14, fontWeight:600 }}>×</span>
-            <button onClick={() => setEditing('reps')}
-              style={{ flex:1, padding:'8px 10px', borderRadius:10, background:set.done?C.greenLight:C.surfaceMid, border:'none', cursor:'pointer', textAlign:'center' }}>
-              <span style={{ fontSize:18, fontWeight:700, color:set.done?C.green:set.reps?C.text:C.textDim }}>{set.reps||'—'}</span>
-              <span style={{ fontSize:11, color:C.textMuted }}> reps</span>
+            <span style={{ color:C.border, fontSize:18, fontWeight:300 }}>×</span>
+            <button onClick={() => setSheet('reps')}
+              style={{ flex:1, padding:'12px 6px', background:'none', border:'none', cursor:'pointer', textAlign:'center' }}>
+              <span style={{ fontSize:20, fontWeight:700, color:set.done?C.green:set.reps?C.text:C.textDim }}>
+                {set.reps || '—'}
+              </span>
+              <span style={{ fontSize:12, color:C.textMuted }}> reps</span>
             </button>
           </div>
         )}
 
-        <button onClick={onRemove} style={{ background:'none', border:'none', color:C.textDim, fontSize:16, cursor:'pointer', padding:'0 2px', flexShrink:0 }}>✕</button>
+        {/* Done button */}
+        <button onClick={markDone}
+          style={{ width:44, height:44, borderRadius:12, background:set.done?C.green:C.purpleLight, border:'none', color:set.done?'#fff':C.purple, fontSize:set.done?16:13, fontWeight:700, cursor:'pointer', flexShrink:0, margin:'4px 4px 4px 0' }}>
+          {set.done ? '✓' : '→'}
+        </button>
       </div>
 
-      {/* Inline editor popups */}
-      {editing === 'weight'   && <InputPop field="weight"   value={set.weight}   unit="kg"  onConfirm={v => onChange({...set, weight:v})} />}
-      {editing === 'reps'     && <InputPop field="reps"     value={set.reps}     unit="reps" onConfirm={v => onChange({...set, reps:v})} />}
-      {editing === 'duration' && <InputPop field="duration" value={set.duration} unit="sec" onConfirm={v => onChange({...set, duration:v})} />}
+      {sheet === 'weight'   && <NumberSheet label="Weight (kg)"    value={set.weight}   onConfirm={v => onChange({...set, weight:v})}   onClose={() => setSheet(null)} />}
+      {sheet === 'reps'     && <NumberSheet label="Reps"           value={set.reps}     onConfirm={v => onChange({...set, reps:v})}     onClose={() => setSheet(null)} />}
+      {sheet === 'duration' && <NumberSheet label="Duration (sec)" value={set.duration} onConfirm={v => onChange({...set, duration:v})} onClose={() => setSheet(null)} />}
     </>
   )
 }
 
 // ─────────────────────────────────────────────
-// Session exercise card — clean, tap to fill
+// Session exercise card — premium look
 // ─────────────────────────────────────────────
 function SessionExCard({ ex, onUpdate, onRemove, restDuration }) {
   const data     = getExercise(ex.name)
   const timed    = data.timed || ex.timed
   const [showRest, setShowRest] = useState(false)
+
   const doneSets = ex.sets.filter(s => s.done).length
-  const allDone  = doneSets === ex.sets.length && ex.sets.length > 0
+  const allDone  = ex.sets.length > 0 && doneSets === ex.sets.length
 
   const addSet = () => {
-    const p = ex.sets[ex.sets.length-1] || {}
-    onUpdate({ ...ex, sets:[...ex.sets, { weight:p.weight||'', reps:p.reps||'', duration:p.duration||'', done:false }] })
+    const p = ex.sets[ex.sets.length - 1] || {}
+    onUpdate({ ...ex, sets: [...ex.sets, { weight:p.weight||'', reps:p.reps||'', duration:p.duration||'', done:false }] })
   }
   const updateSet = (i, s) => {
-    const sets = [...ex.sets]
-    const wasDone = sets[i].done
-    sets[i] = s
-    onUpdate({ ...ex, sets })
-    // Show rest timer when marking a set as done
-    if (!wasDone && s.done && restDuration > 0) setShowRest(true)
+    const sets = [...ex.sets]; sets[i] = s; onUpdate({ ...ex, sets })
   }
-  const removeSet = i => onUpdate({ ...ex, sets: ex.sets.filter((_,j)=>j!==i) })
+  const removeSet = i => onUpdate({ ...ex, sets: ex.sets.filter((_,j) => j!==i) })
 
   return (
-    <div style={{ background:C.surface, borderRadius:18, border:`1px solid ${allDone?C.green+'66':C.divider}`, marginBottom:14, overflow:'hidden' }}>
-      {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background:allDone?C.greenLight:'transparent' }}>
-        <div style={{ width:44, height:44, borderRadius:13, background:allDone?C.greenLight:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
-          {data.icon||'💪'}
-        </div>
-        <div style={{ flex:1 }}>
-          <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{ex.name}</div>
-          <div style={{ fontSize:11, color:C.textMuted }}>
-            {data.muscles}
-            <span style={{ color:allDone?C.green:doneSets>0?C.amber:C.textDim }}> · {doneSets}/{ex.sets.length} sets</span>
+    <>
+      {showRest && <RestTimer duration={restDuration} onDone={() => setShowRest(false)} />}
+
+      <div style={{ background:C.surface, borderRadius:20, border:`1px solid ${allDone?C.green+'55':C.divider}`, marginBottom:16, overflow:'hidden', boxShadow:allDone?`0 0 0 2px ${C.green}22`:C.shadowCard }}>
+        {/* Header */}
+        <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px 10px', borderBottom:`1px solid ${C.divider}` }}>
+          <div style={{ width:42, height:42, borderRadius:12, background:allDone?`${C.green}18`:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
+            {data.icon || '💪'}
           </div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{ex.name}</div>
+            <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:2 }}>
+              <span style={{ fontSize:11, color:C.textMuted }}>{data.muscles}</span>
+              <span style={{ fontSize:11, color:allDone?C.green:doneSets>0?C.amber:C.textDim }}>· {doneSets}/{ex.sets.length} done</span>
+            </div>
+          </div>
+          <button onClick={onRemove} style={{ background:'none', border:'none', color:C.textDim, fontSize:18, cursor:'pointer', padding:'4px' }}>✕</button>
         </div>
-        <button onClick={onRemove} style={{ background:'none', border:'none', color:C.textDim, fontSize:18, cursor:'pointer', padding:'0 4px' }}>✕</button>
-      </div>
 
-      {/* Sets */}
-      <div style={{ padding:'4px 16px 4px' }}>
-        {/* Column labels */}
-        <div style={{ display:'flex', gap:10, paddingLeft:42, paddingBottom:4 }}>
-          {timed
-            ? <div style={{ flex:1, fontSize:10, color:C.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textAlign:'center' }}>Duration</div>
-            : <>
-                <div style={{ flex:1, fontSize:10, color:C.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textAlign:'center' }}>Weight</div>
-                <div style={{ width:20 }} />
-                <div style={{ flex:1, fontSize:10, color:C.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', textAlign:'center' }}>Reps</div>
-              </>
-          }
-          <div style={{ width:24 }} />
+        {/* Column headers */}
+        <div style={{ display:'flex', alignItems:'center', padding:'6px 4px 2px', borderBottom:`1px solid ${C.divider}` }}>
+          <div style={{ width:44, fontSize:10, color:C.textDim, textAlign:'center', fontWeight:600, textTransform:'uppercase' }}>SET</div>
+          {timed ? (
+            <div style={{ flex:1, fontSize:10, color:C.textDim, textAlign:'center', fontWeight:600, textTransform:'uppercase' }}>DURATION</div>
+          ) : (
+            <>
+              <div style={{ flex:1, fontSize:10, color:C.textDim, textAlign:'center', fontWeight:600, textTransform:'uppercase' }}>KG</div>
+              <div style={{ width:16 }} />
+              <div style={{ flex:1, fontSize:10, color:C.textDim, textAlign:'center', fontWeight:600, textTransform:'uppercase' }}>REPS</div>
+            </>
+          )}
+          <div style={{ width:52 }} />
         </div>
-        {ex.sets.map((set,i) => (
-          <SetRow key={i} set={set} idx={i} timed={timed}
-            onChange={s => updateSet(i,s)} onRemove={() => removeSet(i)} />
-        ))}
-        {/* Rest timer */}
-        {showRest && restDuration > 0 && (
-          <RestTimer duration={restDuration} onDone={() => setShowRest(false)} />
-        )}
-        <button onClick={addSet}
-          style={{ width:'100%', padding:'9px', marginTop:8, marginBottom:4, borderRadius:10, background:C.purpleLight, border:`1px dashed ${C.purple}55`, color:C.purple, fontSize:13, fontWeight:600, cursor:'pointer' }}>
-          + Add set
-        </button>
-      </div>
 
-      {/* How to */}
-      <div style={{ padding:'4px 16px 12px' }}>
-        <ExerciseHowTo name={ex.name} />
+        {/* Sets */}
+        <div style={{ padding:'4px 8px 8px' }}>
+          {ex.sets.map((set, i) => (
+            <SetRow key={i} set={set} idx={i} timed={timed}
+              onChange={s => updateSet(i, s)}
+              onRemove={() => removeSet(i)}
+              onDone={() => restDuration > 0 && setShowRest(true)}
+            />
+          ))}
+          <button onClick={addSet}
+            style={{ width:'100%', padding:'9px', marginTop:6, borderRadius:10, background:C.surfaceMid, border:`1px dashed ${C.border}`, color:C.textMuted, fontSize:13, fontWeight:500, cursor:'pointer' }}>
+            + Add set
+          </button>
+        </div>
+
+        {/* How to */}
+        <div style={{ padding:'0 16px 4px', borderTop:`1px solid ${C.divider}` }}>
+          <ExerciseHowTo name={ex.name} />
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
