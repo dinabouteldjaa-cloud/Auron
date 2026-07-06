@@ -8,17 +8,13 @@ import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 
 const C = T
 
-function useMuscles() {
-  const { lang } = useTranslation()
-}
-
 // ─────────────────────────────────────────────
 // ─────────────────────────────────────────────
 function useSportT() {
   const { t, lang } = useTranslation()
-  const tSport    = id  => t(`sport.${id}`,     id)
-  const tCat      = key => t(`sport.cat.${key}`, key)
-  const tWorkout  = id  => t(`w.${id}`,          id)
+  const tSport    = id  => t(`sport.${id}`) || id
+  const tCat      = key => t(`sport.cat.${key}`) || key
+  const tWorkout  = id  => t(`w.${id}`) || id
   const tLevel    = lvl => {
     const map = { All: t('workout.level.all'), Beginner: t('workout.level.beginner'), Intermediate: t('workout.level.intermediate'), Advanced: t('workout.level.advanced') }
     return map[lvl] || lvl
@@ -30,8 +26,37 @@ function useSportT() {
     'Team Sports':'team','Outdoor & Adventure':'outdoor','Dance & Performing':'dance',
     'Precision & Skill':'precision','Gymnastics & Acrobatics':'gymnastics','Equestrian':'equestrian',
   }
-  const tCatName = name => t(`sport.cat.${CAT_KEYS[name]||name}`, name)
-  return { tSport, tCat, tCatName, tWorkout, tLevel, lang }
+  const tCatName = name => t(`sport.cat.${CAT_KEYS[name]||name}`) || name
+  // Translate muscle group string (replaces English parts with French)
+  const MUSCLE_MAP_FR = {
+    'Chest':'Pectoraux', 'Back':'Dos', 'Legs':'Jambes', 'Shoulders':'Épaules',
+    'Arms':'Bras', 'Core':'Core', 'Abs':'Abdominaux', 'Obliques':'Obliques',
+    'Glutes':'Fessiers', 'Hamstrings':'Ischio-jambiers', 'Quads':'Quadriceps',
+    'Calves':'Mollets', 'Biceps':'Biceps', 'Triceps':'Triceps',
+    'Lats':'Dorsaux', 'Traps':'Trapèzes', 'Forearms':'Avant-bras',
+    'Full Body':'Corps entier', 'Cardiovascular':'Cardiovasculaire',
+    'Cardio':'Cardio', 'Rear Delts':'Deltoïdes postérieurs',
+    'Upper Back':'Dos supérieur', 'Lower Back':'Bas du dos',
+    'Hip Flexors':'Fléchisseurs de hanche', 'Flexibility':'Souplesse',
+    'Speed':'Vitesse', 'Endurance':'Endurance', 'Agility':'Agilité',
+    'Balance':'Équilibre', 'Coordination':'Coordination', 'Power':'Puissance',
+    'Stability':'Stabilité', 'All muscle groups':'Tous les groupes musculaires',
+    'Upper Chest':'Pectoraux supérieurs', 'Lower Abs':'Abdominaux inférieurs',
+    'Side Delts':'Deltoïdes latéraux', 'All Deltoid Heads':'Tous les chefs du deltoïde',
+    'Spine':'Colonne vertébrale', 'Breathing':'Respiration',
+    'Hip':'Hanches', 'Hips':'Hanches', 'IT Band':'Bande iliotibiale',
+    'Posture':'Posture', 'Low Impact':'Faible impact',
+    'Grip':'Préhension', 'Jump':'Saut',
+  }
+  const tMuscles = muscles => {
+    if (lang !== 'fr' || !muscles) return muscles
+    let result = muscles
+    Object.entries(MUSCLE_MAP_FR).forEach(([en, fr]) => {
+      result = result.replace(new RegExp(`\\b${en}\\b`, 'g'), fr)
+    })
+    return result
+  }
+  return { tSport, tCat, tCatName, tWorkout, tLevel, tMuscles, lang }
 }
 function Card({ children, style={} }) {
   return <div style={{ background:C.surface, borderRadius:18, border:`1px solid ${C.divider}`, boxShadow:C.shadowCard, padding:'16px 18px', ...style }}>{children}</div>
@@ -54,8 +79,8 @@ function ExerciseHowTo({ name }) {
   const { t, lang } = useTranslation()
   const [open, setOpen] = useState(false)
   const data = getExercise(name)
-  const howTo = frData?.howTo || data.howTo || []
-  const tips  = frData?.tips  || data.tips  || ''
+  const howTo = data.howTo || []
+  const tips  = data.tips  || ''
   if (!howTo.length) return null
   return (
     <div style={{ marginTop:8, paddingLeft:0 }}>
@@ -90,7 +115,7 @@ function ExerciseHowTo({ name }) {
 // ─────────────────────────────────────────────
 function LibraryTab({ onUseAsTemplate }) {
   const { t } = useTranslation()
-  const { tSport, tCatName, tWorkout, tLevel, lang } = useSportT()
+  const { tSport, tCatName, tWorkout, tLevel, tMuscles, lang } = useSportT()
   const [sport,   setSport]   = useState(null)
   const [workout, setWorkout] = useState(null)
   const [search,  setSearch]  = useState('')
@@ -110,7 +135,7 @@ function LibraryTab({ onUseAsTemplate }) {
           <div style={{ fontSize:22, fontWeight:700 }}>{tWorkout(workout.id)}</div>
           <div style={{ fontSize:13, opacity:0.85, marginTop:4 }}>{workout.description}</div>
           <div style={{ display:'flex', gap:16, marginTop:14, flexWrap:'wrap' }}>
-            {[[t('workout.duration2'), workout.duration], [t('workout.level'), tLevel(workout.level)], [t('workout.muscles'), workout.muscles]].map(([l,v]) => (
+            {[[t('workout.duration2'), workout.duration], [t('workout.level'), tLevel(workout.level)], [t('workout.muscles'), tMuscles(workout.muscles)]].map(([l,v]) => (
               <div key={l}><div style={{ fontSize:13, fontWeight:700 }}>{v}</div><div style={{ fontSize:10, opacity:0.7 }}>{l}</div></div>
             ))}
           </div>
@@ -124,7 +149,7 @@ function LibraryTab({ onUseAsTemplate }) {
                 <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{ex.icon}</div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
-                  <div style={{ fontSize:11, color:C.textMuted }}>{ex.muscles}{ex.timed ? ' · ' + t('workout.duration2') : ` · ${t('session.reps')} & Sets`}</div>
+                  <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)}{ex.timed ? ' · ' + t('workout.duration2') : ` · ${t('session.reps')}`}</div>
                 </div>
               </div>
               <ExerciseHowTo name={ex.name} />
@@ -175,7 +200,7 @@ function LibraryTab({ onUseAsTemplate }) {
                 <span style={{ fontSize:15, fontWeight:700, color:C.text }}>{tWorkout(w.id)}</span>
                 <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:`${LEVEL_COLOR[w.level]||C.purple}22`, color:LEVEL_COLOR[w.level]||C.purple, fontWeight:600 }}>{tLevel(w.level)}</span>
               </div>
-              <div style={{ fontSize:12, color:C.textMuted }}>{w.muscles}</div>
+              <div style={{ fontSize:12, color:C.textMuted }}>{tMuscles(w.muscles)}</div>
               <div style={{ fontSize:11, color:C.purple, marginTop:3 }}>⏱ {w.duration} · {w.exercises.length} {t('workout.exercises')}</div>
             </div>
             <span style={{ fontSize:20, color:C.textDim }}>›</span>
@@ -224,7 +249,7 @@ function LibraryTab({ onUseAsTemplate }) {
                     <span style={{ fontSize:14, fontWeight:700, color:C.text }}>{tWorkout(w.id)}</span>
                     <span style={{ fontSize:10, padding:'2px 6px', borderRadius:20, background:`${LEVEL_COLOR[w.level]||C.purple}22`, color:LEVEL_COLOR[w.level]||C.purple, fontWeight:600 }}>{tLevel(w.level)}</span>
                   </div>
-                  <div style={{ fontSize:11, color:C.textMuted }}>{tSport(w.sport)} · {w.muscles}</div>
+                  <div style={{ fontSize:11, color:C.textMuted }}>{tSport(w.sport)} · {tMuscles(w.muscles)}</div>
                   <div style={{ fontSize:11, color:C.purple }}>⏱ {w.duration} · {w.exercises.length} {t('workout.exercises')}</div>
                 </div>
                 <span style={{ fontSize:20, color:C.textDim }}>›</span>
@@ -267,7 +292,7 @@ function LibraryTab({ onUseAsTemplate }) {
 // ─────────────────────────────────────────────
 function ExercisePickerModal({ onAdd, onClose }) {
   const { t }  = useTranslation()
-  const { tSport, lang } = useSportT()
+  const { tSport, tMuscles, lang } = useSportT()
   const [search,   setSearch]   = useState('')
   const [category, setCategory] = useState('All')
   const all        = Object.entries(EXERCISES).map(([name, ex]) => ({ name, ...ex }))
@@ -321,7 +346,7 @@ function ExercisePickerModal({ onAdd, onClose }) {
               <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{ex.icon}</div>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:14, fontWeight:500, color:C.text }}>{ex.name}</div>
-                <div style={{ fontSize:11, color:C.textMuted }}>{ex.category} · {ex.muscles}</div>
+                <div style={{ fontSize:11, color:C.textMuted }}>{ex.category} · {tMuscles(ex.muscles)}</div>
               </div>
               <span style={{ fontSize:20, color:C.purple }}>+</span>
             </button>
@@ -410,7 +435,7 @@ function PlanEditor({ plan, onSave, onCancel }) {
             <span style={{ fontSize:20 }}>{ex.icon}</span>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
-              <div style={{ fontSize:11, color:C.textMuted }}>{ex.muscles}</div>
+              <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)}</div>
             </div>
             <div style={{ display:'flex', gap:4 }}>
               <button onClick={() => moveUp(i)}   style={{ padding:'4px 8px', borderRadius:8, background:C.surfaceMid, border:'none', color:C.textMuted, cursor:'pointer', fontSize:12 }}>↑</button>
@@ -954,8 +979,8 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
               <span style={{ color:C.purple, fontSize:16 }}>{showHow ? '▲' : '▼'}</span>
             </button>
             {showHow && (() => {
-              const howTo  = frData?.howTo || data.howTo || []
-              const tips   = frData?.tips  || data.tips  || ''
+              const howTo  = data.howTo || []
+              const tips   = data.tips  || ''
               return (
                 <div style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, padding:'16px', marginTop:8 }}>
                   <ol style={{ margin:0, padding:'0 0 0 18px', display:'flex', flexDirection:'column', gap:10 }}>
@@ -1134,7 +1159,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
               <span style={{ fontSize:20 }}>{data.icon||'💪'}</span>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
-                <div style={{ fontSize:11, color:C.textMuted }}>{ex.sets.length} {t('plan.sets').toLowerCase()} · {data.muscles}</div>
+                <div style={{ fontSize:11, color:C.textMuted }}>{ex.sets.length} {t('plan.sets').toLowerCase()} · {tMuscles(data.muscles)}</div>
               </div>
               <button onClick={() => removeEx(i)} style={{ background:'none', border:'none', color:C.textDim, fontSize:16, cursor:'pointer' }}>✕</button>
             </div>
