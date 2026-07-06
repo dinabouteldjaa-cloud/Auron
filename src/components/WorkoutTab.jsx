@@ -3,14 +3,33 @@ import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
-import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LEVEL_COLOR, getExercise } from '../lib/workoutData.js'
+import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LEVEL_COLOR, getExercise, SPORT_I18N_KEYS } from '../lib/workoutData.js'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 
 const C = T
 
 // ─────────────────────────────────────────────
-// Shared primitives
+// Sport & workout name translation helpers
 // ─────────────────────────────────────────────
+function useSportT() {
+  const { t } = useTranslation()
+  const tSport    = id  => t(`sport.${id}`,     id)
+  const tCat      = key => t(`sport.cat.${key}`, key)
+  const tWorkout  = id  => t(`w.${id}`,          id)
+  const tLevel    = lvl => {
+    const map = { All: t('workout.level.all'), Beginner: t('workout.level.beginner'), Intermediate: t('workout.level.intermediate'), Advanced: t('workout.level.advanced') }
+    return map[lvl] || lvl
+  }
+  // Map category string → i18n key
+  const CAT_KEYS = {
+    'Gym & Strength':'gym','Cardio & Running':'cardio','Water Sports':'water',
+    'Mind & Body':'mind','Combat Sports':'combat','Racquet Sports':'racquet',
+    'Team Sports':'team','Outdoor & Adventure':'outdoor','Dance & Performing':'dance',
+    'Precision & Skill':'precision','Gymnastics & Acrobatics':'gymnastics','Equestrian':'equestrian',
+  }
+  const tCatName = name => t(`sport.cat.${CAT_KEYS[name]||name}`, name)
+  return { tSport, tCat, tCatName, tWorkout, tLevel }
+}
 function Card({ children, style={} }) {
   return <div style={{ background:C.surface, borderRadius:18, border:`1px solid ${C.divider}`, boxShadow:C.shadowCard, padding:'16px 18px', ...style }}>{children}</div>
 }
@@ -61,12 +80,19 @@ function ExerciseHowTo({ name }) {
 // ─────────────────────────────────────────────
 // Library tab — Sports → Workouts → Detail
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// Library tab — Sports → Workouts → Detail
+// ─────────────────────────────────────────────
 function LibraryTab({ onUseAsTemplate }) {
   const { t } = useTranslation()
+  const { tSport, tCatName, tWorkout, tLevel } = useSportT()
   const [sport,   setSport]   = useState(null)
   const [workout, setWorkout] = useState(null)
   const [search,  setSearch]  = useState('')
-  const [filter,  setFilter]  = useState(t('workout.level.all')) // All | Beginner | Intermediate | Advanced
+  const [filter,  setFilter]  = useState('All')
+
+  const tFilterLabel = f => ({ All: t('workout.level.all'), Beginner: t('workout.level.beginner'), Intermediate: t('workout.level.intermediate'), Advanced: t('workout.level.advanced') })[f] || f
 
   // ── Workout detail ────────────────────────
   if (workout) {
@@ -77,16 +103,16 @@ function LibraryTab({ onUseAsTemplate }) {
         <BackBtn onBack={() => setWorkout(null)} />
         <div style={{ background:`linear-gradient(135deg, ${sport_obj.color||C.purple}, ${sport_obj.color||C.purple}BB)`, borderRadius:20, padding:'22px 20px', marginBottom:20, color:'#fff' }}>
           <div style={{ fontSize:32, marginBottom:8 }}>{workout.icon}</div>
-          <div style={{ fontSize:22, fontWeight:700 }}>{workout.name}</div>
+          <div style={{ fontSize:22, fontWeight:700 }}>{tWorkout(workout.id)}</div>
           <div style={{ fontSize:13, opacity:0.85, marginTop:4 }}>{workout.description}</div>
           <div style={{ display:'flex', gap:16, marginTop:14, flexWrap:'wrap' }}>
-            {[['Duration', workout.duration], ['Level', workout.level], ['Muscles', workout.muscles]].map(([l,v]) => (
+            {[[t('workout.duration2'), workout.duration], [t('workout.level'), tLevel(workout.level)], [t('workout.muscles'), workout.muscles]].map(([l,v]) => (
               <div key={l}><div style={{ fontSize:13, fontWeight:700 }}>{v}</div><div style={{ fontSize:10, opacity:0.7 }}>{l}</div></div>
             ))}
           </div>
         </div>
 
-        <Label>Exercises ({exercises.length})</Label>
+        <Label>{t('workout.exercises')} ({exercises.length})</Label>
         <Card style={{ padding:0, overflow:'hidden', marginBottom:20 }}>
           {exercises.map((ex, i) => (
             <div key={i} style={{ padding:'14px 16px', borderBottom: i < exercises.length-1 ? `1px solid ${C.divider}` : 'none' }}>
@@ -116,36 +142,37 @@ function LibraryTab({ onUseAsTemplate }) {
 
   // ── Sport workouts list ───────────────────
   if (sport) {
-    const s       = SPORTS.find(s => s.id === sport) || {}
-    const workouts = LIBRARY_WORKOUTS.filter(w => w.sport === sport && (filter === t('workout.level.all') || w.level === filter))
+    const s        = SPORTS.find(s => s.id === sport) || {}
+    const LEVELS   = ['All','Beginner','Intermediate','Advanced']
+    const workouts = LIBRARY_WORKOUTS.filter(w => w.sport === sport && (filter === 'All' || w.level === filter))
     return (
       <div>
         <BackBtn onBack={() => setSport(null)} />
         <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
           <span style={{ fontSize:32 }}>{s.icon}</span>
-          <div style={{ fontSize:22, fontWeight:700, color:C.text }}>{s.name}</div>
+          <div style={{ fontSize:22, fontWeight:700, color:C.text }}>{tSport(sport)}</div>
         </div>
         {/* Level filter */}
         <div style={{ display:'flex', gap:6, marginBottom:16 }}>
-          {[t('workout.level.all'),t('workout.level.beginner'),t('workout.level.intermediate'),t('workout.level.advanced')].map(f => (
+          {LEVELS.map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{ padding:'6px 14px', borderRadius:20, fontSize:12, cursor:'pointer', border:`1px solid ${filter===f?C.purple:C.border}`, background:filter===f?C.purpleLight:'transparent', color:filter===f?C.purple:C.textMuted, fontWeight:filter===f?600:400 }}>
-              {f}
+              {tFilterLabel(f)}
             </button>
           ))}
         </div>
         {workouts.length === 0 ? (
-          <Card style={{ textAlign:'center', padding:'24px', color:C.textMuted }}>No {filter !== t('workout.level.all') ? filter.toLowerCase() : ''} workouts in this category yet.</Card>
+          <Card style={{ textAlign:'center', padding:'24px', color:C.textMuted }}>{t('workout.comingSoon')}</Card>
         ) : workouts.map(w => (
           <button key={w.id} onClick={() => setWorkout(w)}
             style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', marginBottom:10, boxShadow:C.shadowCard }}>
             <div style={{ width:50, height:50, borderRadius:14, background:`${s.color||C.purple}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, flexShrink:0 }}>{w.icon}</div>
             <div style={{ flex:1 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
-                <span style={{ fontSize:15, fontWeight:700, color:C.text }}>{w.name}</span>
-                <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:`${LEVEL_COLOR[w.level]||C.purple}22`, color:LEVEL_COLOR[w.level]||C.purple, fontWeight:600 }}>{w.level}</span>
+                <span style={{ fontSize:15, fontWeight:700, color:C.text }}>{tWorkout(w.id)}</span>
+                <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:`${LEVEL_COLOR[w.level]||C.purple}22`, color:LEVEL_COLOR[w.level]||C.purple, fontWeight:600 }}>{tLevel(w.level)}</span>
               </div>
               <div style={{ fontSize:12, color:C.textMuted }}>{w.muscles}</div>
-              <div style={{ fontSize:11, color:C.purple, marginTop:3 }}>⏱ {w.duration} · {w.exercises.length} exercises</div>
+              <div style={{ fontSize:11, color:C.purple, marginTop:3 }}>⏱ {w.duration} · {w.exercises.length} {t('workout.exercises')}</div>
             </div>
             <span style={{ fontSize:20, color:C.textDim }}>›</span>
           </button>
@@ -155,8 +182,9 @@ function LibraryTab({ onUseAsTemplate }) {
   }
 
   // ── Sports grid with search ───────────────
+  const LEVELS = ['All','Beginner','Intermediate','Advanced']
   const allWorkouts = LIBRARY_WORKOUTS.filter(w =>
-    (filter === t('workout.level.all') || w.level === filter) &&
+    (filter === 'All' || w.level === filter) &&
     (search === '' || w.name.toLowerCase().includes(search.toLowerCase()) || w.muscles.toLowerCase().includes(search.toLowerCase()))
   )
   const showSearch = search.length > 0
@@ -166,13 +194,13 @@ function LibraryTab({ onUseAsTemplate }) {
       {/* Search + filter */}
       <div style={{ position:'relative', marginBottom:12 }}>
         <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16 }}>🔍</span>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="{t('workout.searchPlaceholder')}"
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('workout.searchPlaceholder')}
           style={{ width:'100%', padding:'10px 14px 10px 38px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none' }} />
       </div>
       <div style={{ display:'flex', gap:6, marginBottom:16, overflowX:'auto' }}>
-        {[t('workout.level.all'),t('workout.level.beginner'),t('workout.level.intermediate'),t('workout.level.advanced')].map(f => (
+        {LEVELS.map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{ padding:'6px 14px', borderRadius:20, fontSize:12, cursor:'pointer', whiteSpace:'nowrap', border:`1px solid ${filter===f?C.purple:C.border}`, background:filter===f?C.purpleLight:'transparent', color:filter===f?C.purple:C.textMuted, fontWeight:filter===f?600:400 }}>
-            {f}
+            {tFilterLabel(f)}
           </button>
         ))}
       </div>
@@ -180,7 +208,7 @@ function LibraryTab({ onUseAsTemplate }) {
       {/* Search results */}
       {showSearch ? (
         <div>
-          <Label>{allWorkouts.length} results</Label>
+          <Label>{allWorkouts.length} {t('workout.results','results')}</Label>
           {allWorkouts.map(w => {
             const s = SPORTS.find(s => s.id === w.sport) || {}
             return (
@@ -189,47 +217,41 @@ function LibraryTab({ onUseAsTemplate }) {
                 <div style={{ width:48, height:48, borderRadius:14, background:`${s.color||C.purple}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>{w.icon}</div>
                 <div style={{ flex:1 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
-                    <span style={{ fontSize:14, fontWeight:700, color:C.text }}>{w.name}</span>
-                    <span style={{ fontSize:10, padding:'2px 6px', borderRadius:20, background:`${LEVEL_COLOR[w.level]||C.purple}22`, color:LEVEL_COLOR[w.level]||C.purple, fontWeight:600 }}>{w.level}</span>
+                    <span style={{ fontSize:14, fontWeight:700, color:C.text }}>{tWorkout(w.id)}</span>
+                    <span style={{ fontSize:10, padding:'2px 6px', borderRadius:20, background:`${LEVEL_COLOR[w.level]||C.purple}22`, color:LEVEL_COLOR[w.level]||C.purple, fontWeight:600 }}>{tLevel(w.level)}</span>
                   </div>
-                  <div style={{ fontSize:11, color:C.textMuted }}>{s.name} · {w.muscles}</div>
-                  <div style={{ fontSize:11, color:C.purple }}>⏱ {w.duration} · {w.exercises.length} ex</div>
+                  <div style={{ fontSize:11, color:C.textMuted }}>{tSport(w.sport)} · {w.muscles}</div>
+                  <div style={{ fontSize:11, color:C.purple }}>⏱ {w.duration} · {w.exercises.length} {t('workout.exercises')}</div>
                 </div>
                 <span style={{ fontSize:20, color:C.textDim }}>›</span>
               </button>
             )
           })}
-          {allWorkouts.length === 0 && <Card style={{ textAlign:'center', padding:24, color:C.textMuted }}>No workouts found for "{search}"</Card>}
+          {allWorkouts.length === 0 && <Card style={{ textAlign:'center', padding:24, color:C.textMuted }}>{t('workout.noResults','')} "{search}"</Card>}
         </div>
       ) : (
       /* Sports categorized grid */
         <div>
-          {SPORTS_CATEGORIES.map(cat => {
-            const sportsInCat = cat.sports.filter(s => {
-              const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id && (filter===t('workout.level.all')||w.level===filter)).length
-              return true // show all sports
-            })
-            return (
-              <div key={cat.category} style={{ marginBottom:24 }}>
-                <Label>{cat.category}</Label>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-                  {sportsInCat.map(s => {
-                    const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id && (filter===t('workout.level.all')||w.level===filter)).length
-                    return (
-                      <button key={s.id} onClick={() => setSport(s.id)}
-                        style={{ padding:'14px 12px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:5 }}>
-                        <span style={{ fontSize:26 }}>{s.icon}</span>
-                        <div style={{ fontSize:13, fontWeight:700, color:C.text, lineHeight:1.2 }}>{s.name}</div>
-                        <div style={{ fontSize:10, color:count>0?C.purple:C.textDim }}>
-                          {count>0 ? `${count} workout${count!==1?'s':''}` : 'Coming soon'}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
+          {SPORTS_CATEGORIES.map(cat => (
+            <div key={cat.category} style={{ marginBottom:24 }}>
+              <Label>{tCatName(cat.category)}</Label>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                {cat.sports.map(s => {
+                  const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id && (filter==='All'||w.level===filter)).length
+                  return (
+                    <button key={s.id} onClick={() => setSport(s.id)}
+                      style={{ padding:'14px 12px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:5 }}>
+                      <span style={{ fontSize:26 }}>{s.icon}</span>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.text, lineHeight:1.2 }}>{tSport(s.id)}</div>
+                      <div style={{ fontSize:10, color:count>0?C.purple:C.textDim }}>
+                        {count>0 ? `${count} ${count===1?t('workout.workout1','workout'):t('workout.workouts','workouts')}` : t('workout.comingSoon')}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
-            )
-          })}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -241,7 +263,7 @@ function LibraryTab({ onUseAsTemplate }) {
 // ─────────────────────────────────────────────
 function ExercisePickerModal({ onAdd, onClose }) {
   const [search,   setSearch]   = useState('')
-  const [category, setCategory] = useState(t('workout.level.all'))
+  const [category, setCategory] = useState('All')
   const all        = Object.entries(EXERCISES).map(([name, ex]) => ({ name, ...ex }))
   const categories = [t('workout.level.all'), ...new Set(all.map(e => e.category))]
   const filtered   = search
