@@ -262,20 +262,21 @@ function LibraryTab({ onUseAsTemplate }) {
 // Exercise picker modal
 // ─────────────────────────────────────────────
 function ExercisePickerModal({ onAdd, onClose }) {
+  const { t }  = useTranslation()
   const [search,   setSearch]   = useState('')
   const [category, setCategory] = useState('All')
   const all        = Object.entries(EXERCISES).map(([name, ex]) => ({ name, ...ex }))
-  const categories = [t('workout.level.all'), ...new Set(all.map(e => e.category))]
+  const categories = ['All', ...new Set(all.map(e => e.category))]
   const filtered   = search
     ? all.filter(e => e.name.toLowerCase().includes(search.toLowerCase()) || (e.muscles||'').toLowerCase().includes(search.toLowerCase()))
-    : category === t('workout.level.all') ? all : all.filter(e => e.category === category)
+    : category === 'All' ? all : all.filter(e => e.category === category)
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(26,26,46,0.6)', zIndex:300, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{ background:C.surface, borderRadius:'22px 22px 0 0', width:'100%', maxWidth:480, maxHeight:'80vh', display:'flex', flexDirection:'column' }}>
         <div style={{ padding:'16px 20px 12px' }}>
           <div style={{ width:36, height:4, borderRadius:2, background:C.divider, margin:'0 auto 16px' }} />
-          <div style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:12 }}>Add Exercise</div>
+          <div style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:12 }}>{t('session.addExercise')}</div>
           <div style={{ position:'relative', marginBottom:10 }}>
             <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)' }}>🔍</span>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="{t('workout.searchExPlaceholder')}" autoFocus
@@ -567,9 +568,9 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBui
             </div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            <button onClick={() => onStartPlan(plan)} style={{ flex:2, padding:'10px', borderRadius:12, background:C.green, border:'none', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>▶ Start</button>
-            <button onClick={() => setEditing(plan)} style={{ flex:1, padding:'10px', borderRadius:12, background:C.surfaceMid, border:'none', color:C.textMuted, fontSize:13, cursor:'pointer' }}>Edit</button>
-            <button onClick={() => deletePlan(plan.id)} style={{ flex:1, padding:'10px', borderRadius:12, background:C.redLight, border:'none', color:C.red, fontSize:13, cursor:'pointer' }}>Delete</button>
+            <button onClick={() => onStartPlan(plan)} style={{ flex:2, padding:'10px', borderRadius:12, background:C.green, border:'none', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>{t('workout.start')}</button>
+            <button onClick={() => setEditing(plan)} style={{ flex:1, padding:'10px', borderRadius:12, background:C.surfaceMid, border:'none', color:C.textMuted, fontSize:13, cursor:'pointer' }}>{t('workout.edit')}</button>
+            <button onClick={() => deletePlan(plan.id)} style={{ flex:1, padding:'10px', borderRadius:12, background:C.redLight, border:'none', color:C.red, fontSize:13, cursor:'pointer' }}>{t('workout.delete')}</button>
           </div>
         </div>
       ))}
@@ -1071,7 +1072,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   if (!started) {
     return (
       <div>
-        <BackBtn onBack={onCancel} label="Cancel" />
+        <BackBtn onBack={onCancel} label={t('session.cancelWorkout')} />
         <div style={{ background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark})`, borderRadius:20, padding:'24px 20px', marginBottom:20, color:'#fff' }}>
           {fromLibrary
             ? <div style={{ fontSize:22, fontWeight:800 }}>{name}</div>
@@ -1172,6 +1173,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
 // Workout history card
 // ─────────────────────────────────────────────
 function WorkoutHistoryCard({ log, onDelete }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const [confirm,  setConfirm]  = useState(false)
   return (
@@ -1187,7 +1189,7 @@ function WorkoutHistoryCard({ log, onDelete }) {
         <div style={{ display:'flex', gap:6 }}>
           {log.exercises?.length>0 && (
             <button onClick={()=>setExpanded(e=>!e)} style={{ padding:'6px 12px', borderRadius:10, background:C.purpleLight, border:'none', color:C.purple, fontSize:12, cursor:'pointer' }}>
-              {expanded?'▲':`${log.exercises.length} ex`}
+              {expanded?'▲':`${log.exercises.length} {t('workout.exercises')}`}
             </button>
           )}
           {!confirm
@@ -1242,13 +1244,13 @@ function TodayWorkoutTab({ userId, timezone, today, logs, logsLoading, onStartEm
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{plan.name}</div>
                   <div style={{ fontSize:12, color:C.purple }}>
-                    {plan.exercises?.length||0} exercises{plan.schedule?.time ? ` · ${plan.schedule.time}` : ''}
+                    {plan.exercises?.length||0} {t('workout.exercises')}{plan.schedule?.time ? ` · ${plan.schedule.time}` : ''}
                   </div>
                 </div>
               </div>
               <button onClick={() => onStartPlan(plan)}
                 style={{ width:'100%', padding:'11px', borderRadius:12, background:C.purple, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>
-                ▶ Start now
+                {t('workout.startNow')}
               </button>
             </div>
           ))}
@@ -1269,7 +1271,7 @@ function TodayWorkoutTab({ userId, timezone, today, logs, logsLoading, onStartEm
             {scheduledToday.length > 0 ? t('workout.readyStart') : t('workout.noWorkoutToday')}
           </div>
           <div style={{ fontSize:13, color:C.textMuted }}>
-            {scheduledToday.length > 0 ? 'Tap "Start now" above to begin your scheduled workout.' : t('workout.noWorkoutSub')}
+            {scheduledToday.length > 0 ? t('workout.noWorkoutSub') : t('workout.noWorkoutSub')}
           </div>
         </Card>
       )}
