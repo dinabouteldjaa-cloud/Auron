@@ -865,7 +865,6 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
   const set       = exercise.sets[setIdx]
   const [showHow, setShowHow] = useState(false)
   const [sheet,   setSheet]   = useState(null)
-  const [showRest,setShowRest]= useState(false)
   const [weight,  setWeight]  = useState(set?.weight || '')
   const [reps,    setReps]    = useState(set?.reps   || '')
   const [dur,     setDur]     = useState(set?.duration || '')
@@ -876,7 +875,6 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
     setReps(set?.reps || '')
     setDur(set?.duration || '')
     setShowHow(false)
-    // Note: do NOT reset showRest here — let it finish naturally
   }, [setIdx, exercise.name])
 
   const isFinishing = isLast && setIdx === totalSets - 1
@@ -889,9 +887,6 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
 
   return (
     <div style={{ position:'fixed', inset:0, background:C.pageBg||'#F0EFF8', zIndex:200, display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto', overflow:'hidden' }}>
-      {showRest && (
-        <RestTimer duration={restSecs} onDone={() => { setShowRest(false) }} />
-      )}
       {sheet && (
         <NumberSheet
           label={sheet==='weight'?t('session.weight'):sheet==='reps'?t('session.reps'):t('session.duration')}
@@ -938,7 +933,7 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
             <button onClick={() => setSheet('duration')}
               style={{ background:C.surface, border:`2px solid ${C.purple}`, borderRadius:20, padding:'20px 40px', cursor:'pointer', boxShadow:C.shadowCard }}>
               <span style={{ fontSize:52, fontWeight:800, color:dur?C.purple:C.textDim, fontVariantNumeric:'tabular-nums' }}>{dur||'—'}</span>
-              <span style={{ fontSize:20, color:C.textMuted, marginLeft:6 }}>{t('workout.sec').toLowerCase()}</span>
+              <span style={{ fontSize:20, color:C.textMuted, marginLeft:6 }}>sec</span>
             </button>
           </div>
         ) : (
