@@ -806,6 +806,10 @@ const translations = {
     'q.limitations.placeholder':'e.g. Bad knees, avoid jumping, no overhead pressing...',
     'q.request.q':'Any specific request for Auron?','q.request.sub':'Anything else you want in your plan.',
     'q.request.placeholder':'e.g. I want a simple dumbbell plan, avoid jumping, focus on arms and chest.',
+
+    'sport.chest_ex':'Chest','sport.back_ex':'Back','sport.legs_ex':'Legs',
+    'sport.shoulders_ex':'Shoulders','sport.arms_ex':'Arms','sport.core_ex':'Core',
+    'sport.cardio_ex':'Cardio',
     'lang.en':'English',
     'lang.fr':'Français'
   },
@@ -1643,6 +1647,10 @@ const translations = {
     'plan.scheduleTimeHint':'Laisser vide pour ignorer le rappel',
     'plan.selectDay':'Sélectionnez au moins un jour',
     'plan.daysLabel':'Jours',
+
+    'sport.chest_ex':'Pectoraux','sport.back_ex':'Dos','sport.legs_ex':'Jambes',
+    'sport.shoulders_ex':'Épaules','sport.arms_ex':'Bras','sport.core_ex':'Abdominaux',
+    'sport.cardio_ex':'Cardio',
     'lang.en':'English',
     'lang.fr':'Français'
   }
