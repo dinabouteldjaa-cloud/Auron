@@ -2,7 +2,7 @@ import { createContext, useContext, useState } from 'react'
 
 const translations = {
   en: {
-    'nav.home':'Home',
+    'nav.home':'Home','nav.workout':'Workout',
     'nav.nutrition':'Nutrition',
     'nav.progress':'Progress',
     'nav.meds':'Meds',
@@ -811,7 +811,7 @@ const translations = {
   },
 
   fr: {
-    'nav.home':'Accueil',
+    'nav.home':'Accueil','nav.workout':'Entraînement',
     'nav.nutrition':'Nutrition',
     'nav.progress':'Progrès',
     'nav.meds':'Médicaments',
