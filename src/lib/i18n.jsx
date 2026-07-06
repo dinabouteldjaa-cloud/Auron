@@ -810,8 +810,19 @@ const translations = {
     'sport.chest_ex':'Chest','sport.back_ex':'Back','sport.legs_ex':'Legs',
     'sport.shoulders_ex':'Shoulders','sport.arms_ex':'Arms','sport.core_ex':'Core',
     'sport.cardio_ex':'Cardio',
-    'lang.en':'English',
-    'lang.fr':'Français'
+
+    // Workout muscle descriptions
+    'muscles.chest_tri_sh':'Chest · Shoulders · Triceps',
+    'muscles.back_bi_rd':'Back · Biceps · Rear Delts',
+    'muscles.quads_ham_glu':'Quads · Hamstrings · Glutes',
+    'muscles.all':'All muscle groups',
+    'muscles.chest_back_sh_arms':'Chest · Back · Shoulders · Arms',
+    'muscles.core_abs_obl':'Core · Abs · Obliques',
+    'muscles.full_body':'Full Body',
+    'muscles.legs_cardio':'Legs, Cardiovascular',
+    'muscles.speed_endurance':'Speed, Endurance',
+    'muscles.full_flexibility':'Full Body, Flexibility',
+    'workout.sec':'sec','lang.en':'English','lang.fr':'Français'
   },
 
   fr: {
@@ -1651,8 +1662,19 @@ const translations = {
     'sport.chest_ex':'Pectoraux','sport.back_ex':'Dos','sport.legs_ex':'Jambes',
     'sport.shoulders_ex':'Épaules','sport.arms_ex':'Bras','sport.core_ex':'Abdominaux',
     'sport.cardio_ex':'Cardio',
-    'lang.en':'English',
-    'lang.fr':'Français'
+
+    // Workout muscle descriptions FR
+    'muscles.chest_tri_sh':'Pectoraux · Épaules · Triceps',
+    'muscles.back_bi_rd':'Dos · Biceps · Deltoïdes',
+    'muscles.quads_ham_glu':'Quadriceps · Ischio · Fessiers',
+    'muscles.all':'Tous les groupes musculaires',
+    'muscles.chest_back_sh_arms':'Pectoraux · Dos · Épaules · Bras',
+    'muscles.core_abs_obl':'Core · Abdominaux · Obliques',
+    'muscles.full_body':'Corps entier',
+    'muscles.legs_cardio':'Jambes, Cardiovasculaire',
+    'muscles.speed_endurance':'Vitesse, Endurance',
+    'muscles.full_flexibility':'Corps entier, Souplesse',
+    'workout.sec':'sec','lang.en':'English','lang.fr':'Français'
   }
 }
 
