@@ -263,6 +263,7 @@ function LibraryTab({ onUseAsTemplate }) {
 // ─────────────────────────────────────────────
 function ExercisePickerModal({ onAdd, onClose }) {
   const { t }  = useTranslation()
+  const { tSport } = useSportT()
   const [search,   setSearch]   = useState('')
   const [category, setCategory] = useState('All')
   const all        = Object.entries(EXERCISES).map(([name, ex]) => ({ name, ...ex }))
@@ -270,6 +271,23 @@ function ExercisePickerModal({ onAdd, onClose }) {
   const filtered   = search
     ? all.filter(e => e.name.toLowerCase().includes(search.toLowerCase()) || (e.muscles||'').toLowerCase().includes(search.toLowerCase()))
     : category === 'All' ? all : all.filter(e => e.category === category)
+
+  // Map exercise category names to sport ids for translation
+  const CAT_TO_SPORT = {
+    'Chest':'chest_ex','Back':'back_ex','Legs':'legs_ex','Shoulders':'shoulders_ex',
+    'Arms':'arms_ex','Core':'core_ex','Cardio':'cardio_ex','Running':'running',
+    'Cycling':'cycling','Swimming':'swimming','CrossFit':'crossfit','Yoga':'yoga',
+    'Pilates':'pilates','Boxing':'boxing','Stretching':'stretching','HIIT':'hiit',
+    'Martial Arts':'martial','Calisthenics':'calisthenics','Kettlebell':'kettlebell',
+    'Functional':'functional','Basketball':'basketball','Tennis':'tennis',
+    'Football':'football','Badminton':'badminton','Golf':'golf','Dance':'dance',
+    'Gymnastics':'gymnastics','Rowing':'rowing','Walking':'walking',
+  }
+  const tCat = cat => {
+    if (cat === 'All') return t('workout.level.all')
+    const sportId = CAT_TO_SPORT[cat]
+    return sportId ? t(`sport.${sportId}`, cat) : cat
+  }
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(26,26,46,0.6)', zIndex:300, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
@@ -279,14 +297,14 @@ function ExercisePickerModal({ onAdd, onClose }) {
           <div style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:12 }}>{t('session.addExercise')}</div>
           <div style={{ position:'relative', marginBottom:10 }}>
             <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)' }}>🔍</span>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="{t('workout.searchExPlaceholder')}" autoFocus
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('workout.searchExPlaceholder')} autoFocus
               style={{ width:'100%', padding:'10px 14px 10px 36px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none' }} />
           </div>
           {!search && (
             <div style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:4 }}>
               {categories.map(cat => (
                 <button key={cat} onClick={() => setCategory(cat)} style={{ padding:'6px 12px', borderRadius:20, fontSize:11, cursor:'pointer', whiteSpace:'nowrap', border:`1px solid ${category===cat?C.purple:C.border}`, background:category===cat?C.purpleLight:'transparent', color:category===cat?C.purple:C.textMuted, fontWeight:category===cat?600:400 }}>
-                  {cat}
+                  {tCat(cat)}
                 </button>
               ))}
             </div>
@@ -928,9 +946,9 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
               style={{ width:'100%', background:C.surface, border:`1px solid ${C.divider}`, borderRadius:14, padding:'12px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:C.shadowCard }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ fontSize:16 }}>📋</span>
-                <span style={{ fontSize:14, fontWeight:600, color:C.text }}>How to perform</span>
+                <span style={{ fontSize:14, fontWeight:600, color:C.text }}>{t('session.howTo').replace('📋 ', '')}</span>
               </div>
-              <span style={{ color:C.purple, fontSize:16 }}>{showHow?'▲':'▼'}</span>
+              <span style={{ color:C.purple, fontSize:16 }}>{showHow ? '▲' : '▼'}</span>
             </button>
             {showHow && (
               <div style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, padding:'16px', marginTop:8 }}>
@@ -956,7 +974,7 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
       <div style={{ padding:'12px 20px 32px', background:C.pageBg||'#F0EFF8', borderTop:`1px solid ${C.divider}`, flexShrink:0 }}>
         <button onClick={handleDone}
           style={{ width:'100%', padding:'18px', borderRadius:20, background:`linear-gradient(135deg, ${C.green}, #1aad6b)`, border:'none', color:'#fff', fontSize:18, fontWeight:800, cursor:'pointer', letterSpacing:'0.02em', boxShadow:`0 6px 24px ${C.green}44` }}>
-          {isLast && setIdx === totalSets - 1 ? t('workout.finishWorkout') : t('workout.doneMark')}
+          {isLast && setIdx === totalSets - 1 ? t('session.finishWorkout') : t('session.doneMark')}
         </button>
         {/* Skip */}
         {!(isLast && setIdx === totalSets - 1) && (
@@ -1140,7 +1158,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
         <div style={{ fontSize:28, fontWeight:800, color:C.text, marginBottom:8 }}>{t('session.allDone')}</div>
         <div style={{ fontSize:15, color:C.textMuted, marginBottom:8 }}>{fmt(elapsed)} · {doneSetsTotal} sets</div>
         {totalVol>0 && <div style={{ fontSize:13, color:C.textMuted, marginBottom:32 }}>{Math.round(totalVol)} kg total volume</div>}
-        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="{t('session.notes')}"
+        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder={t('session.notes')}
           style={{ width:'100%', maxWidth:360, padding:'12px 14px', borderRadius:14, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', marginBottom:16 }} />
         <button onClick={handleSave} disabled={saving}
           style={{ width:'100%', maxWidth:360, padding:16, borderRadius:18, background:C.purple, border:'none', color:'#fff', fontSize:16, fontWeight:700, cursor:saving?'default':'pointer' }}>
