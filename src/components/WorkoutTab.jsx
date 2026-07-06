@@ -3,16 +3,19 @@ import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
-import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LEVEL_COLOR, getExercise, SPORT_I18N_KEYS } from '../lib/workoutData.js'
+import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LEVEL_COLOR, getExercise } from '../lib/workoutData.js'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 
 const C = T
 
+function useMuscles() {
+  const { lang } = useTranslation()
+}
+
 // ─────────────────────────────────────────────
-// Sport & workout name translation helpers
 // ─────────────────────────────────────────────
 function useSportT() {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const tSport    = id  => t(`sport.${id}`,     id)
   const tCat      = key => t(`sport.cat.${key}`, key)
   const tWorkout  = id  => t(`w.${id}`,          id)
@@ -28,7 +31,7 @@ function useSportT() {
     'Precision & Skill':'precision','Gymnastics & Acrobatics':'gymnastics','Equestrian':'equestrian',
   }
   const tCatName = name => t(`sport.cat.${CAT_KEYS[name]||name}`, name)
-  return { tSport, tCat, tCatName, tWorkout, tLevel }
+  return { tSport, tCat, tCatName, tWorkout, tLevel, lang }
 }
 function Card({ children, style={} }) {
   return <div style={{ background:C.surface, borderRadius:18, border:`1px solid ${C.divider}`, boxShadow:C.shadowCard, padding:'16px 18px', ...style }}>{children}</div>
@@ -48,11 +51,12 @@ function BackBtn({ onBack, label }) {
 // How-to — no conditional return before hook
 // ─────────────────────────────────────────────
 function ExerciseHowTo({ name }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const [open, setOpen] = useState(false)
   const data = getExercise(name)
-  // Always render container but hide toggle if no data
-  if (!data.howTo?.length) return null
+  const howTo = frData?.howTo || data.howTo || []
+  const tips  = frData?.tips  || data.tips  || ''
+  if (!howTo.length) return null
   return (
     <div style={{ marginTop:8, paddingLeft:0 }}>
       <button onClick={() => setOpen(o => !o)}
@@ -62,13 +66,13 @@ function ExerciseHowTo({ name }) {
       {open && (
         <div style={{ marginTop:8, padding:'12px 14px', background:C.purpleLight, borderRadius:12 }}>
           <ol style={{ margin:0, padding:'0 0 0 18px', display:'flex', flexDirection:'column', gap:5 }}>
-            {data.howTo.map((step, i) => (
+            {howTo.map((step, i) => (
               <li key={i} style={{ fontSize:12, color:C.text, lineHeight:1.5 }}>{step}</li>
             ))}
           </ol>
-          {data.tips && (
+          {tips && (
             <div style={{ marginTop:8, fontSize:11, color:C.purple, fontStyle:'italic', borderTop:`1px solid ${C.border}`, paddingTop:8 }}>
-              💡 {data.tips}
+              💡 {tips}
             </div>
           )}
         </div>
@@ -86,7 +90,7 @@ function ExerciseHowTo({ name }) {
 // ─────────────────────────────────────────────
 function LibraryTab({ onUseAsTemplate }) {
   const { t } = useTranslation()
-  const { tSport, tCatName, tWorkout, tLevel } = useSportT()
+  const { tSport, tCatName, tWorkout, tLevel, lang } = useSportT()
   const [sport,   setSport]   = useState(null)
   const [workout, setWorkout] = useState(null)
   const [search,  setSearch]  = useState('')
@@ -96,7 +100,7 @@ function LibraryTab({ onUseAsTemplate }) {
 
   // ── Workout detail ────────────────────────
   if (workout) {
-    const exercises = workout.exercises.map(name => getExercise(name))
+    const exercises = workout.exercises.map(name => getExercise(name, lang))
     const sport_obj = SPORTS.find(s => s.id === workout.sport) || {}
     return (
       <div>
@@ -263,7 +267,7 @@ function LibraryTab({ onUseAsTemplate }) {
 // ─────────────────────────────────────────────
 function ExercisePickerModal({ onAdd, onClose }) {
   const { t }  = useTranslation()
-  const { tSport } = useSportT()
+  const { tSport, lang } = useSportT()
   const [search,   setSearch]   = useState('')
   const [category, setCategory] = useState('All')
   const all        = Object.entries(EXERCISES).map(([name, ex]) => ({ name, ...ex }))
@@ -753,6 +757,7 @@ function SetRow({ set, idx, onChange, onRemove, timed, onDone }) {
 // ─────────────────────────────────────────────
 function SessionExCard({ ex, onUpdate, onRemove, restDuration, onRestStart }) {
   const { t } = useTranslation()
+  const tMuscles = useMuscles()
   const data     = getExercise(ex.name)
   const timed    = data.timed || ex.timed
 
@@ -779,7 +784,7 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration, onRestStart }) {
           <div style={{ flex:1 }}>
             <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{ex.name}</div>
             <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:2 }}>
-              <span style={{ fontSize:11, color:C.textMuted }}>{data.muscles}</span>
+              <span style={{ fontSize:11, color:C.textMuted }}>{tMuscles(data.muscles)}</span>
               <span style={{ fontSize:11, color:allDone?C.green:doneSets>0?C.amber:C.textDim }}>· {doneSets}/{ex.sets.length} {t('session.doneMark').replace('✓ ','')}</span>
             </div>
           </div>
@@ -828,7 +833,8 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration, onRestStart }) {
 // Fullscreen exercise view
 // ─────────────────────────────────────────────
 function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTogglePause, onSetDone, onPrev, onNext, onFinish, restSecs, saving, fmt, isLast }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
+  const tMuscles = useMuscles()
   const data      = getExercise(exercise.name)
   const timed     = data.timed || exercise.timed
   const set       = exercise.sets[setIdx]
@@ -839,19 +845,19 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
   const [reps,    setReps]    = useState(set?.reps   || '')
   const [dur,     setDur]     = useState(set?.duration || '')
 
-  // Sync local state when set changes
+  // Sync local state when set/exercise changes — but NOT showRest
   useEffect(() => {
     setWeight(set?.weight || '')
     setReps(set?.reps || '')
     setDur(set?.duration || '')
     setShowHow(false)
-    setShowRest(false)
+    // Note: do NOT reset showRest here — let it finish naturally
   }, [setIdx, exercise.name])
+
+  const isFinishing = isLast && setIdx === totalSets - 1
 
   const handleDone = () => {
     onSetDone({ weight, reps, duration: dur })
-    if (restSecs > 0 && !(isLast && setIdx === totalSets - 1)) setShowRest(true)
-    else if (!isLast || setIdx < totalSets - 1) {}
   }
 
   const doneCount = exercise.sets.filter(s => s.done).length
@@ -859,11 +865,11 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
   return (
     <div style={{ position:'fixed', inset:0, background:C.pageBg||'#F0EFF8', zIndex:200, display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto', overflow:'hidden' }}>
       {showRest && (
-        <RestTimer duration={restSecs} onDone={() => { setShowRest(false); onNext?.() }} />
+        <RestTimer duration={restSecs} onDone={() => { setShowRest(false) }} />
       )}
       {sheet && (
         <NumberSheet
-          label={sheet==='weight'?'Weight (kg)':sheet==='reps'?'Reps':'Duration (sec)'}
+          label={sheet==='weight'?t('session.weight'):sheet==='reps'?t('session.reps'):t('session.duration')}
           value={sheet==='weight'?weight:sheet==='reps'?reps:dur}
           onConfirm={v => { if(sheet==='weight') setWeight(v); else if(sheet==='reps') setReps(v); else setDur(v) }}
           onClose={() => setSheet(null)}
@@ -894,7 +900,7 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
         <div style={{ textAlign:'center', marginBottom:24 }}>
           <div style={{ fontSize:56, marginBottom:12 }}>{data.icon||'💪'}</div>
           <div style={{ fontSize:26, fontWeight:800, color:C.text, lineHeight:1.2, marginBottom:6 }}>{exercise.name}</div>
-          <div style={{ fontSize:13, color:C.textMuted }}>{data.muscles}</div>
+          <div style={{ fontSize:13, color:C.textMuted }}>{tMuscles(data.muscles)}</div>
           <div style={{ fontSize:13, color:C.purple, fontWeight:600, marginTop:4 }}>
             Set {setIdx+1}/{totalSets} · {doneCount} {t('session.doneMark').replace('✓ ','')}
           </div>
@@ -943,24 +949,28 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
               style={{ width:'100%', background:C.surface, border:`1px solid ${C.divider}`, borderRadius:14, padding:'12px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:C.shadowCard }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ fontSize:16 }}>📋</span>
-                <span style={{ fontSize:14, fontWeight:600, color:C.text }}>{t('session.howTo').replace('📋 ', '')}</span>
+                <span style={{ fontSize:14, fontWeight:600, color:C.text }}>{t('workout.howTo')}</span>
               </div>
               <span style={{ color:C.purple, fontSize:16 }}>{showHow ? '▲' : '▼'}</span>
             </button>
-            {showHow && (
-              <div style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, padding:'16px', marginTop:8 }}>
-                <ol style={{ margin:0, padding:'0 0 0 18px', display:'flex', flexDirection:'column', gap:10 }}>
-                  {data.howTo.map((step,i) => (
-                    <li key={i} style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>{step}</li>
-                  ))}
-                </ol>
-                {data.tips && (
-                  <div style={{ marginTop:12, fontSize:12, color:C.purple, fontStyle:'italic', borderTop:`1px solid ${C.divider}`, paddingTop:10 }}>
-                    💡 {data.tips}
-                  </div>
-                )}
-              </div>
-            )}
+            {showHow && (() => {
+              const howTo  = frData?.howTo || data.howTo || []
+              const tips   = frData?.tips  || data.tips  || ''
+              return (
+                <div style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, padding:'16px', marginTop:8 }}>
+                  <ol style={{ margin:0, padding:'0 0 0 18px', display:'flex', flexDirection:'column', gap:10 }}>
+                    {howTo.map((step,i) => (
+                      <li key={i} style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>{step}</li>
+                    ))}
+                  </ol>
+                  {tips && (
+                    <div style={{ marginTop:12, fontSize:12, color:C.purple, fontStyle:'italic', borderTop:`1px solid ${C.divider}`, paddingTop:10 }}>
+                      💡 {tips}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </div>
         )}
 
@@ -971,10 +981,10 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
       <div style={{ padding:'12px 20px 32px', background:C.pageBg||'#F0EFF8', borderTop:`1px solid ${C.divider}`, flexShrink:0 }}>
         <button onClick={handleDone}
           style={{ width:'100%', padding:'18px', borderRadius:20, background:`linear-gradient(135deg, ${C.green}, #1aad6b)`, border:'none', color:'#fff', fontSize:18, fontWeight:800, cursor:'pointer', letterSpacing:'0.02em', boxShadow:`0 6px 24px ${C.green}44` }}>
-          {isLast && setIdx === totalSets - 1 ? t('session.finishWorkout') : t('session.doneMark')}
+          {isFinishing ? t('session.finishWorkout') : t('session.doneMark')}
         </button>
         {/* Skip */}
-        {!(isLast && setIdx === totalSets - 1) && (
+        {!isFinishing && (
           <button onClick={() => onNext?.()}
             style={{ width:'100%', marginTop:8, padding:'10px', background:'none', border:'none', color:C.textMuted, fontSize:13, cursor:'pointer' }}>
             {t('session.skipSet')}
@@ -989,12 +999,12 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
 // Active session — orchestrates fullscreen flow
 // ─────────────────────────────────────────────
 function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const fromLibrary = !!plan?.fromLibrary
 
   const initExercises = () => (plan?.exercises || []).map(ex => {
     const name  = typeof ex === 'string' ? ex : (ex.name || ex)
-    const data  = getExercise(name)
+    const data  = getExercise(name, lang)
     const count = parseInt(ex.sets) || 3
     return {
       name, timed: data.timed || false,
@@ -1048,6 +1058,13 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
     const sets = ex.sets.map((s,i) => i===activeSet ? {...s, weight, reps, duration, done:true} : s)
     updateEx(activeEx, { ...ex, sets })
 
+    const isFinishing = activeEx === exercises.length - 1 && activeSet === ex.sets.length - 1
+
+    // Show rest timer (unless this is the very last set)
+    if (restSecs > 0 && !isFinishing) {
+      setShowRest(true)
+    }
+
     // Advance to next set or next exercise
     if (activeSet < ex.sets.length - 1) {
       setActiveSet(s => s + 1)
@@ -1055,7 +1072,6 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
       setActiveEx(e => e + 1)
       setActiveSet(0)
     }
-    // If last exercise, last set — finish prompt handled in fullscreen
   }
 
   const handleNext = () => {
@@ -1112,7 +1128,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
         {/* Exercise list preview */}
         <Label>{t('workout.exercises')}</Label>
         {exercises.map((ex,i) => {
-          const data = getExercise(ex.name)
+          const data = getExercise(ex.name, lang)
           return (
             <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 14px', background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, marginBottom:8 }}>
               <span style={{ fontSize:20 }}>{data.icon||'💪'}</span>
@@ -1145,46 +1161,47 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   }
 
   // ── Active — fullscreen exercise view ────────
-  // Global rest timer — rendered at session level so it survives exercise re-renders
-  if (showRest) return <RestTimer duration={restSecs} onDone={() => setShowRest(false)} />
-
   if (exercises.length === 0) return null
 
   // If last set of last exercise just done — show finish prompt
   const allDone = exercises.every(ex => ex.sets.every(s => s.done))
-  if (allDone) {
+  if (allDone && !showRest) {
     return (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'60vh', textAlign:'center', padding:24 }}>
         <div style={{ fontSize:64, marginBottom:16 }}>🏆</div>
         <div style={{ fontSize:28, fontWeight:800, color:C.text, marginBottom:8 }}>{t('session.allDone')}</div>
-        <div style={{ fontSize:15, color:C.textMuted, marginBottom:8 }}>{fmt(elapsed)} · {doneSetsTotal} sets</div>
-        {totalVol>0 && <div style={{ fontSize:13, color:C.textMuted, marginBottom:32 }}>{Math.round(totalVol)} kg total volume</div>}
+        <div style={{ fontSize:15, color:C.textMuted, marginBottom:8 }}>{fmt(elapsed)} · {doneSetsTotal} {t('plan.sets').toLowerCase()}</div>
+        {totalVol>0 && <div style={{ fontSize:13, color:C.textMuted, marginBottom:32 }}>{Math.round(totalVol)} kg</div>}
         <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder={t('session.notes')}
           style={{ width:'100%', maxWidth:360, padding:'12px 14px', borderRadius:14, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', marginBottom:16 }} />
         <button onClick={handleSave} disabled={saving}
           style={{ width:'100%', maxWidth:360, padding:16, borderRadius:18, background:C.purple, border:'none', color:'#fff', fontSize:16, fontWeight:700, cursor:saving?'default':'pointer' }}>
-          {saving?t('workout.saving'):t('workout.saveWorkout')}
+          {saving?t('session.saving'):t('session.saveWorkout')}
         </button>
       </div>
     )
   }
 
+  // Render rest timer as fullscreen overlay while exercise view is still mounted
   return (
-    <FullscreenExercise
-      exercise={exercises[activeEx]}
-      setIdx={activeSet}
-      totalSets={exercises[activeEx].sets.length}
-      elapsed={elapsed}
-      paused={paused}
-      onTogglePause={togglePause}
-      onSetDone={handleSetDone}
-      onNext={handleNext}
-      onFinish={() => { setStarted(false) }}
-      restSecs={restSecs}
-      saving={saving}
-      fmt={fmt}
-      isLast={activeEx===exercises.length-1}
-    />
+    <>
+      {showRest && <RestTimer duration={restSecs} onDone={() => setShowRest(false)} />}
+      <FullscreenExercise
+        exercise={exercises[activeEx]}
+        setIdx={activeSet}
+        totalSets={exercises[activeEx].sets.length}
+        elapsed={elapsed}
+        paused={paused}
+        onTogglePause={togglePause}
+        onSetDone={handleSetDone}
+        onNext={handleNext}
+        onFinish={() => { setStarted(false) }}
+        restSecs={restSecs}
+        saving={saving}
+        fmt={fmt}
+        isLast={activeEx===exercises.length-1}
+      />
+    </>
   )
 }
 

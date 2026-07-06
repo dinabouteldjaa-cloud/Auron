@@ -13,9 +13,9 @@ const DAY_KEYS  = ['sun','mon','tue','wed','thu','fri','sat']
 const MEDICAL_KEYWORDS = ['heart','cardiac','surgery','cancer','diabetes','epilepsy','pregnant','pregnancy','chronic','condition','disorder','disease','fracture','herniat','arthritis']
 const hasMedicalConcern = txt => txt && MEDICAL_KEYWORDS.some(k => txt.toLowerCase().includes(k))
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Question definitions — labels resolved via t() at render time
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 const QUESTION_DEFS = [
   { id:'goal',        mood:'motivating', qKey:'q.goal.q',        subKey:'q.goal.sub',        type:'single',
     options:[{label:'Lose fat',emoji:'🔥'},{label:'Build muscle',emoji:'💪'},{label:'Improve fitness',emoji:'🏃'},{label:'Get stronger',emoji:'🏋️'},{label:'Stay healthy',emoji:'❤️'}] },
@@ -35,9 +35,9 @@ const QUESTION_DEFS = [
   { id:'request',     mood:'thinking',   qKey:'q.request.q',     subKey:'q.request.sub',     type:'text', placeholderKey:'q.request.placeholder' },
 ]
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Progress bar
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 function ProgressBar({ current, total }) {
   return (
     <div style={{ height:4, background:C.border, borderRadius:2, overflow:'hidden', width:'100%' }}>
@@ -46,10 +46,10 @@ function ProgressBar({ current, total }) {
   )
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Question screen — uses t() for every string
-// ─────────────────────────────────────────────
-function QuestionScreen({ qDef, value, onChange, onNext, onBack, idx, total }) {
+// ---------------------------------------------
+function QuestionScreen({ qDef, value, onChange, onNext, onBack, onClose, idx, total }) {
   const { t } = useTranslation()
   const canNext = qDef.type === 'text' ? true : qDef.type === 'multi' ? (value||[]).length > 0 : !!value
   const isLast  = idx === total - 1
@@ -58,11 +58,13 @@ function QuestionScreen({ qDef, value, onChange, onNext, onBack, idx, total }) {
     <div style={{ position:'fixed', inset:0, background:C.pageBg||'#F0EFF8', zIndex:300, display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto' }}>
       <div style={{ padding:'20px 20px 12px', flexShrink:0 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
-          {idx > 0 && (
-            <button onClick={onBack} style={{ background:'none', border:'none', color:C.textMuted, fontSize:22, cursor:'pointer', padding:0, lineHeight:1 }}>‹</button>
-          )}
+          {idx > 0
+            ? <button onClick={onBack} style={{ background:'none', border:'none', color:C.textMuted, fontSize:22, cursor:'pointer', padding:0, lineHeight:1, minWidth:28 }}>‹</button>
+            : <div style={{ minWidth:28 }} />
+          }
           <div style={{ flex:1 }}><ProgressBar current={idx+1} total={total} /></div>
-          <div style={{ fontSize:12, color:C.textMuted, fontWeight:600, minWidth:40, textAlign:'right' }}>{idx+1}/{total}</div>
+          <div style={{ fontSize:12, color:C.textMuted, fontWeight:600 }}>{idx+1}/{total}</div>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:C.textMuted, fontSize:18, cursor:'pointer', padding:'0 0 0 8px', lineHeight:1 }}>✕</button>
         </div>
       </div>
 
@@ -136,9 +138,9 @@ function QuestionScreen({ qDef, value, onChange, onNext, onBack, idx, total }) {
   )
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Generating screen
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 function GeneratingScreen() {
   const { t } = useTranslation()
   return (
@@ -156,11 +158,11 @@ function GeneratingScreen() {
   )
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Plan preview — editable days, separate workouts
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 function PlanPreviewScreen({ plan, answers, onSave, onRegenerate, onEditRequest, onCancel, saving }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const numWorkouts = plan.workouts?.length || 0
   const [assignedDays, setAssignedDays] = useState(() => {
     const map = {}
@@ -247,7 +249,7 @@ function PlanPreviewScreen({ plan, answers, onSave, onRegenerate, onEditRequest,
             <div style={{ padding:'6px 16px' }}>
               {workout.exercises?.map((ex, j) => {
                 const name = typeof ex === 'string' ? ex : ex.name
-                const data = getExercise(name)
+                const data = getExercise(name, lang)
                 return (
                   <div key={j} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom: j<workout.exercises.length-1?`1px solid ${C.divider}`:'none' }}>
                     <div style={{ width:34, height:34, borderRadius:10, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>{data.icon||'💪'}</div>
@@ -284,9 +286,9 @@ function PlanPreviewScreen({ plan, answers, onSave, onRegenerate, onEditRequest,
   )
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // Main component
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 export default function AuronWorkoutBuilder({ userId, onClose, onPlanSaved }) {
   const { t, lang } = useTranslation()
   const [step,    setStep]    = useState(0)
@@ -322,7 +324,7 @@ export default function AuronWorkoutBuilder({ userId, onClose, onPlanSaved }) {
       const dayKey  = assignedDays[wi] || null
       const exercises = (workout.exercises || []).map(ex => {
         const name = typeof ex === 'string' ? ex : ex.name
-        return { name, icon:getExercise(name).icon||'💪', muscles:getExercise(name).muscles||'', timed:getExercise(name).timed||false, sets:parseInt(ex.sets)||3, reps:parseInt(ex.reps)||10, notes:ex.notes||'' }
+        return { name, icon:getExercise(name).icon||'💪', muscles:getExercise(name, lang).muscles||'', timed:getExercise(name).timed||false, sets:parseInt(ex.sets)||3, reps:parseInt(ex.reps)||10, notes:ex.notes||'' }
       })
       const schedule  = dayKey ? { days:[dayKey], time:null, active:true } : null
       const planTitle = plan.workouts.length > 1 ? `${planName} — ${workout.title}` : planName
@@ -366,14 +368,15 @@ export default function AuronWorkoutBuilder({ userId, onClose, onPlanSaved }) {
       <MedBanner />
       <QuestionScreen qDef={QUESTION_DEFS[step]} value={answers[QUESTION_DEFS[step].id]}
         onChange={val => setAnswer(QUESTION_DEFS[step].id, val)}
-        onNext={goNext} onBack={() => setStep(s => Math.max(0, s-1))} idx={step} total={total} />
+        onNext={goNext} onBack={() => setStep(s => Math.max(0, s-1))}
+        onClose={onClose} idx={step} total={total} />
     </>
   )
 }
 
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 // AI call
-// ─────────────────────────────────────────────
+// ---------------------------------------------
 async function callAI(answers, lang) {
   const key = import.meta.env.VITE_GROQ_KEY
   if (!key) throw new Error('No AI key configured.')
