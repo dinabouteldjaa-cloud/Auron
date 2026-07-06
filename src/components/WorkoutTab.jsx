@@ -781,9 +781,9 @@ function SetRow({ set, idx, onChange, onRemove, timed, onDone }) {
 // Session exercise card — premium look
 // ─────────────────────────────────────────────
 function SessionExCard({ ex, onUpdate, onRemove, restDuration, onRestStart }) {
-  const { t } = useTranslation()
-  const tMuscles = useMuscles()
-  const data     = getExercise(ex.name)
+  const { t, lang } = useTranslation()
+  const { tMuscles } = useSportT()
+  const data     = getExercise(ex.name, lang)
   const timed    = data.timed || ex.timed
 
   const doneSets = ex.sets.filter(s => s.done).length
@@ -859,7 +859,7 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration, onRestStart }) {
 // ─────────────────────────────────────────────
 function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTogglePause, onSetDone, onPrev, onNext, onFinish, restSecs, saving, fmt, isLast }) {
   const { t, lang } = useTranslation()
-  const tMuscles = useMuscles()
+  const { tMuscles } = useSportT()
   const data      = getExercise(exercise.name)
   const timed     = data.timed || exercise.timed
   const set       = exercise.sets[setIdx]
