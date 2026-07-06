@@ -312,14 +312,15 @@ function ExercisePickerModal({ onAdd, onClose }) {
 // ─────────────────────────────────────────────
 // Plan editor (My Plans)
 // ─────────────────────────────────────────────
-const DAYS = [
-  { key:'mon', label:'Mon' },
-  { key:'tue', label:'Tue' },
-  { key:'wed', label:'Wed' },
-  { key:'thu', label:'Thu' },
-  { key:'fri', label:'Fri' },
-  { key:'sat', label:'Sat' },
-  { key:'sun', label:'Sun' },
+// Days resolved via t() at render time — keys match i18n sched.* keys
+const DAY_DEFS = [
+  { key:'mon', i18n:'sched.mon' },
+  { key:'tue', i18n:'sched.tue' },
+  { key:'wed', i18n:'sched.wed' },
+  { key:'thu', i18n:'sched.thu' },
+  { key:'fri', i18n:'sched.fri' },
+  { key:'sat', i18n:'sched.sat' },
+  { key:'sun', i18n:'sched.sun' },
 ]
 
 function PlanEditor({ plan, onSave, onCancel }) {
@@ -373,13 +374,13 @@ function PlanEditor({ plan, onSave, onCancel }) {
 
       {/* Name */}
       <div style={{ marginBottom:16 }}>
-        <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>{t('workout.planName')}</div>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. My Push Day"
+        <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>{t('plan.planName')}</div>
+        <input value={name} onChange={e => setName(e.target.value)} placeholder={t('session.nameWorkout')}
           style={{ width:'100%', padding:'11px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:15, fontWeight:600, outline:'none' }} />
       </div>
 
       {/* Exercises */}
-      <Label>Exercises ({exercises.length})</Label>
+      <Label>{t('workout.exercises')} ({exercises.length})</Label>
       {exercises.map((ex, i) => (
         <div key={i} style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, padding:'12px 14px', marginBottom:8 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
@@ -396,18 +397,18 @@ function PlanEditor({ plan, onSave, onCancel }) {
           </div>
           <div style={{ display:'flex', gap:8 }}>
             <div style={{ flex:1 }}>
-              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>Sets</div>
+              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>{t('plan.sets')}</div>
               <input type="number" value={ex.sets} onChange={e=>updateEx(i,'sets',e.target.value)}
                 style={{ width:'100%', padding:'7px 8px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', textAlign:'center' }} />
             </div>
             <div style={{ flex:1 }}>
-              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>{ex.timed?'Sec':'Reps'}</div>
+              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>{ex.timed ? t('plan.sec') : t('plan.reps')}</div>
               <input type="number" value={ex.reps} onChange={e=>updateEx(i,'reps',e.target.value)}
                 style={{ width:'100%', padding:'7px 8px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', textAlign:'center' }} />
             </div>
             <div style={{ flex:2 }}>
-              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>Note</div>
-              <input value={ex.notes||''} onChange={e=>updateEx(i,'notes',e.target.value)} placeholder="Optional"
+              <div style={{ fontSize:10, color:C.textDim, marginBottom:4 }}>{t('plan.note')}</div>
+              <input value={ex.notes||''} onChange={e=>updateEx(i,'notes',e.target.value)} placeholder={t('plan.optional')}
                 style={{ width:'100%', padding:'7px 8px', borderRadius:8, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:12, outline:'none' }} />
             </div>
           </div>
@@ -416,13 +417,13 @@ function PlanEditor({ plan, onSave, onCancel }) {
 
       <button onClick={() => setShowPicker(true)}
         style={{ width:'100%', padding:12, borderRadius:14, background:C.purpleLight, border:`2px dashed ${C.purple}55`, color:C.purple, fontSize:14, fontWeight:600, cursor:'pointer', marginBottom:16 }}>
-        + Add exercise
+        {t('plan.addExercise')}
       </button>
 
       {/* Notes */}
       <div style={{ marginBottom:20 }}>
-        <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>{t('workout.planNotes')}</div>
-        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder={t('workout.optional')}
+        <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:500 }}>{t('plan.planNotes')}</div>
+        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={2} placeholder={t('plan.optional')}
           style={{ width:'100%', padding:'10px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', lineHeight:1.5 }} />
       </div>
 
@@ -430,12 +431,11 @@ function PlanEditor({ plan, onSave, onCancel }) {
       <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.divider}`, padding:'16px', marginBottom:20 }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: schedEnabled ? 16 : 0 }}>
           <div>
-            <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{t('workout.scheduleTitle')}</div>
+            <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{t('plan.scheduleTitle')}</div>
             <div style={{ fontSize:11, color:C.textMuted, marginTop:2 }}>
-              {schedEnabled ? t('workout.scheduleEnabled') : t('workout.scheduleDisabled')}
+              {schedEnabled ? t('plan.scheduleOn') : t('plan.scheduleOff')}
             </div>
           </div>
-          {/* Toggle */}
           <div onClick={() => setSchedEnabled(e => !e)}
             style={{ width:48, height:28, borderRadius:14, background:schedEnabled?C.purple:C.border, cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
             <div style={{ width:22, height:22, borderRadius:'50%', background:'#fff', position:'absolute', top:3, left: schedEnabled?23:3, transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }} />
@@ -444,31 +444,28 @@ function PlanEditor({ plan, onSave, onCancel }) {
 
         {schedEnabled && (
           <>
-            {/* Day picker */}
             <div style={{ marginBottom:14 }}>
-              <div style={{ fontSize:12, color:C.textMuted, fontWeight:500, marginBottom:8 }}>Days</div>
+              <div style={{ fontSize:12, color:C.textMuted, fontWeight:500, marginBottom:8 }}>{t('plan.daysLabel')}</div>
               <div style={{ display:'flex', gap:6 }}>
-                {DAYS.map(d => {
+                {DAY_DEFS.map(d => {
                   const active = schedDays.includes(d.key)
                   return (
                     <button key={d.key} onClick={() => toggleDay(d.key)}
                       style={{ flex:1, padding:'9px 0', borderRadius:10, border:`1px solid ${active?C.purple:C.border}`, background:active?C.purple:'transparent', color:active?'#fff':C.textMuted, fontSize:11, fontWeight:active?700:400, cursor:'pointer', transition:'all 0.15s' }}>
-                      {d.label}
+                      {t(d.i18n)}
                     </button>
                   )
                 })}
               </div>
               {schedDays.length === 0 && (
-                <div style={{ fontSize:11, color:C.red, marginTop:6 }}>{t('workout.selectAtLeastOne')}</div>
+                <div style={{ fontSize:11, color:C.red, marginTop:6 }}>{t('plan.selectDay')}</div>
               )}
             </div>
-
-            {/* Time picker */}
             <div>
-              <div style={{ fontSize:12, color:C.textMuted, fontWeight:500, marginBottom:8 }}>{t('workout.scheduleTime')}</div>
+              <div style={{ fontSize:12, color:C.textMuted, fontWeight:500, marginBottom:8 }}>{t('plan.scheduleTime')}</div>
               <input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)}
                 style={{ padding:'10px 14px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:15, fontWeight:600, outline:'none', cursor:'pointer' }} />
-              <div style={{ fontSize:11, color:C.textDim, marginTop:6 }}>{t('workout.scheduleTimeHint')}</div>
+              <div style={{ fontSize:11, color:C.textDim, marginTop:6 }}>{t('plan.scheduleTimeHint')}</div>
             </div>
           </>
         )}
@@ -476,7 +473,7 @@ function PlanEditor({ plan, onSave, onCancel }) {
 
       <button onClick={handleSave} disabled={!canSave}
         style={{ width:'100%', padding:14, borderRadius:16, background:canSave?C.purple:C.surfaceMid, border:'none', color:canSave?'#fff':C.textDim, fontSize:15, fontWeight:700, cursor:canSave?'pointer':'default' }}>
-        {plan?.id ? t('workout.saveChanges') : t('workout.createPlan2')}
+        {plan?.id ? t('plan.saveChanges') : t('plan.create')}
       </button>
 
       {showPicker && <ExercisePickerModal onAdd={addEx} onClose={() => setShowPicker(false)} />}
@@ -584,6 +581,7 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBui
 // Rest Timer — fullscreen overlay
 // ─────────────────────────────────────────────
 function RestTimer({ duration, onDone }) {
+  const { t } = useTranslation()
   const [remaining, setRemaining] = useState(duration)
   useEffect(() => {
     const id = setInterval(() => setRemaining(r => {
@@ -597,7 +595,7 @@ function RestTimer({ duration, onDone }) {
   const circ = 2 * Math.PI * r
   return (
     <div style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(26,20,50,0.92)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:24 }}>
-      <div style={{ fontSize:16, fontWeight:600, color:'rgba(255,255,255,0.7)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Rest</div>
+      <div style={{ fontSize:16, fontWeight:600, color:'rgba(255,255,255,0.7)', letterSpacing:'0.1em', textTransform:'uppercase' }}>{t('session.rest')}</div>
       <div style={{ position:'relative', width:160, height:160 }}>
         <svg viewBox="0 0 120 120" style={{ width:160, height:160, transform:'rotate(-90deg)' }}>
           <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
@@ -607,14 +605,14 @@ function RestTimer({ duration, onDone }) {
         </svg>
         <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
           <div style={{ fontSize:52, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{remaining}</div>
-          <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', marginTop:4 }}>seconds</div>
+          <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', marginTop:4 }}>{t('session.seconds')}</div>
         </div>
       </div>
       <div style={{ display:'flex', gap:12 }}>
         <button onClick={() => setRemaining(r => Math.max(0, r - 15))}
           style={{ padding:'10px 20px', borderRadius:20, background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', fontSize:14, cursor:'pointer' }}>-15s</button>
         <button onClick={onDone}
-          style={{ padding:'10px 32px', borderRadius:20, background:C.purple, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>Skip rest</button>
+          style={{ padding:'10px 32px', borderRadius:20, background:C.purple, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>{t('session.skipRest')}</button>
         <button onClick={() => setRemaining(r => r + 15)}
           style={{ padding:'10px 20px', borderRadius:20, background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', fontSize:14, cursor:'pointer' }}>+15s</button>
       </div>
@@ -655,7 +653,7 @@ function NumberSheet({ label, value, onConfirm, onClose }) {
         </div>
         <button onClick={() => { onConfirm(val); onClose() }}
           style={{ width:'100%', padding:14, borderRadius:16, background:C.purple, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer' }}>
-          Confirm
+          {t('session.confirm')}
         </button>
       </div>
     </div>
@@ -666,7 +664,8 @@ function NumberSheet({ label, value, onConfirm, onClose }) {
 // SetRow — clean row, tap weight/reps to edit
 // ─────────────────────────────────────────────
 function SetRow({ set, idx, onChange, onRemove, timed, onDone }) {
-  const [sheet, setSheet] = useState(null) // null | 'weight' | 'reps' | 'duration'
+  const { t }  = useTranslation()
+  const [sheet, setSheet] = useState(null)
 
   const markDone = () => {
     const newDone = !set.done
@@ -723,9 +722,9 @@ function SetRow({ set, idx, onChange, onRemove, timed, onDone }) {
         </button>
       </div>
 
-      {sheet === 'weight'   && <NumberSheet label="Weight (kg)"    value={set.weight}   onConfirm={v => onChange({...set, weight:v})}   onClose={() => setSheet(null)} />}
-      {sheet === 'reps'     && <NumberSheet label="Reps"           value={set.reps}     onConfirm={v => onChange({...set, reps:v})}     onClose={() => setSheet(null)} />}
-      {sheet === 'duration' && <NumberSheet label="Duration (sec)" value={set.duration} onConfirm={v => onChange({...set, duration:v})} onClose={() => setSheet(null)} />}
+      {sheet === 'weight'   && <NumberSheet label={t('session.weight')}   value={set.weight}   onConfirm={v => onChange({...set, weight:v})}   onClose={() => setSheet(null)} />}
+      {sheet === 'reps'     && <NumberSheet label={t('session.reps')}     value={set.reps}     onConfirm={v => onChange({...set, reps:v})}     onClose={() => setSheet(null)} />}
+      {sheet === 'duration' && <NumberSheet label={t('session.duration')} value={set.duration} onConfirm={v => onChange({...set, duration:v})} onClose={() => setSheet(null)} />}
     </>
   )
 }
@@ -734,6 +733,7 @@ function SetRow({ set, idx, onChange, onRemove, timed, onDone }) {
 // Session exercise card — premium look
 // ─────────────────────────────────────────────
 function SessionExCard({ ex, onUpdate, onRemove, restDuration }) {
+  const { t } = useTranslation()
   const data     = getExercise(ex.name)
   const timed    = data.timed || ex.timed
   const [showRest, setShowRest] = useState(false)
@@ -796,8 +796,7 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration }) {
           ))}
           <button onClick={addSet}
             style={{ width:'100%', padding:'9px', marginTop:6, borderRadius:10, background:C.surfaceMid, border:`1px dashed ${C.border}`, color:C.textMuted, fontSize:13, fontWeight:500, cursor:'pointer' }}>
-            {t('workout.addSet')}
-          </button>
+            {t('session.addSet')}</button>
         </div>
 
         {/* How to */}
@@ -1084,7 +1083,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
 
         {/* Rest setting */}
         <div style={{ background:C.surface, borderRadius:14, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-          <span style={{ fontSize:13, color:C.textMuted, marginRight:4 }}>{t('workout.restBetween')}</span>
+          <span style={{ fontSize:13, color:C.textMuted, marginRight:4 }}>{t('session.restBetween')}</span>
           {[0,30,45,60,90,120].map(s => (
             <button key={s} onClick={() => setRestSecs(s)}
               style={{ padding:'5px 12px', borderRadius:20, fontSize:12, cursor:'pointer', border:`1px solid ${restSecs===s?C.purple:C.border}`, background:restSecs===s?C.purpleLight:'transparent', color:restSecs===s?C.purple:C.textMuted, fontWeight:restSecs===s?700:400 }}>
@@ -1137,10 +1136,10 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
     return (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'60vh', textAlign:'center', padding:24 }}>
         <div style={{ fontSize:64, marginBottom:16 }}>🏆</div>
-        <div style={{ fontSize:28, fontWeight:800, color:C.text, marginBottom:8 }}>{t('workout.allDone')}</div>
+        <div style={{ fontSize:28, fontWeight:800, color:C.text, marginBottom:8 }}>{t('session.allDone')}</div>
         <div style={{ fontSize:15, color:C.textMuted, marginBottom:8 }}>{fmt(elapsed)} · {doneSetsTotal} sets</div>
         {totalVol>0 && <div style={{ fontSize:13, color:C.textMuted, marginBottom:32 }}>{Math.round(totalVol)} kg total volume</div>}
-        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="{t('workout.sessionNotes')}"
+        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3} placeholder="{t('session.notes')}"
           style={{ width:'100%', maxWidth:360, padding:'12px 14px', borderRadius:14, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:13, outline:'none', resize:'none', marginBottom:16 }} />
         <button onClick={handleSave} disabled={saving}
           style={{ width:'100%', maxWidth:360, padding:16, borderRadius:18, background:C.purple, border:'none', color:'#fff', fontSize:16, fontWeight:700, cursor:saving?'default':'pointer' }}>
