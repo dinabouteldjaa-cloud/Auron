@@ -1025,6 +1025,7 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
 // ─────────────────────────────────────────────
 function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   const { t, lang } = useTranslation()
+  const { tMuscles } = useSportT()
   const fromLibrary = !!plan?.fromLibrary
 
   const initExercises = () => (plan?.exercises || []).map(ex => {
