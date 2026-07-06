@@ -78,7 +78,7 @@ function BackBtn({ onBack, label }) {
 function ExerciseHowTo({ name }) {
   const { t, lang } = useTranslation()
   const [open, setOpen] = useState(false)
-  const data = getExercise(name)
+  const data = getExercise(name, lang)
   const howTo = data.howTo || []
   const tips  = data.tips  || ''
   if (!howTo.length) return null
@@ -860,7 +860,7 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration, onRestStart }) {
 function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTogglePause, onSetDone, onPrev, onNext, onFinish, restSecs, saving, fmt, isLast }) {
   const { t, lang } = useTranslation()
   const { tMuscles } = useSportT()
-  const data      = getExercise(exercise.name)
+  const data      = getExercise(exercise.name, lang)
   const timed     = data.timed || exercise.timed
   const set       = exercise.sets[setIdx]
   const [showHow, setShowHow] = useState(false)
@@ -1074,12 +1074,21 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   const totalVol      = exercises.reduce((s,e)=>s+e.sets.filter(s=>s.done).reduce((sv,set)=>sv+(parseFloat(set.weight)||0)*(parseInt(set.reps)||1),0),0)
 
   // Mark current set done and advance
+  const [workoutDone, setWorkoutDone] = useState(false)
+
   const handleSetDone = ({ weight, reps, duration }) => {
     const ex   = exercises[activeEx]
     const sets = ex.sets.map((s,i) => i===activeSet ? {...s, weight, reps, duration, done:true} : s)
-    updateEx(activeEx, { ...ex, sets })
+    const updatedExercises = exercises.map((e,i) => i===activeEx ? {...e, sets} : e)
+    setExercises(updatedExercises)
 
     const isFinishing = activeEx === exercises.length - 1 && activeSet === ex.sets.length - 1
+
+    if (isFinishing) {
+      // Check if truly all done after this update
+      const truly = updatedExercises.every(e => e.sets.every(s => s.done))
+      if (truly) { setWorkoutDone(true); return }
+    }
 
     // Show rest timer (unless this is the very last set)
     if (restSecs > 0 && !isFinishing) {
@@ -1184,9 +1193,8 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   // ── Active — fullscreen exercise view ────────
   if (exercises.length === 0) return null
 
-  // If last set of last exercise just done — show finish prompt
-  const allDone = exercises.every(ex => ex.sets.every(s => s.done))
-  if (allDone && !showRest) {
+  // Finish screen — triggered by explicit workoutDone flag (avoids stale closure bug)
+  if (workoutDone) {
     return (
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'60vh', textAlign:'center', padding:24 }}>
         <div style={{ fontSize:64, marginBottom:16 }}>🏆</div>
