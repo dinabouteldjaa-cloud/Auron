@@ -96,13 +96,15 @@ function MedIcon({ active }) {
 }
 
 function WorkoutIcon({ active }) {
+  const c = active ? T.purple : T.textMuted
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path d="M6.5 6.5L4 9l2.5 2.5M17.5 6.5L20 9l-2.5 2.5" stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <line x1="4" y1="9" x2="20" y2="9" stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" strokeLinecap="round" />
-      <line x1="9" y1="9" x2="9" y2="15" stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" strokeLinecap="round" />
-      <line x1="15" y1="9" x2="15" y2="15" stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" strokeLinecap="round" />
-      <line x1="9" y1="15" x2="15" y2="15" stroke={active ? T.purple : T.textMuted} strokeWidth="1.8" strokeLinecap="round" />
+      {/* Barbell icon */}
+      <rect x="2" y="10.5" width="3" height="3" rx="0.5" fill={c} />
+      <rect x="5" y="9" width="2" height="6" rx="0.5" fill={c} />
+      <rect x="7" y="11" width="10" height="2" rx="1" fill={c} />
+      <rect x="17" y="9" width="2" height="6" rx="0.5" fill={c} />
+      <rect x="19" y="10.5" width="3" height="3" rx="0.5" fill={c} />
     </svg>
   )
 }
@@ -117,7 +119,7 @@ export default function App() {
     { id: 'today',      label: t('nav.home'),      icon: HomeIcon      },
     { id: 'calories',   label: t('nav.nutrition'), icon: NutritionIcon },
     { id: 'workouts',   label: t('nav.progress'),  icon: ProgressIcon  },
-    { id: 'workout',    label: 'Workout',           icon: WorkoutIcon   },
+    { id: 'workout',    label: t('nav.workout'),   icon: WorkoutIcon   },
     { id: 'medication', label: t('nav.meds'),       icon: MedIcon       },
     { id: 'profile',    label: t('nav.profile'),   icon: ProfileIcon   },
   ]
