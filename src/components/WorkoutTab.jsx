@@ -1253,7 +1253,7 @@ function WorkoutHistoryCard({ log, onDelete }) {
         <div style={{ display:'flex', gap:6 }}>
           {log.exercises?.length>0 && (
             <button onClick={()=>setExpanded(e=>!e)} style={{ padding:'6px 12px', borderRadius:10, background:C.purpleLight, border:'none', color:C.purple, fontSize:12, cursor:'pointer' }}>
-              {expanded?'▲':`${log.exercises.length} {t('workout.exercises')}`}
+              {expanded ? '▲' : `${log.exercises.length} ` + t('workout.exercises')}
             </button>
           )}
           {!confirm
