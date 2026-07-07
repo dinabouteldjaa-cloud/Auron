@@ -1082,23 +1082,22 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
     const updatedExercises = exercises.map((e,i) => i===activeEx ? {...e, sets} : e)
     setExercises(updatedExercises)
 
-    const isFinishing = activeEx === exercises.length - 1 && activeSet === ex.sets.length - 1
+    const isLastEx  = activeEx === exercises.length - 1
+    const isLastSet = activeSet === ex.sets.length - 1
+    const isFinishing = isLastEx && isLastSet
 
     if (isFinishing) {
-      // Check if truly all done after this update
-      const truly = updatedExercises.every(e => e.sets.every(s => s.done))
-      if (truly) { setWorkoutDone(true); return }
+      setWorkoutDone(true)
+      return
     }
 
-    // Show rest timer (unless this is the very last set)
-    if (restSecs > 0 && !isFinishing) {
-      setShowRest(true)
-    }
+    // Show rest timer between sets
+    if (restSecs > 0) setShowRest(true)
 
     // Advance to next set or next exercise
-    if (activeSet < ex.sets.length - 1) {
+    if (!isLastSet) {
       setActiveSet(s => s + 1)
-    } else if (activeEx < exercises.length - 1) {
+    } else {
       setActiveEx(e => e + 1)
       setActiveSet(0)
     }
