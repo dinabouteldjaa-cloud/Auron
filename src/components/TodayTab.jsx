@@ -399,15 +399,7 @@ function MealsSection({ foodLogs, isToday, onOpenNutrition }) {
 
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Label style={{ marginBottom: 0 }}>{t('today.meals')}</Label>
-        {isToday && (
-          <button onClick={onOpenNutrition} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ fontSize: 12, color: C.gold, fontWeight: 600 }}>{t('today.logMeal')}</span>
-            <span style={{ fontSize: 13, color: C.gold }}>›</span>
-          </button>
-        )}
-      </div>
+      <Label>{t('today.meals')}</Label>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {MEAL_SLOTS.map(slot => {
           const items    = foodLogs.filter(f => f.meal_slot === slot.id)
