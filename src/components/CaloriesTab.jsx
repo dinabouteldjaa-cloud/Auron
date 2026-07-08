@@ -341,21 +341,48 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
 // ─────────────────────────────────────────────
 function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF, lang = 'en' }) {
   const { t } = useTranslation()
-  const [suggestion,   setSuggestion]   = useState('')
+  const [suggestion,   setSuggestion]   = useState(null)   // parsed { meal, calories, protein, carbs, fat, whyItFits, ingredients, steps }
   const [loading,      setLoading]      = useState(false)
   const [fetched,      setFetched]      = useState(false)
   const [customInput,  setCustomInput]  = useState('')
   const [showCustom,   setShowCustom]   = useState(false)
+  const [showModify,   setShowModify]   = useState(false)
+  const [modifyInput,  setModifyInput]  = useState('')
+
+  const parseResponse = (raw) => {
+    const clean = raw.replace(/```json|```/g, '').trim()
+    return JSON.parse(clean)
+  }
+
+  const nutritionCtx = { totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF }
 
   const getSuggestion = async (avoidPrevious = false) => {
     setLoading(true)
-    const result = await askMealSuggestion(preferences, {
-      totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF,
-    }, lang, {
-      customRequest: customInput,
-      avoidDish: avoidPrevious ? suggestion : '',
-    })
-    setSuggestion(result); setLoading(false); setFetched(true)
+    try {
+      const raw = await askMealSuggestion(preferences, nutritionCtx, lang, {
+        customRequest: customInput,
+        avoidDish: avoidPrevious ? suggestion?.meal : '',
+      })
+      setSuggestion(parseResponse(raw))
+    } catch {
+      setSuggestion(null)
+    }
+    setLoading(false); setFetched(true)
+  }
+
+  const applyModification = async () => {
+    if (!modifyInput.trim()) return
+    setLoading(true)
+    try {
+      const raw = await askMealSuggestion(preferences, nutritionCtx, lang, {
+        modification: modifyInput,
+        previousMeal: suggestion,
+      })
+      setSuggestion(parseResponse(raw))
+    } catch {
+      // keep previous suggestion visible if modification fails
+    }
+    setModifyInput(''); setShowModify(false); setLoading(false)
   }
 
   // Show active restrictions so user knows they're being respected
@@ -383,6 +410,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
         </div>
       </div>
 
+      {/* Pre-first-ask: optional context + main CTA */}
       {!fetched && !loading && (
         <div>
           <div style={{ fontSize: 12.5, color: C.textMuted, marginBottom: 10, lineHeight: 1.5 }}>
@@ -421,19 +449,56 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
         <div style={{ fontSize: 13, color: C.textMuted }}>{t('cal.generating')}</div>
       )}
 
+      {/* Structured suggestion */}
       {suggestion && (
-        <div style={{ fontSize: 14, color: C.text, lineHeight: 1.65, marginBottom: 14 }}>{suggestion}</div>
+        <div style={{ marginBottom: 14, opacity: loading ? 0.5 : 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 10 }}>{suggestion.meal}</div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 10 }}>
+            {[['Calories', suggestion.calories, 'kcal', C.gold], [t('cal.protein'), suggestion.protein, 'g', C.blue], [t('cal.carbs'), suggestion.carbs, 'g', C.amber], ['Fat', suggestion.fat, 'g', C.green]].map(([l, v, u, col]) => (
+              <div key={l} style={{ background: C.surfaceLight, borderRadius: 10, padding: '8px 6px', textAlign: 'center' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: col }}>{v}</div>
+                <div style={{ fontSize: 9.5, color: C.textMuted }}>{u} {l}</div>
+              </div>
+            ))}
+          </div>
+
+          {suggestion.whyItFits && (
+            <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 12, lineHeight: 1.5 }}>
+              💡 {suggestion.whyItFits}
+            </div>
+          )}
+
+          {suggestion.ingredients?.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10.5, color: C.textDim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+                {t('cal.ingredients')}
+              </div>
+              <div style={{ fontSize: 12.5, color: C.text, lineHeight: 1.6 }}>
+                {suggestion.ingredients.join(' · ')}
+              </div>
+            </div>
+          )}
+
+          {suggestion.steps?.length > 0 && (
+            <div>
+              <div style={{ fontSize: 10.5, color: C.textDim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+                {t('cal.prepSteps')}
+              </div>
+              <ol style={{ margin: 0, padding: '0 0 0 18px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {suggestion.steps.map((s, i) => (
+                  <li key={i} style={{ fontSize: 12.5, color: C.text, lineHeight: 1.5 }}>{s}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
       )}
 
-      {fetched && (
+      {/* Two distinct actions: different meal vs. modify this one */}
+      {fetched && suggestion && (
         <div>
-          <input
-            value={customInput}
-            onChange={e => setCustomInput(e.target.value)}
-            placeholder={t('cal.notePlaceholder')}
-            style={{ width: '100%', padding: '9px 12px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
-          />
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: showModify ? 12 : 0 }}>
             <button
               onClick={() => getSuggestion(true)}
               disabled={loading}
@@ -442,13 +507,44 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
               {loading ? <><Spinner /> {t('cal.thinking')}</> : t('cal.somethingElse')}
             </button>
             <button
-              onClick={() => getSuggestion(false)}
+              onClick={() => setShowModify(v => !v)}
               disabled={loading}
-              style={{ flex: 1, padding: '9px 0', borderRadius: 12, background: C.goldLight, border: `1px solid ${C.gold}44`, color: C.gold, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+              style={{ flex: 1, padding: '9px 0', borderRadius: 12, background: showModify ? C.gold : C.goldLight, border: `1px solid ${C.gold}44`, color: showModify ? C.dark : C.gold, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
             >
-              {t('cal.refresh')}
+              {t('cal.modifySuggestion')}
             </button>
           </div>
+
+          {/* Modify panel — visually attached to the current suggestion above */}
+          {showModify && (
+            <div style={{ background: C.goldLight, border: `1px solid ${C.gold}33`, borderRadius: 12, padding: '12px 14px' }}>
+              <div style={{ fontSize: 11.5, fontWeight: 600, color: C.gold, marginBottom: 8, lineHeight: 1.4 }}>
+                {t('cal.modifyLabel')}
+              </div>
+              <textarea
+                autoFocus
+                rows={2}
+                value={modifyInput}
+                onChange={e => setModifyInput(e.target.value)}
+                placeholder={t('cal.modifyPlaceholder')}
+                style={{ width: '100%', padding: '9px 12px', borderRadius: 10, background: C.surface, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, outline: 'none', resize: 'vertical', boxSizing: 'border-box', marginBottom: 10, lineHeight: 1.5 }}
+              />
+              <button
+                onClick={applyModification}
+                disabled={loading || !modifyInput.trim()}
+                style={{
+                  width: '100%', padding: 10, borderRadius: 12,
+                  background: !modifyInput.trim() || loading ? C.surfaceLight : C.gold,
+                  color: !modifyInput.trim() || loading ? C.textMuted : C.dark,
+                  border: 'none', fontSize: 12.5, fontWeight: 600,
+                  cursor: !modifyInput.trim() || loading ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}
+              >
+                {loading ? <><Spinner /> {t('cal.thinking')}</> : t('cal.updateSuggestion')}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </Card>
