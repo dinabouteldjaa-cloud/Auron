@@ -246,15 +246,20 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
 // ─────────────────────────────────────────────
 function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF, lang = 'en' }) {
   const { t } = useTranslation()
-  const [suggestion, setSuggestion] = useState('')
-  const [loading,    setLoading]    = useState(false)
-  const [fetched,    setFetched]    = useState(false)
+  const [suggestion,   setSuggestion]   = useState('')
+  const [loading,      setLoading]      = useState(false)
+  const [fetched,      setFetched]      = useState(false)
+  const [customInput,  setCustomInput]  = useState('')
+  const [showCustom,   setShowCustom]   = useState(false)
 
-  const getSuggestion = async () => {
-    setLoading(true); setSuggestion('')
+  const getSuggestion = async (avoidPrevious = false) => {
+    setLoading(true)
     const result = await askMealSuggestion(preferences, {
       totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF,
-    }, lang)
+    }, lang, {
+      customRequest: customInput,
+      avoidDish: avoidPrevious ? suggestion : '',
+    })
     setSuggestion(result); setLoading(false); setFetched(true)
   }
 
@@ -266,7 +271,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 
   return (
     <Card style={{ borderColor: C.borderStrong, marginBottom: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: fetched || loading ? 12 : 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: fetched || loading ? 12 : 8 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: C.gold }}>{t('cal.aiSuggest')}</div>
           {activeRestrictions.length > 0 && (
@@ -275,29 +280,77 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
             </div>
           )}
         </div>
-        <button
-          onClick={getSuggestion}
-          disabled={loading}
-          style={{
-            padding: '6px 14px', borderRadius: 12,
-            background: 'transparent', border: `1px solid ${C.border}`,
-            color: C.textMuted, fontSize: 12,
-            display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-          }}
-        >
-          {loading ? <><Spinner /> Thinking...</> : fetched ? t('cal.refresh') : t('cal.askAI')}
-        </button>
+        {!fetched && (
+          <button
+            onClick={() => getSuggestion(false)}
+            disabled={loading}
+            style={{
+              padding: '6px 14px', borderRadius: 12,
+              background: 'transparent', border: `1px solid ${C.border}`,
+              color: C.textMuted, fontSize: 12,
+              display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+            }}
+          >
+            {loading ? <><Spinner /> {t('cal.thinking')}</> : t('cal.askAI')}
+          </button>
+        )}
       </div>
+
       {!fetched && !loading && (
-        <div style={{ fontSize: 13, color: C.textMuted }}>
-          {t('cal.tapAsk')}
+        <div>
+          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 8 }}>
+            {t('cal.tapAsk')}
+          </div>
+          {!showCustom ? (
+            <button onClick={() => setShowCustom(true)}
+              style={{ background: 'none', border: 'none', padding: 0, color: C.gold, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              {t('cal.addNote')}
+            </button>
+          ) : (
+            <input
+              autoFocus
+              value={customInput}
+              onChange={e => setCustomInput(e.target.value)}
+              placeholder={t('cal.notePlaceholder')}
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+            />
+          )}
         </div>
       )}
+
       {loading && !suggestion && (
-        <div style={{ fontSize: 13, color: C.textMuted }}>Generating suggestion...</div>
+        <div style={{ fontSize: 13, color: C.textMuted }}>{t('cal.generating')}</div>
       )}
+
       {suggestion && (
-        <div style={{ fontSize: 14, color: C.text, lineHeight: 1.65 }}>{suggestion}</div>
+        <div style={{ fontSize: 14, color: C.text, lineHeight: 1.65, marginBottom: 14 }}>{suggestion}</div>
+      )}
+
+      {fetched && (
+        <div>
+          <input
+            value={customInput}
+            onChange={e => setCustomInput(e.target.value)}
+            placeholder={t('cal.notePlaceholder')}
+            style={{ width: '100%', padding: '9px 12px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, outline: 'none', boxSizing: 'border-box', marginBottom: 10 }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => getSuggestion(true)}
+              disabled={loading}
+              style={{ flex: 1, padding: '9px 0', borderRadius: 12, background: 'transparent', border: `1px solid ${C.border}`, color: C.textMuted, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              {loading ? <><Spinner /> {t('cal.thinking')}</> : t('cal.somethingElse')}
+            </button>
+            <button
+              onClick={() => getSuggestion(false)}
+              disabled={loading}
+              style={{ flex: 1, padding: '9px 0', borderRadius: 12, background: C.goldLight, border: `1px solid ${C.gold}44`, color: C.gold, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+            >
+              {t('cal.refresh')}
+            </button>
+          </div>
+        </div>
       )}
     </Card>
   )
