@@ -370,40 +370,32 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   ]
 
   return (
-    <Card style={{ borderColor: C.borderStrong, marginBottom: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: fetched || loading ? 12 : 8 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: C.gold }}>{t('cal.aiSuggest')}</div>
+    <Card style={{ borderColor: C.borderStrong, marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: fetched || loading ? 12 : 10 }}>
+        <div style={{
+          width: 30, height: 30, borderRadius: 9, flexShrink: 0, marginTop: 1,
+          background: `${C.gold}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
+        }}>
+          ✨
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: C.text }}>{t('cal.aiSuggest')}</div>
           {activeRestrictions.length > 0 && (
-            <div style={{ fontSize: 11, color: C.textDim, marginTop: 3 }}>
+            <div style={{ fontSize: 10.5, color: C.textDim, marginTop: 2 }}>
               Respecting: {activeRestrictions.slice(0, 3).join(', ')}{activeRestrictions.length > 3 ? ` +${activeRestrictions.length - 3} more` : ''}
             </div>
           )}
         </div>
-        {!fetched && (
-          <button
-            onClick={() => getSuggestion(false)}
-            disabled={loading}
-            style={{
-              padding: '6px 14px', borderRadius: 12,
-              background: 'transparent', border: `1px solid ${C.border}`,
-              color: C.textMuted, fontSize: 12,
-              display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-            }}
-          >
-            {loading ? <><Spinner /> {t('cal.thinking')}</> : t('cal.askAI')}
-          </button>
-        )}
       </div>
 
       {!fetched && !loading && (
         <div>
-          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 8 }}>
+          <div style={{ fontSize: 12.5, color: C.textMuted, marginBottom: 10, lineHeight: 1.5 }}>
             {t('cal.tapAsk')}
           </div>
           {!showCustom ? (
             <button onClick={() => setShowCustom(true)}
-              style={{ background: 'none', border: 'none', padding: 0, color: C.gold, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              style={{ background: 'none', border: 'none', padding: 0, color: C.gold, fontSize: 12, fontWeight: 600, cursor: 'pointer', marginBottom: 14, display: 'block' }}>
               {t('cal.addNote')}
             </button>
           ) : (
@@ -412,9 +404,21 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
               value={customInput}
               onChange={e => setCustomInput(e.target.value)}
               placeholder={t('cal.notePlaceholder')}
-              style={{ width: '100%', padding: '9px 12px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, outline: 'none', boxSizing: 'border-box', marginBottom: 14 }}
             />
           )}
+          <button
+            onClick={() => getSuggestion(false)}
+            disabled={loading}
+            style={{
+              width: '100%', padding: 12, borderRadius: 14,
+              background: C.gold, color: C.dark, border: 'none',
+              fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            {loading ? <><Spinner /> {t('cal.thinking')}</> : t('cal.askAI')}
+          </button>
         </div>
       )}
 
@@ -456,7 +460,6 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   )
 }
 
-// ─────────────────────────────────────────────
 // ─────────────────────────────────────────────
 // Add food modal — live search via USDA + Open Food Facts
 // ─────────────────────────────────────────────
@@ -720,39 +723,46 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
     <div>
       <TabAuronCard tab="nutrition" ctx={nutritionCtx} lang={lang} />
 
-      {/* AI Describe button */}
-      <div style={{ marginBottom: 20 }}>
-        <button
-          onClick={() => setSubView('describe')}
-          style={{
-            width: '100%', padding: 11, borderRadius: 12,
-            border: `1px solid ${C.border}`, background: C.surfaceLight,
-            color: C.text, fontSize: 13, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}
-        >
-          {t('cal.describeBtn')}
-        </button>
-      </div>
-
-      {/* Calorie summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-        <div style={{ background: C.surfaceLight, borderRadius: 14, padding: '14px 16px', border: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 4 }}>{t('cal.caloriesLabel')}</div>
-          <div style={{ fontSize: 26, fontWeight: 700, color: C.gold }}>{totalCal.toLocaleString()}</div>
-          <div style={{ fontSize: 11, color: C.textMuted }}>{t('cal.ofGoal').replace('{n}', calorieGoal.toLocaleString())}</div>
+      {/* Meal estimator entry — compact, clearly interactive */}
+      <button
+        onClick={() => setSubView('describe')}
+        style={{
+          width: '100%', marginBottom: 18, padding: '12px 14px', borderRadius: 14,
+          border: `1px solid ${C.gold}33`, background: C.goldLight,
+          display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left',
+        }}
+      >
+        <div style={{
+          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+          background: `${C.gold}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17,
+        }}>
+          ✨
         </div>
-        <div style={{ background: C.surfaceLight, borderRadius: 14, padding: '14px 16px', border: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 4 }}>{t('cal.remaining')}</div>
-          <div style={{ fontSize: 26, fontWeight: 700, color: totalCal > calorieGoal ? C.red : C.green }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: C.text, lineHeight: 1.3 }}>{t('cal.describeBtn')}</div>
+          <div style={{ fontSize: 11.5, color: C.textMuted, marginTop: 2, lineHeight: 1.35 }}>{t('cal.describeBtnSub')}</div>
+        </div>
+        <span style={{ fontSize: 18, color: C.gold, flexShrink: 0 }}>›</span>
+      </button>
+
+      {/* ── Stats cluster: Calories/Remaining + Macros grouped together ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+        <div style={{ background: C.surfaceLight, borderRadius: 12, padding: '11px 13px', border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 10.5, color: C.textMuted, marginBottom: 2 }}>{t('cal.caloriesLabel')}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: C.gold, lineHeight: 1.15 }}>{totalCal.toLocaleString()}</div>
+          <div style={{ fontSize: 10.5, color: C.textMuted }}>{t('cal.ofGoal').replace('{n}', calorieGoal.toLocaleString())}</div>
+        </div>
+        <div style={{ background: C.surfaceLight, borderRadius: 12, padding: '11px 13px', border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 10.5, color: C.textMuted, marginBottom: 2 }}>{t('cal.remaining')}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: totalCal > calorieGoal ? C.red : C.green, lineHeight: 1.15 }}>
             {Math.abs(calorieGoal - totalCal).toLocaleString()}
           </div>
-          <div style={{ fontSize: 11, color: C.textMuted }}>{totalCal > calorieGoal ? t('cal.kcalOver') : t('cal.kcalLeft')}</div>
+          <div style={{ fontSize: 10.5, color: C.textMuted }}>{totalCal > calorieGoal ? t('cal.kcalOver') : t('cal.kcalLeft')}</div>
         </div>
       </div>
 
       {/* Macros */}
-      <Card style={{ marginBottom: 20 }}>
+      <Card style={{ marginBottom: 24 }}>
         <Label>{t('cal.macrosToday')}</Label>
         <MacroBar label={t('cal.protein')} current={totalP} goal={proteinGoal} color={C.blue}  />
         <MacroBar label={t('cal.carbs')}   current={totalC} goal={carbsGoal}   color={C.amber} />
