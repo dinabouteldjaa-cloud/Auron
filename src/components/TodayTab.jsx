@@ -1050,10 +1050,21 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
       return diff <= 30 // due within next 30 min or already overdue
     } catch { return false }
   })
-  const nextDueMed     = medsDueSoon[0] || null
-  const nextDueMedTime = nextDueMed
+  const nextDueMed = medsDueSoon[0] || null
+
+  // Raw reminder time (may include seconds, e.g. "20:00:00") → clean HH:MM,
+  // and work out whether it's still upcoming or already overdue.
+  const rawNextMedTime = nextDueMed
     ? (() => { try { return nextDueMed.reminder_time || JSON.parse(nextDueMed.reminder_times)[0] || '' } catch { return '' } })()
     : ''
+  const nextDueMedTime  = rawNextMedTime ? rawNextMedTime.slice(0, 5) : '' // "20:00:00" → "20:00"
+  const nextDueMedOverdue = (() => {
+    if (!rawNextMedTime) return false
+    try {
+      const [mh, mm] = rawNextMedTime.split(':').map(Number)
+      return (mh * 60 + mm) - nowMinutes < 0
+    } catch { return false }
+  })()
 
   const coachCtx = {
     firstName, isToday, hour,
@@ -1067,14 +1078,13 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
     waterUnit: profile?.water_unit || 'cups',
     waterPct,
     workoutDone, workoutMinutes,
-    steps:        parseInt(dailyStats?.steps)  || 0,
-    sleepHours:   parseFloat(dailyStats?.sleep) || 0,
     streakDays,
     missedMeds:       missedCount  || 0,
     pendingMeds:      pendingMedsList.length,
     pendingMedsDueSoon: medsDueSoon.length,
     nextMedName:      nextDueMed?.medication_name || nextMed?.medication_name || '',
     nextMedTime:      nextDueMedTime,
+    medOverdue:       nextDueMedOverdue,
     proteinPct:       proteinGoal > 0 ? (totalP / proteinGoal) * 100 : 0,
     foodLogsCount:    foodLogs.length,
     mood: '',
@@ -1131,25 +1141,7 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
         onOpenNutrition={onOpenNutrition}
       />
 
-      {/* 2 ── 2-col: Activity + Steps */}
-      <ActivityStepsRow
-        workoutLogs={workoutLogs}
-        steps={dailyStats.steps}
-        burned={dailyStats.burned}
-        isToday={isToday}
-        onStatChange={handleStatChange}
-        onOpenWorkout={onOpenWorkout}
-        onOpenProgress={onOpenProgress}
-      />
-
-      {/* 3 ── Sleep bar — compact full-width */}
-      <SleepCard
-        sleep={dailyStats.sleep}
-        isToday={isToday}
-        onStatChange={handleStatChange}
-      />
-
-      {/* 4 ── Medication card */}
+      {/* 2 ── Medication card */}
       <MedicationCard
         nextMed={nextMed}
         takenCount={takenCount}
@@ -1159,7 +1151,7 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
         isToday={isToday}
       />
 
-      {/* 5 ── Water tracker — full width now insight is removed */}
+      {/* 3 ── Water tracker — full width now insight is removed */}
       <WaterTracker
         userId={userId}
         profile={profile}
@@ -1168,11 +1160,11 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
         userTz={userTz}
       />
 
-      {/* 6 ── Meals */}
+      {/* 4 ── Meals */}
       <MealsSection foodLogs={foodLogs} isToday={isToday} onOpenNutrition={onOpenNutrition} />
 
 
-      {/* 7 ── Workout */}
+      {/* 5 ── Workout */}
       <WorkoutSection
         workoutLogs={workoutLogs}
         savedPlans={savedPlans}
