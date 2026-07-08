@@ -53,6 +53,7 @@ export function buildMealPrompt(preferences = {}, lang = 'en') {
     food_restrictions   = [],
     avoided_foods       = [],
     health_notes        = '',
+    cuisine_preference   = '',
   } = preferences
 
   const lines = [
@@ -90,6 +91,11 @@ export function buildMealPrompt(preferences = {}, lang = 'en') {
   if (avoided_foods.length > 0) {
     lines.push('')
     lines.push(`FOODS TO AVOID — never include these in any meal suggestion: ${avoided_foods.join(', ')}`)
+  }
+
+  if (cuisine_preference && cuisine_preference.trim()) {
+    lines.push('')
+    lines.push(`CUISINE PREFERENCE: The user prefers ${cuisine_preference.trim()} cuisine. Prioritise meal suggestions inspired by ${cuisine_preference.trim()} dishes and ingredients whenever it's practical and fits their calorie/macro targets. It's fine to occasionally suggest other cuisines for variety, but ${cuisine_preference.trim()}-style options should come first.`)
   }
 
   if (health_notes.trim()) {
@@ -169,4 +175,3 @@ export async function askClaudeWithImage() {
     note: 'Photo scanning requires a paid AI plan. Please use the Describe meal option instead.',
   })
 }
-
