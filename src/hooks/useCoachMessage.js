@@ -15,12 +15,26 @@ function pick(arr, seed) {
   return arr[Math.abs(Math.round(seed)) % arr.length]
 }
 
+// Format a "HH:MM" 24h time string in a user-friendly, localized way.
+// EN → 12h with am/pm (e.g. "8:00 pm"), FR → 24h (e.g. "20h00").
+function formatMedTime(time, lang) {
+  if (!time) return ''
+  const [hStr, mStr] = time.split(':')
+  const h = parseInt(hStr, 10)
+  const m = (mStr || '00').padStart(2, '0')
+  if (isNaN(h)) return ''
+  if (lang === 'fr') return `${h}h${m}`
+  const period = h >= 12 ? 'pm' : 'am'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:${m} ${period}`
+}
+
 // Stable seed that only changes when the situation meaningfully changes
 // Deliberately coarse so minor fluctuations don't re-trigger
 function buildSeed(ctx) {
   const { hour = 0, foodLogsCount = 0, waterPct = 0, workoutDone = false,
           totalCal = 0, calorieGoal = 1, pendingMedsDueSoon = 0,
-          steps = 0, streakDays = 0 } = ctx
+          streakDays = 0 } = ctx
   return (
     hour * 100 +                                    // changes each hour
     foodLogsCount * 7 +                             // changes when meals logged
@@ -28,7 +42,6 @@ function buildSeed(ctx) {
     (workoutDone ? 31 : 0) +
     Math.floor((totalCal / Math.max(calorieGoal, 1)) * 10) * 3 +
     pendingMedsDueSoon * 17 +
-    Math.floor(steps / 2000) * 5 +
     streakDays * 2
   )
 }
@@ -42,9 +55,9 @@ export function buildPriority(ctx) {
     isToday, hour, minute = 0,
     totalCal, calorieGoal,
     proteinPct, waterPct, waterGoal, waterAmount, waterUnit,
-    workoutDone, steps,
-    foodLogsCount, sleepHours,
-    pendingMeds, pendingMedsDueSoon, nextMedName, nextMedTime,
+    workoutDone,
+    foodLogsCount,
+    pendingMeds, pendingMedsDueSoon, nextMedName, nextMedTime, medOverdue,
     streakDays,
     calOver, calRemaining,
     proteinShort,
@@ -56,7 +69,7 @@ export function buildPriority(ctx) {
 
   // ── 1. MEDICATION — only when due within 30 min or overdue ──
   if (pendingMedsDueSoon > 0) {
-    return { type: 'med_due', name: nextMedName, time: nextMedTime }
+    return { type: 'med_due', name: nextMedName, time: nextMedTime, overdue: !!medOverdue }
   }
 
   // ── 2. CALORIES OVER ─────────────────────────────────────────
@@ -95,17 +108,12 @@ export function buildPriority(ctx) {
     return { type: 'protein_low', shortBy: Math.round(proteinShort || 0) }
   }
 
-  // ── 6. STEPS — flag in afternoon only ─────────────────────────
-  if (steps < 3000 && hour >= 15 && hour < 20) {
-    return { type: 'steps_low', steps }
-  }
-
-  // ── 7. WORKOUT — suggest if evening and not done ──────────────
+  // ── 6. WORKOUT — suggest if evening and not done ──────────────
   if (!workoutDone && hour >= 16 && hour < 20) {
     return { type: 'workout_missing' }
   }
 
-  // ── 8. POSITIVE STATES ───────────────────────────────────────
+  // ── 7. POSITIVE STATES ───────────────────────────────────────
   // Celebrating streak
   if (streakDays >= 7) return { type: 'streak', days: streakDays }
 
@@ -115,14 +123,13 @@ export function buildPriority(ctx) {
     waterPct >= 70,
     proteinPct >= 60,
     workoutDone,
-    steps >= 7000,
   ].filter(Boolean).length
 
-  if (positives >= 4) return { type: 'all_good' }
-  if (workoutDone && positives >= 3) return { type: 'workout_done' }
+  if (positives >= 3) return { type: 'all_good' }
+  if (workoutDone && positives >= 2) return { type: 'workout_done' }
   if (positives >= 2) return { type: 'good_progress' }
 
-  // ── 9. GREETING / DEFAULT ────────────────────────────────────
+  // ── 8. GREETING / DEFAULT ────────────────────────────────────
   if (hour < 10) return { type: 'greeting' }
   if (hour >= 21) return { type: 'evening' }
   return { type: 'default' }
@@ -143,7 +150,6 @@ export function getAuronMoodFromContext(ctx) {
     case 'meal_dinner':   return 'thinking'
     case 'water_low':     return 'thinking'
     case 'protein_low':   return 'thinking'
-    case 'steps_low':     return 'motivating'
     case 'workout_missing':return 'motivating'
     case 'streak':        return 'celebrating'
     case 'all_good':      return 'happy'
@@ -160,7 +166,7 @@ export function getAuronMoodFromContext(ctx) {
 // ─────────────────────────────────────────────────────────────
 function buildMessage(ctx, lang, seed) {
   const priority = buildPriority(ctx)
-  const { firstName: name, hour, streakDays, steps,
+  const { firstName: name, hour, streakDays,
           waterGoal, waterAmount, waterUnit, waterPct,
           totalCal, calorieGoal, proteinPct, proteinShort,
           foodLogsCount, workoutDone, workoutMinutes } = ctx
@@ -211,11 +217,18 @@ function buildMessage(ctx, lang, seed) {
 
       case 'med_due': {
         const medName = priority.name || 'votre médicament'
-        const medTime = priority.time ? ` (${priority.time})` : ''
+        const medTime = priority.time ? ` (${formatMedTime(priority.time, 'fr')})` : ''
+        if (priority.overdue) {
+          return pick([
+            `${greet}${medName}${medTime} aurait déjà dû être pris. Prenez-le dès que possible.`,
+            `${medName} est en retard${medTime} — pensez à le prendre.`,
+            `${G}n'oubliez pas ${medName}, prévu${medTime} — c'est déjà passé.`,
+          ], seed)
+        }
         return pick([
-          `${greet}c'est l'heure de prendre ${medName}${medTime}.`,
-          `N'oubliez pas ${medName}${medTime} — prenez-le maintenant.`,
-          `${G}${medName} est dû${medTime}. Prenez-le avant de passer à autre chose.`,
+          `${greet}${medName} est à prendre bientôt${medTime}.`,
+          `N'oubliez pas ${medName}${medTime} — c'est presque l'heure.`,
+          `${G}${medName} arrive${medTime}. Préparez-vous à le prendre.`,
         ], seed)
       }
 
@@ -241,13 +254,6 @@ function buildMessage(ctx, lang, seed) {
           `${greet}vos protéines sont faibles — il vous manque ${priority.shortBy}g. Ajoutez des œufs, du poulet ou du yaourt.`,
           `Protéines insuffisantes pour l'instant (${priority.shortBy}g manquants). Une collation riche en protéines aiderait.`,
           `${greet}pensez aux protéines — il vous en manque encore ${priority.shortBy}g pour atteindre votre objectif.`,
-        ], seed)
-
-      case 'steps_low':
-        return pick([
-          `${greet}seulement ${(priority.steps||0).toLocaleString()} pas pour l'instant. Une courte marche ferait la différence.`,
-          `Vous bougez peu aujourd'hui. Une marche de 15 min peut booster votre compteur de pas.`,
-          `${G}activez-vous un peu ! Vous n'avez que ${(priority.steps||0).toLocaleString()} pas pour l'instant.`,
         ], seed)
 
       case 'workout_missing':
@@ -347,11 +353,18 @@ function buildMessage(ctx, lang, seed) {
 
     case 'med_due': {
       const medName = priority.name || 'your medication'
-      const medTime = priority.time ? ` (${priority.time})` : ''
+      const medTime = priority.time ? ` (${formatMedTime(priority.time, 'en')})` : ''
+      if (priority.overdue) {
+        return pick([
+          `${greet}${medName}${medTime} was due earlier — take it as soon as you can.`,
+          `${medName}${medTime} is overdue. Don't forget to take it.`,
+          `${G}${medName} was due${medTime} and hasn't been logged yet.`,
+        ], seed)
+      }
       return pick([
-        `${greet}time to take ${medName}${medTime}.`,
-        `Don't forget ${medName}${medTime} — take it now before you forget.`,
-        `${G}${medName} is due${medTime}. Take it before moving on with your day.`,
+        `${greet}${medName} is coming up soon${medTime}.`,
+        `Don't forget ${medName}${medTime} — it's almost time.`,
+        `${G}${medName} is due shortly${medTime}. Get ready to take it.`,
       ], seed)
     }
 
@@ -377,13 +390,6 @@ function buildMessage(ctx, lang, seed) {
         `${greet}protein is low — ${priority.shortBy}g short of your goal. Try eggs, chicken, or Greek yogurt.`,
         `You're ${priority.shortBy}g short on protein. A high-protein snack would help right now.`,
         `${greet}protein needs attention — ${priority.shortBy}g to go to reach your daily target.`,
-      ], seed)
-
-    case 'steps_low':
-      return pick([
-        `${greet}only ${(priority.steps||0).toLocaleString()} steps so far. A short walk would make a real difference.`,
-        `Movement is low today. Even a 15-minute walk can boost your step count.`,
-        `${G}time to move! You've only hit ${(priority.steps||0).toLocaleString()} steps today.`,
       ], seed)
 
     case 'workout_missing':
