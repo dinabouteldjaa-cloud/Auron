@@ -5,6 +5,7 @@ import { usePreferences } from './hooks/usePreferences'
 import { useMedications } from './hooks/useMedications'
 import { T, globalCss } from './lib/theme'
 import { useTranslation, LANGUAGES } from './lib/i18n.jsx'
+import { useTabGuide, HowToGuideModal, HelpIconButton } from './lib/howToGuide.jsx'
 import TodayTab from './components/TodayTab'
 import ProfileTab from './components/ProfileTab'
 import CaloriesTab from './components/CaloriesTab'
@@ -131,6 +132,7 @@ export default function App() {
   }, [])
 
   const uid = session?.user?.id
+  const { show: showGuide, dismiss: dismissGuide, reopen: reopenGuide, hasGuide } = useTabGuide(tab, uid)
   const { profile,     updateProfile     } = useProfile(uid)
   const { preferences, updatePreferences } = usePreferences(uid)
 
@@ -237,6 +239,7 @@ export default function App() {
 
             {/* Avatar / streak chip */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <HelpIconButton onClick={reopenGuide} hidden={!hasGuide} />
               <div style={{
                 width: 38, height: 38, borderRadius: '50%',
                 background: `linear-gradient(135deg, ${T.heroGrad1}, ${T.heroGrad2})`,
@@ -248,6 +251,11 @@ export default function App() {
               </div>
             </div>
           </div>
+
+          {/* ── How-to guide (first visit, or reopened via ? icon) ── */}
+          {showGuide && (
+            <HowToGuideModal tabKey={tab} lang={lang} onClose={dismissGuide} />
+          )}
 
           {/* ── Content ── */}
           <div style={{ flex: 1, padding: '0 16px 100px', overflowY: 'auto' }}>
