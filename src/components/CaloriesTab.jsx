@@ -157,13 +157,13 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
       <button onClick={onBack} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 13, marginBottom: 20, cursor: 'pointer' }}>
         ← Back
       </button>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, marginBottom: 6 }}>{t('cal.describeTitle')}</div>
-      <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 16 }}>
+      <div style={{ fontSize: 19, fontWeight: 700, color: C.text, marginBottom: 4 }}>{t('cal.describeTitle')}</div>
+      <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
         {t('cal.describeSubtitle')}
       </div>
 
       {/* Coach Auron — friendly nutrition guidance throughout the flow */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <div style={{ flexShrink: 0 }}>
           <AuronCharacter mood="nutrition" size="compact" />
         </div>
@@ -198,13 +198,13 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
         <textarea
           value={desc}
           onChange={e => setDesc(e.target.value)}
-          rows={4}
+          rows={3}
           placeholder="e.g. A large plate of spaghetti bolognese with ground beef, tomato sauce and parmesan. About 300g of pasta total..."
           style={{
             width: '100%', padding: '12px 14px', borderRadius: 10,
             background: C.surfaceLight, border: `1px solid ${C.border}`,
-            color: C.text, fontSize: 13, resize: 'none', outline: 'none',
-            lineHeight: 1.6, marginBottom: 12,
+            color: C.text, fontSize: 13, resize: 'vertical', outline: 'none',
+            lineHeight: 1.6, marginBottom: 12, minHeight: 64,
           }}
         />
         <button
@@ -218,7 +218,7 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
             cursor: desc.trim() && !loading ? 'pointer' : 'default',
           }}
         >
-          {loading ? t('cal.estimating') : t('cal.estimateBtn')}
+          {loading ? t('cal.estimating') : (result && !result.error) ? t('cal.updateEstimate') : t('cal.estimateBtn')}
         </button>
       </Card>
 
@@ -282,7 +282,7 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
           ? <Card style={{ borderColor: C.red }}><div style={{ fontSize: 13, color: C.red }}>{result.error}</div></Card>
           : <Card style={{ borderColor: C.borderStrong }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, flex: 1 }}>{result.meal}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: C.text, flex: 1 }}>{result.meal}</div>
                 {result.confidence && (
                   <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: `${confColor[result.confidence]}22`, color: confColor[result.confidence], fontWeight: 500, marginLeft: 8 }}>
                     {result.confidence} confidence
@@ -292,7 +292,7 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 6 }}>
                 {[['Calories', result.calories, 'kcal', C.gold], [t('cal.protein'), result.protein, 'g', C.blue], [t('cal.carbs'), result.carbs, 'g', C.amber], ['Fat', result.fat, 'g', C.green]].map(([l, v, u, col]) => (
                   <div key={l} style={{ background: C.surfaceLight, borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
-                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: col }}>{v}</div>
+                    <div style={{ fontSize: 19, fontWeight: 700, color: col }}>{v}</div>
                     <div style={{ fontSize: 10, color: C.textMuted }}>{u} {l}</div>
                   </div>
                 ))}
@@ -309,18 +309,13 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
                 </div>
               )}
               {result.items?.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: 14 }}>
                   {result.items.map((item, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${C.border}`, fontSize: 13 }}>
                       <span style={{ color: C.text }}>{item.name}</span>
                       <span style={{ color: C.gold, fontWeight: 500 }}>{item.calories} kcal</span>
                     </div>
                   ))}
-                </div>
-              )}
-              {result.note && (
-                <div style={{ fontSize: 12, color: C.textMuted, fontStyle: 'italic', marginBottom: 14, lineHeight: 1.6 }}>
-                  {result.note}
                 </div>
               )}
               <button
