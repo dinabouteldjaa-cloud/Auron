@@ -5,6 +5,7 @@ import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
 import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LEVEL_COLOR, getExercise } from '../lib/workoutData.js'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
+import { TabAuronCard } from './CoachAuron'
 
 const C = T
 
@@ -1347,7 +1348,7 @@ function TodayWorkoutTab({ userId, timezone, today, logs, logsLoading, onStartEm
 // Main WorkoutTab
 // ─────────────────────────────────────────────
 export default function WorkoutTab({ userId, profile }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const timezone = profile?.timezone
   const today    = toUserDateStr(timezone)
 
@@ -1383,6 +1384,11 @@ export default function WorkoutTab({ userId, profile }) {
     }
   }
 
+  const workoutCtx = logsLoading ? null : {
+    workoutDone: logs.length > 0,
+    hour: new Date().getHours(),
+  }
+
   if (session) {
     return (
       <WorkoutSession
@@ -1395,6 +1401,8 @@ export default function WorkoutTab({ userId, profile }) {
 
   return (
     <div>
+      <TabAuronCard tab="workout" ctx={workoutCtx} lang={lang} />
+
       {/* Tab switcher */}
       <div style={{ display:'flex', gap:6, marginBottom:20, background:C.surfaceMid, borderRadius:14, padding:4 }}>
         {[['library',t('workout.library')],['plans',t('workout.myPlans')],['log',t('workout.today')]].map(([id,label]) => (
