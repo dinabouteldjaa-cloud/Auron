@@ -826,6 +826,7 @@ const translations = {
     'cal.generating':'Generating suggestion...','cal.addNote':'+ Add a note (ingredients, mood, etc.)','cal.notePlaceholder':'e.g. I have chicken and rice, or avoid fish','cal.somethingElse':'🔄 Something else',
     'cal.updateEstimate':'Update estimate',
     'cal.ingredients':'Ingredients','cal.prepSteps':'How to prepare','cal.modifySuggestion':'✏️ Modify this suggestion',"cal.modifyLabel":"Tell Auron what you have, don't have, or want to avoid",'cal.modifyPlaceholder':'e.g. I don\'t have chicken, but I have tuna and eggs','cal.updateSuggestion':'Update suggestion',
+    'cal.saveMeal':'Save meal','cal.savedMeal':'✓ Saved','cal.recentMeals':'Recent','cal.savedMeals':'Saved','cal.noRecent':'No recent meals yet','cal.noSaved':'No saved meals yet','cal.chooseMealType':'Choose meal type',
     'workout.sec':'sec','lang.en':'English','lang.fr':'Français'
   },
 
@@ -1682,6 +1683,7 @@ const translations = {
     'cal.generating':'Génération en cours...','cal.addNote':'+ Ajouter une note (ingrédients, envie...)','cal.notePlaceholder':'ex. J\'ai du poulet et du riz, ou éviter le poisson','cal.somethingElse':'🔄 Autre chose',
     'cal.updateEstimate':'Mettre à jour l\'estimation',
     'cal.ingredients':'Ingrédients','cal.prepSteps':'Préparation',"cal.modifySuggestion":"✏️ Modifier cette suggestion","cal.modifyLabel":"Dis à Auron ce que tu as, n'as pas, ou veux éviter","cal.modifyPlaceholder":"ex. Je n'ai pas de poulet, mais j'ai du thon et des œufs",'cal.updateSuggestion':'Mettre à jour la suggestion',
+    'cal.saveMeal':'Enregistrer le repas','cal.savedMeal':'✓ Enregistré','cal.recentMeals':'Récents','cal.savedMeals':'Enregistrés','cal.noRecent':'Aucun repas récent','cal.noSaved':'Aucun repas enregistré','cal.chooseMealType':'Choisir le type de repas',
     'workout.sec':'sec','lang.en':'English','lang.fr':'Français'
   }
 }
