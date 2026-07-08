@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { useTranslation } from '../lib/i18n.jsx'
+import { TabAuronCard } from './CoachAuron'
 import { toUserDateStr } from '../lib/dateUtils.js'
 
 // ─────────────────────────────────────────────
@@ -249,7 +250,7 @@ function WeightLogger({ userId, timezone, weightData, onLogged }) {
 // Main ProgressTab
 // ─────────────────────────────────────────────
 export default function ProgressTab({ userId, profile }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const timezone  = profile?.timezone
   const [range,   setRange]   = useState(7)   // 7 or 30 days
   const [loading, setLoading] = useState(true)
@@ -362,8 +363,17 @@ export default function ProgressTab({ userId, profile }) {
   }
 
   // ── Render ──────────────────────────────────
+  const progressCtx = loading ? null : {
+    daysLogged: weekSummary?.daysLogged ?? 0,
+    streakDays,
+    avgWater: weekSummary?.avgWater ?? null,
+    waterGoal,
+  }
+
   return (
     <div style={{ paddingBottom: 8 }}>
+
+      <TabAuronCard tab="progress" ctx={progressCtx} lang={lang} />
 
       {/* Header stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 20 }}>
