@@ -823,6 +823,7 @@ const translations = {
     'muscles.speed_endurance':'Speed, Endurance',
     'muscles.full_flexibility':'Full Body, Flexibility',
     'health.cuisineTitle':'Cuisine preference','health.cuisineDesc':'Auron will prioritise meal suggestions from this cuisine when practical.','health.cuisineGeneral':'General','health.cuisineOther':'Other','health.cuisinePlaceholder':'e.g. Algerian',
+    'cal.generating':'Generating suggestion...','cal.addNote':'+ Add a note (ingredients, mood, etc.)','cal.notePlaceholder':'e.g. I have chicken and rice, or avoid fish','cal.somethingElse':'🔄 Something else',
     'workout.sec':'sec','lang.en':'English','lang.fr':'Français'
   },
 
@@ -1676,6 +1677,7 @@ const translations = {
     'muscles.speed_endurance':'Vitesse, Endurance',
     'muscles.full_flexibility':'Corps entier, Souplesse',
     'health.cuisineTitle':'Préférence culinaire','health.cuisineDesc':"Auron privilégiera les suggestions de repas de cette cuisine quand c'est possible.",'health.cuisineGeneral':'Général','health.cuisineOther':'Autre','health.cuisinePlaceholder':'ex. Algérienne',
+    'cal.generating':'Génération en cours...','cal.addNote':'+ Ajouter une note (ingrédients, envie...)','cal.notePlaceholder':'ex. J\'ai du poulet et du riz, ou éviter le poisson','cal.somethingElse':'🔄 Autre chose',
     'workout.sec':'sec','lang.en':'English','lang.fr':'Français'
   }
 }
