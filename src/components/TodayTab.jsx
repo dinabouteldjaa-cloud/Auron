@@ -120,7 +120,7 @@ function TodaysFocus({ consumed, goal, workoutCount, waterPct, streakDays }) {
 // ─────────────────────────────────────────────────────────────
 // HeroCard — full-width purple gradient card, calorie ring + macros
 // ─────────────────────────────────────────────────────────────
-function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
+function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG, onOpenNutrition }) {
   const { t } = useTranslation()
   const r    = 64
   const circ = 2 * Math.PI * r
@@ -177,10 +177,11 @@ function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG }) {
             </div>
           )
         })}
-        <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button onClick={onOpenNutrition}
+          style={{ width: '100%', marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
           <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>{t('today.viewNutrition')}</span>
           <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)' }}>›</span>
-        </div>
+        </button>
       </div>
     </div>
   )
@@ -293,7 +294,7 @@ function MiniRing({ pct, color, size = 52, icon }) {
   )
 }
 
-function ActivityStepsRow({ workoutLogs, steps, burned, isToday, onStatChange }) {
+function ActivityStepsRow({ workoutLogs, steps, burned, isToday, onStatChange, onOpenWorkout, onOpenProgress }) {
   const { t } = useTranslation()
   const workoutMin  = workoutLogs.reduce((s, w) => s + (w.duration_minutes || 0), 0)
   const activityGoal = 60
@@ -319,9 +320,10 @@ function ActivityStepsRow({ workoutLogs, steps, burned, isToday, onStatChange })
           </div>
           <MiniRing pct={actPct} color={T.green} size={52} icon="🏃" />
         </div>
-        <div style={{ borderTop: `1px solid ${T.divider}`, paddingTop: 10, marginTop: 4 }}>
+        <button onClick={onOpenWorkout}
+          style={{ width: '100%', borderTop: `1px solid ${T.divider}`, paddingTop: 10, marginTop: 4, background: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: 'none', textAlign: 'left', cursor: 'pointer' }}>
           <span style={{ fontSize: 12, color: T.purple, fontWeight: 600 }}>{t('today.logWorkout')}</span>
-        </div>
+        </button>
       </div>
 
       {/* Steps */}
@@ -344,9 +346,10 @@ function ActivityStepsRow({ workoutLogs, steps, burned, isToday, onStatChange })
           </div>
           <MiniRing pct={stepsPct} color={T.blue} size={52} icon="👟" />
         </div>
-        <div style={{ borderTop: `1px solid ${T.divider}`, paddingTop: 10, marginTop: 4 }}>
+        <button onClick={onOpenProgress}
+          style={{ width: '100%', borderTop: `1px solid ${T.divider}`, paddingTop: 10, marginTop: 4, background: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: 'none', textAlign: 'left', cursor: 'pointer' }}>
           <span style={{ fontSize: 12, color: T.blue, fontWeight: 600 }}>{t('today.viewProgress')}</span>
-        </div>
+        </button>
       </div>
     </div>
   )
@@ -389,14 +392,22 @@ function StatCard({ icon, label, value, onChange, unit, color, placeholder, isTo
 // ─────────────────────────────────────────────────────────────
 // Meals section
 // ─────────────────────────────────────────────────────────────
-function MealsSection({ foodLogs, isToday }) {
+function MealsSection({ foodLogs, isToday, onOpenNutrition }) {
   const [expanded, setExpanded] = useState(null)
   const { t } = useTranslation()
   const MEAL_SLOTS = getMealSlots(t)
 
   return (
     <div style={{ marginBottom: 20 }}>
-      <Label>{t('today.meals')}</Label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <Label style={{ marginBottom: 0 }}>{t('today.meals')}</Label>
+        {isToday && (
+          <button onClick={onOpenNutrition} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <span style={{ fontSize: 12, color: C.gold, fontWeight: 600 }}>{t('today.logMeal')}</span>
+            <span style={{ fontSize: 13, color: C.gold }}>›</span>
+          </button>
+        )}
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {MEAL_SLOTS.map(slot => {
           const items    = foodLogs.filter(f => f.meal_slot === slot.id)
@@ -416,10 +427,10 @@ function MealsSection({ foodLogs, isToday }) {
               }}
             >
               <div
-                onClick={() => hasItems && setExpanded(isExp ? null : slot.id)}
+                onClick={() => hasItems ? setExpanded(isExp ? null : slot.id) : (isToday && onOpenNutrition?.())}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '13px 16px', cursor: hasItems ? 'pointer' : 'default',
+                  padding: '13px 16px', cursor: (hasItems || isToday) ? 'pointer' : 'default',
                 }}
               >
                 <div style={{
@@ -471,9 +482,10 @@ function MealsSection({ foodLogs, isToday }) {
       </div>
 
       {foodLogs.length === 0 && isToday && (
-        <div style={{ marginTop: 10, padding: 16, background: C.surfaceLight, borderRadius: 12, textAlign: 'center', border: `1px dashed ${C.border}` }}>
-          <div style={{ fontSize: 13, color: C.textMuted }}>{t('cal.nothingLogged')}</div>
-        </div>
+        <button onClick={onOpenNutrition}
+          style={{ width: '100%', marginTop: 10, padding: 16, background: C.surfaceLight, borderRadius: 12, textAlign: 'center', border: `1px dashed ${C.border}`, cursor: 'pointer' }}>
+          <div style={{ fontSize: 13, color: C.gold, fontWeight: 600 }}>{t('cal.nothingLogged')}</div>
+        </button>
       )}
     </div>
   )
@@ -845,7 +857,7 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 // ─────────────────────────────────────────────────────────────
 // Main TodayTab export
 // ─────────────────────────────────────────────────────────────
-export default function TodayTab({ userId, profile, updateProfile, preferences, updatePreferences, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds, onDateChange, onOpenWorkout }) {
+export default function TodayTab({ userId, profile, updateProfile, preferences, updatePreferences, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds, onDateChange, onOpenWorkout, onOpenNutrition, onOpenProgress }) {
   const { t, lang } = useTranslation()
 
   // Use profile timezone (auto-detected from browser, stored in DB)
@@ -1124,6 +1136,7 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
         consumed={totalCal}  goal={calorieGoal}
         proteinG={totalP}    proteinGoal={proteinGoal}
         carbsG={totalC}      fatG={totalF}
+        onOpenNutrition={onOpenNutrition}
       />
 
       {/* 2 ── 2-col: Activity + Steps */}
@@ -1133,6 +1146,8 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
         burned={dailyStats.burned}
         isToday={isToday}
         onStatChange={handleStatChange}
+        onOpenWorkout={onOpenWorkout}
+        onOpenProgress={onOpenProgress}
       />
 
       {/* 3 ── Sleep bar — compact full-width */}
@@ -1162,7 +1177,8 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
       />
 
       {/* 6 ── Meals */}
-      <MealsSection foodLogs={foodLogs} isToday={isToday} />
+      <MealsSection foodLogs={foodLogs} isToday={isToday} onOpenNutrition={onOpenNutrition} />
+
 
       {/* 7 ── Workout */}
       <WorkoutSection
