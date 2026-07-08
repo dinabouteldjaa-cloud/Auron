@@ -59,6 +59,11 @@ const COMMON_AVOIDED_FOODS = [
   'Onions', 'Garlic', 'Tomatoes',
 ]
 
+const CUISINE_OPTIONS = [
+  'Algerian', 'Moroccan', 'Tunisian', 'Middle Eastern',
+  'Mediterranean', 'Indian', 'Asian', 'Italian', 'Mexican', 'American',
+]
+
 // ─────────────────────────────────────────────
 // Shared primitives
 // ─────────────────────────────────────────────
@@ -196,6 +201,99 @@ function ChipGroup({ options, selected = [], onChange, allowCustom = false, cust
   )
 }
 
+// Single-select cuisine picker — "General" (empty) + presets + custom text
+function CuisineSelect({ value, onChange, generalLabel, otherLabel, placeholder }) {
+  const [customInput, setCustomInput] = useState(
+    value && !CUISINE_OPTIONS.includes(value) ? value : ''
+  )
+  const [showCustom, setShowCustom] = useState(
+    !!value && !CUISINE_OPTIONS.includes(value)
+  )
+
+  const selectPreset = (opt) => { setShowCustom(false); setCustomInput(''); onChange(opt) }
+  const selectGeneral = () => { setShowCustom(false); setCustomInput(''); onChange('') }
+
+  const addCustom = () => {
+    const trimmed = customInput.trim()
+    if (!trimmed) return
+    onChange(trimmed)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      <button
+        onClick={selectGeneral}
+        style={{
+          padding: '7px 14px', borderRadius: 20, fontSize: 13,
+          border: `1px solid ${!value ? C.gold : C.border}`,
+          background: !value ? C.goldLight : 'transparent',
+          color: !value ? C.gold : C.textMuted,
+          transition: 'all 0.15s', cursor: 'pointer',
+        }}
+      >
+        {generalLabel}
+      </button>
+
+      {CUISINE_OPTIONS.map(opt => {
+        const active = value === opt
+        return (
+          <button
+            key={opt}
+            onClick={() => selectPreset(opt)}
+            style={{
+              padding: '7px 14px', borderRadius: 20, fontSize: 13,
+              border: `1px solid ${active ? C.gold : C.border}`,
+              background: active ? C.goldLight : 'transparent',
+              color: active ? C.gold : C.textMuted,
+              transition: 'all 0.15s', cursor: 'pointer',
+            }}
+          >
+            {opt}
+          </button>
+        )
+      })}
+
+      {!showCustom && (
+        <button
+          onClick={() => setShowCustom(true)}
+          style={{
+            padding: '7px 14px', borderRadius: 20, fontSize: 13,
+            border: `1px dashed ${value && !CUISINE_OPTIONS.includes(value) ? C.gold : C.border}`,
+            background: value && !CUISINE_OPTIONS.includes(value) ? C.goldLight : 'transparent',
+            color: value && !CUISINE_OPTIONS.includes(value) ? C.gold : C.textMuted,
+            cursor: 'pointer',
+          }}
+        >
+          {value && !CUISINE_OPTIONS.includes(value) ? value : `+ ${otherLabel}`}
+        </button>
+      )}
+
+      {showCustom && (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%', marginTop: 4 }}>
+          <input
+            autoFocus
+            value={customInput}
+            onChange={e => setCustomInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { addCustom(); setShowCustom(false) }; if (e.key === 'Escape') setShowCustom(false) }}
+            placeholder={placeholder}
+            style={{
+              flex: 1, padding: '8px 12px', borderRadius: 10,
+              background: C.surfaceLight, border: `1px solid ${C.border}`,
+              color: C.text, fontSize: 13, outline: 'none',
+            }}
+          />
+          <button
+            onClick={() => { addCustom(); setShowCustom(false) }}
+            style={{ padding: '8px 14px', borderRadius: 10, background: C.gold, color: C.dark, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+          >
+            ✓
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Avoided foods — separate component, supports both quick-add from common list and free input
 function AvoidedFoodsEditor({ foods = [], onChange }) {
   const [inputValue, setInputValue] = useState('')
@@ -317,6 +415,7 @@ export default function HealthPreferences({ preferences = {}, onSave, saving = f
   const [restrictions, setRestrictions] = useState(preferences.food_restrictions    || [])
   const [avoidedFoods, setAvoidedFoods] = useState(preferences.avoided_foods        || [])
   const [healthNotes,  setHealthNotes]  = useState(preferences.health_notes         || '')
+  const [cuisine,      setCuisine]      = useState(preferences.cuisine_preference   || '')
   const [allergyOther, setAllergyOther] = useState(
     (preferences.allergies || []).filter(a => !ALLERGY_OPTIONS.includes(a))
   )
@@ -328,6 +427,7 @@ export default function HealthPreferences({ preferences = {}, onSave, saving = f
     setRestrictions(preferences.food_restrictions || [])
     setAvoidedFoods(preferences.avoided_foods   || [])
     setHealthNotes(preferences.health_notes     || '')
+    setCuisine(preferences.cuisine_preference   || '')
   }, [preferences.updated_at]) // only re-sync on actual DB update
 
   const handleSave = () => {
@@ -337,6 +437,7 @@ export default function HealthPreferences({ preferences = {}, onSave, saving = f
       food_restrictions:    restrictions,
       avoided_foods:        avoidedFoods,
       health_notes:         healthNotes,
+      cuisine_preference:   cuisine,
     })
   }
 
@@ -373,6 +474,22 @@ export default function HealthPreferences({ preferences = {}, onSave, saving = f
             options={DIETARY_OPTIONS}
             selected={dietary}
             onChange={setDietary}
+          />
+        </Card>
+      </Section>
+
+      {/* Cuisine preference */}
+      <Section title={t('health.cuisineTitle')}>
+        <Card>
+          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 14, lineHeight: 1.5 }}>
+            {t('health.cuisineDesc')}
+          </div>
+          <CuisineSelect
+            value={cuisine}
+            onChange={setCuisine}
+            generalLabel={t('health.cuisineGeneral')}
+            otherLabel={t('health.cuisineOther')}
+            placeholder={t('health.cuisinePlaceholder')}
           />
         </Card>
       </Section>
@@ -463,7 +580,7 @@ export default function HealthPreferences({ preferences = {}, onSave, saving = f
       </button>
 
       {/* Summary of active preferences — shown when at least one is set */}
-      {(dietary.length > 0 || allergies.length > 0 || restrictions.length > 0 || avoidedFoods.length > 0) && (
+      {(dietary.length > 0 || allergies.length > 0 || restrictions.length > 0 || avoidedFoods.length > 0 || cuisine) && (
         <div style={{
           marginTop: 12, padding: '12px 16px', borderRadius: 12,
           background: C.surfaceLight, border: `1px solid ${C.border}`,
@@ -471,6 +588,11 @@ export default function HealthPreferences({ preferences = {}, onSave, saving = f
           <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
             Active preferences
           </div>
+          {cuisine && (
+            <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 4 }}>
+              <span style={{ color: C.gold }}>{t('health.cuisineTitle')}:</span> {cuisine}
+            </div>
+          )}
           {dietary.length > 0 && (
             <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 4 }}>
               <span style={{ color: C.gold }}>Diet:</span> {dietary.join(', ')}
