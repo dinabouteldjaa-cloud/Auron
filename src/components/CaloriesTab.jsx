@@ -363,6 +363,7 @@ function DescribeMeal({ preferences, onLog, onSave, onBack, lang = 'en' }) {
 // ─────────────────────────────────────────────
 function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF, lang = 'en', onLog, onSave, mealSlot }) {
   const { t } = useTranslation()
+  const MEAL_SLOTS = getMealSlotsNutrition(t)
   const [suggestion,   setSuggestion]   = useState(null)   // parsed { meal, calories, protein, carbs, fat, whyItFits, ingredients, steps }
   const [loading,      setLoading]      = useState(false)
   const [fetched,      setFetched]      = useState(false)
@@ -371,6 +372,8 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   const [showModify,   setShowModify]   = useState(false)
   const [modifyInput,  setModifyInput]  = useState('')
   const [saved,        setSaved]        = useState(false)
+  const [logged,       setLogged]       = useState(false)
+  const [selectedSlot, setSelectedSlot] = useState(mealSlot || 'breakfast')
 
   const parseResponse = (raw) => {
     const clean = raw.replace(/```json|```/g, '').trim()
@@ -380,7 +383,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   const nutritionCtx = { totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF }
 
   const getSuggestion = async (avoidPrevious = false) => {
-    setLoading(true); setSaved(false)
+    setLoading(true); setSaved(false); setLogged(false)
     try {
       const raw = await askMealSuggestion(preferences, nutritionCtx, lang, {
         customRequest: customInput,
@@ -395,7 +398,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 
   const applyModification = async () => {
     if (!modifyInput.trim()) return
-    setLoading(true); setSaved(false)
+    setLoading(true); setSaved(false); setLogged(false)
     try {
       const raw = await askMealSuggestion(preferences, nutritionCtx, lang, {
         modification: modifyInput,
@@ -406,6 +409,14 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
       // keep previous suggestion visible if modification fails
     }
     setModifyInput(''); setShowModify(false); setLoading(false)
+  }
+
+  // Fully collapse the card back to its initial pre-ask state
+  const resetCard = () => {
+    setSuggestion(null); setFetched(false); setLoading(false)
+    setCustomInput(''); setShowCustom(false)
+    setShowModify(false); setModifyInput('')
+    setSaved(false); setLogged(false)
   }
 
   // Show active restrictions so user knows they're being respected
@@ -431,6 +442,15 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
             </div>
           )}
         </div>
+        {fetched && !loading && (
+          <button
+            onClick={resetCard}
+            aria-label="Collapse"
+            style={{ background: 'none', border: 'none', color: C.textDim, fontSize: 18, cursor: 'pointer', padding: '0 2px', flexShrink: 0, lineHeight: 1 }}
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Pre-first-ask: optional context + main CTA */}
@@ -520,37 +540,76 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 
       {/* Log / Save actions for this suggestion */}
       {suggestion && !loading && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          <button
-            onClick={() => onLog?.({ name: suggestion.meal, cal: suggestion.calories, p: suggestion.protein, c: suggestion.carbs, f: suggestion.fat }, mealSlot)}
-            style={{ flex: 2, padding: 11, borderRadius: 14, background: C.gold, color: C.dark, border: 'none', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
-          >
-            {t('cal.logMeal')}
-          </button>
-          <button
-            onClick={() => {
-              onSave?.({
-                name: suggestion.meal, calories: suggestion.calories, protein: suggestion.protein,
-                carbs: suggestion.carbs, fat: suggestion.fat,
-                ingredients: suggestion.ingredients || null,
-                source: 'suggestion',
-              })
-              setSaved(true)
-            }}
-            disabled={saved}
-            style={{
-              flex: 1, padding: 11, borderRadius: 14, border: `1px solid ${saved ? C.green : C.border}`,
-              background: saved ? C.greenLight : 'transparent', color: saved ? C.green : C.textMuted,
-              fontSize: 11.5, fontWeight: 600, cursor: saved ? 'default' : 'pointer',
-            }}
-          >
-            {saved ? t('cal.savedMeal') : t('cal.saveMeal')}
-          </button>
+        <div style={{ marginBottom: 12 }}>
+          {!logged && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 10.5, color: C.textDim, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+                {t('cal.logTo')}
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {MEAL_SLOTS.map(s => (
+                  <button key={s.id} onClick={() => setSelectedSlot(s.id)}
+                    style={{
+                      flex: 1, padding: '7px 4px', borderRadius: 10, cursor: 'pointer',
+                      border: `1px solid ${selectedSlot === s.id ? C.gold : C.border}`,
+                      background: selectedSlot === s.id ? C.goldLight : 'transparent',
+                      color: selectedSlot === s.id ? C.gold : C.textMuted,
+                      fontSize: 10.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                    }}>
+                    <span style={{ fontSize: 14 }}>{s.icon}</span>{s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => {
+                onLog?.({ name: suggestion.meal, cal: suggestion.calories, p: suggestion.protein, c: suggestion.carbs, f: suggestion.fat }, selectedSlot)
+                setLogged(true)
+              }}
+              disabled={logged}
+              style={{
+                flex: 2, padding: 11, borderRadius: 14, border: 'none',
+                background: logged ? C.greenLight : C.gold, color: logged ? C.green : C.dark,
+                fontSize: 12.5, fontWeight: 600, cursor: logged ? 'default' : 'pointer',
+              }}
+            >
+              {logged ? '✓ Logged' : t('cal.logMeal')}
+            </button>
+            <button
+              onClick={() => {
+                onSave?.({
+                  name: suggestion.meal, calories: suggestion.calories, protein: suggestion.protein,
+                  carbs: suggestion.carbs, fat: suggestion.fat,
+                  ingredients: suggestion.ingredients || null,
+                  source: 'suggestion',
+                })
+                setSaved(true)
+              }}
+              disabled={saved}
+              style={{
+                flex: 1, padding: 11, borderRadius: 14, border: `1px solid ${saved ? C.green : C.border}`,
+                background: saved ? C.greenLight : 'transparent', color: saved ? C.green : C.textMuted,
+                fontSize: 11.5, fontWeight: 600, cursor: saved ? 'default' : 'pointer',
+              }}
+            >
+              {saved ? t('cal.savedMeal') : t('cal.saveMeal')}
+            </button>
+          </div>
+          {logged && (
+            <button
+              onClick={resetCard}
+              style={{ width: '100%', marginTop: 10, padding: 0, background: 'none', border: 'none', color: C.textMuted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              {lang === 'fr' ? 'Fermer' : 'Close'}
+            </button>
+          )}
         </div>
       )}
 
       {/* Two distinct actions: different meal vs. modify this one */}
-      {fetched && suggestion && (
+      {fetched && suggestion && !logged && (
         <div>
           <div style={{ display: 'flex', gap: 8, marginBottom: showModify ? 12 : 0 }}>
             <button
@@ -606,6 +665,42 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 }
 
 // ─────────────────────────────────────────────
+// Saved Meals — full list view
+// ─────────────────────────────────────────────
+function SavedMealsListModal({ savedMeals, onSelect, onDelete, onClose }) {
+  const { t } = useTranslation()
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(26,26,46,0.55)', zIndex:110, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background:T.surface, borderRadius:'20px 20px 0 0', padding:24, width:'100%', maxWidth:480, maxHeight:'80vh', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:T.shadowStrong }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+          <div style={{ fontSize:18, fontWeight:700, color:T.text }}>{t('cal.savedMeals')}</div>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:T.textMuted, fontSize:22, cursor:'pointer' }}>×</button>
+        </div>
+        <div style={{ overflowY:'auto', flex:1 }}>
+          {savedMeals.length === 0 ? (
+            <div style={{ textAlign:'center', padding:'30px 0', color:T.textMuted, fontSize:13 }}>{t('cal.noSaved')}</div>
+          ) : savedMeals.map(m => (
+            <div key={m.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 0', borderBottom:`1px solid ${T.divider}` }}>
+              <button onClick={() => onSelect(m)} style={{ flex:1, minWidth:0, background:'none', border:'none', textAlign:'left', cursor:'pointer', padding:0 }}>
+                <div style={{ fontSize:13.5, fontWeight:600, color:T.text, marginBottom:3 }}>{m.name}</div>
+                <div style={{ fontSize:11.5, color:T.textMuted }}>
+                  <span style={{ color:T.purple, fontWeight:600 }}>{m.calories} kcal</span>
+                  <span> · P {m.protein}g · C {m.carbs}g · F {m.fat}g</span>
+                </div>
+                {m.ingredients?.length > 0 && (
+                  <div style={{ fontSize:11, color:T.textDim, marginTop:3 }}>{m.ingredients.join(' · ')}</div>
+                )}
+              </button>
+              <button onClick={() => onDelete(m.id)} style={{ flexShrink:0, background:'none', border:'none', color:T.textDim, fontSize:17, cursor:'pointer', padding:'0 4px' }}>×</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────
 // Add food modal — live search via USDA + Open Food Facts
 // ─────────────────────────────────────────────
 function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescribe, recentMeals = [], savedMeals = [], onSaveMeal, onDeleteSavedMeal }) {
@@ -617,6 +712,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
   const [selected, setSelected] = useState(null)  // food being customized
   const [qty,      setQty]      = useState('1')   // multiplier
   const [justSaved,setJustSaved]= useState(false)
+  const [showAllSaved, setShowAllSaved] = useState(false)
   const debounceRef = useRef(null)
 
   // Search with debounce
@@ -761,11 +857,16 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
               <div style={{ marginBottom: 16 }}>
                 {savedMeals.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize:11, color:T.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>
-                      {t('cal.savedMeals')}
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+                      <div style={{ fontSize:11, color:T.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>
+                        {t('cal.savedMeals')}
+                      </div>
+                      <button onClick={() => setShowAllSaved(true)} style={{ background:'none', border:'none', color:T.purple, fontSize:11, fontWeight:600, cursor:'pointer', padding:0 }}>
+                        {t('cal.seeAll') || 'See all'} ›
+                      </button>
                     </div>
                     <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:4 }}>
-                      {savedMeals.map(m => (
+                      {savedMeals.slice(0, 8).map(m => (
                         <button key={m.id}
                           onClick={() => selectFood({ name:m.name, cal:m.calories, p:m.protein, c:m.carbs, f:m.fat, serving:'1 serving', source:'Saved', savedMealId:m.id })}
                           style={{ flexShrink:0, minWidth:118, maxWidth:140, padding:'10px 12px', borderRadius:12, background:T.purpleLight, border:`1px solid ${T.border}`, textAlign:'left', cursor:'pointer' }}>
@@ -859,6 +960,18 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
           </>
         )}
       </div>
+
+      {showAllSaved && (
+        <SavedMealsListModal
+          savedMeals={savedMeals}
+          onSelect={(m) => {
+            selectFood({ name:m.name, cal:m.calories, p:m.protein, c:m.carbs, f:m.fat, serving:'1 serving', source:'Saved', savedMealId:m.id })
+            setShowAllSaved(false)
+          }}
+          onDelete={(id) => onDeleteSavedMeal?.(id)}
+          onClose={() => setShowAllSaved(false)}
+        />
+      )}
     </div>
   )
 }
