@@ -119,25 +119,51 @@ export async function askClaude(systemPrompt, userMessage) {
 }
 
 export async function askMealSuggestion(preferences, { totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF }, lang = 'en', options = {}) {
-  const { customRequest = '', avoidDish = '' } = options
-  const system   = buildMealPrompt(preferences, lang)
+  const { customRequest = '', avoidDish = '', modification = '', previousMeal = null } = options
+
+  const system = buildMealPrompt(preferences, lang) + `
+
+You are also Coach Auron, giving ONE practical, nutrition-aware meal suggestion the user can realistically prepare and adapt.
+
+Respond ONLY with valid JSON, no markdown, no explanation, in exactly this shape:
+{"meal":"meal name","calories":number,"protein":number,"carbs":number,"fat":number,"whyItFits":"one short sentence explaining why this fits the user's remaining calories/macros today","ingredients":["short item 1","short item 2"],"steps":["short step 1","short step 2"]}
+
+Rules:
+- Base the suggestion on the user's ACTUAL remaining calories and macros for today, not a generic "healthy meal."
+- If one specific gap matters most right now (e.g. remaining protein is low, or fat is already close to the daily limit), mention it briefly in whyItFits. Otherwise keep whyItFits short and still tied to today's numbers — avoid generic nutrition claims that aren't specific to this user's day.
+- Respect all dietary preferences, restrictions, allergies, avoided foods, and cuisine preference already provided.
+- ingredients: max 6 short items. steps: max 4 short, practical steps. No long recipe essays — this must be mobile-friendly and quick to read.
+- Keep the meal realistic and easy to prepare at home.`
+
   const calLeft  = calorieGoal - totalCal
   const protLeft = proteinGoal - totalP
 
-  let user = `The user has eaten ${totalCal} kcal today (goal: ${calorieGoal} kcal, ${calLeft > 0 ? calLeft + ' remaining' : Math.abs(calLeft) + ' over'}).
-Macros so far: ${Math.round(totalP)}g protein (${Math.round(protLeft)}g left), ${Math.round(totalC)}g carbs, ${Math.round(totalF)}g fat.
-What should they eat next? Give 1 specific, practical suggestion in 2 sentences max. Name the food and approximate calories.
-Vary your suggestions — favour different proteins, cuisines, and preparations across requests rather than always defaulting to the same dish.`
+  let user = `Today's nutrition so far:
+- Calories: ${totalCal} eaten, ${calorieGoal} goal (${calLeft > 0 ? calLeft + ' kcal remaining' : Math.abs(calLeft) + ' kcal over'})
+- Protein: ${Math.round(totalP)}g eaten, ${proteinGoal}g goal (${Math.round(protLeft)}g remaining)
+- Carbs so far: ${Math.round(totalC)}g
+- Fat so far: ${Math.round(totalF)}g
 
-  if (avoidDish) {
-    user += `\n\nThe user was already suggested this and wants something different this time — do NOT suggest the same dish or a close variant of it: "${avoidDish}"`
-  }
-  if (customRequest && customRequest.trim()) {
-    user += `\n\nThe user added this note — take it into account when choosing the suggestion: "${customRequest.trim()}"`
+Suggest ONE realistic meal that fits what's remaining today.`
+
+  if (modification && previousMeal) {
+    user += `\n\nThe user wants to MODIFY this previously suggested meal — this is not a request for a different meal, it's an adjustment to this one:
+${JSON.stringify(previousMeal)}
+
+Modification request: "${modification.trim()}"
+
+Keep the same nutrition context above. Adapt the meal to satisfy the modification request, recalculate calories/protein/carbs/fat for the modified version, and briefly explain why the modified version still fits today.`
+  } else if (avoidDish) {
+    user += `\n\nThe user already got this suggestion and wants a genuinely different meal this time — do not suggest the same dish or a close variant: "${avoidDish}"`
+    if (customRequest && customRequest.trim()) {
+      user += `\n\nAdditional note from the user: "${customRequest.trim()}"`
+    }
+  } else if (customRequest && customRequest.trim()) {
+    user += `\n\nAdditional note from the user: "${customRequest.trim()}"`
   }
 
   // Slightly higher temperature here specifically so repeated taps give real variety
-  return callGroq(system, user, 200, 0.95)
+  return callGroq(system, user, 500, 0.9)
 }
 
 export async function estimateMealFromDescription(preferences, description, lang = 'en', options = {}) {
