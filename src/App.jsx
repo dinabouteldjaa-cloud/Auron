@@ -188,6 +188,7 @@ export default function App() {
     today: (
       <TodayTab
         userId={uid} profile={profile} updateProfile={updateProfile}
+        preferences={preferences} updatePreferences={updatePreferences}
         medications={medications} takenCount={takenCount}
         missedCount={missedCount} nextMed={nextMed}
         markTaken={markTaken} getStatusForMed={getStatusForMed}
