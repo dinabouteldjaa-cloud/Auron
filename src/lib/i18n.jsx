@@ -822,6 +822,7 @@ const translations = {
     'muscles.legs_cardio':'Legs, Cardiovascular',
     'muscles.speed_endurance':'Speed, Endurance',
     'muscles.full_flexibility':'Full Body, Flexibility',
+    'health.cuisineTitle':'Cuisine preference','health.cuisineDesc':'Auron will prioritise meal suggestions from this cuisine when practical.','health.cuisineGeneral':'General','health.cuisineOther':'Other','health.cuisinePlaceholder':'e.g. Algerian',
     'workout.sec':'sec','lang.en':'English','lang.fr':'Français'
   },
 
@@ -1674,6 +1675,7 @@ const translations = {
     'muscles.legs_cardio':'Jambes, Cardiovasculaire',
     'muscles.speed_endurance':'Vitesse, Endurance',
     'muscles.full_flexibility':'Corps entier, Souplesse',
+    'health.cuisineTitle':'Préférence culinaire','health.cuisineDesc':"Auron privilégiera les suggestions de repas de cette cuisine quand c'est possible.",'health.cuisineGeneral':'Général','health.cuisineOther':'Autre','health.cuisinePlaceholder':'ex. Algérienne',
     'workout.sec':'sec','lang.en':'English','lang.fr':'Français'
   }
 }
