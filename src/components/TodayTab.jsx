@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { useTranslation } from '../lib/i18n.jsx'
 import { toUserDateStr, getBrowserTimezone } from '../lib/dateUtils.js'
-import { AuronCharacter, AuronWelcomeScreen, CoachHero, CoachInsightCard, getAuronMood } from './CoachAuron'
+import { AuronCharacter, CoachHero, CoachInsightCard, getAuronMood } from './CoachAuron'
+import OnboardingFlow from './OnboardingFlow'
 import { useCoachMessage, getAuronMoodFromContext } from '../hooks/useCoachMessage'
 
 const C = {
@@ -844,7 +845,7 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 // ─────────────────────────────────────────────────────────────
 // Main TodayTab export
 // ─────────────────────────────────────────────────────────────
-export default function TodayTab({ userId, profile, updateProfile, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds, onDateChange, onOpenWorkout }) {
+export default function TodayTab({ userId, profile, updateProfile, preferences, updatePreferences, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds, onDateChange, onOpenWorkout }) {
   const { t, lang } = useTranslation()
 
   // Use profile timezone (auto-detected from browser, stored in DB)
@@ -1089,9 +1090,14 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
   return (
     <div style={{ paddingBottom: 8 }}>
 
-      {/* Welcome screen */}
+      {/* Onboarding flow — shown once per user */}
       {showWelcome && (
-        <AuronWelcomeScreen userId={userId} onDismiss={dismissWelcome} />
+        <OnboardingFlow
+          profile={profile}
+          updateProfile={updateProfile}
+          updatePreferences={updatePreferences}
+          onDismiss={dismissWelcome}
+        />
       )}
 
       {/* Week strip — compact, at the very top */}
