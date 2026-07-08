@@ -11,6 +11,16 @@ const C = T
 const DIETARY_OPTIONS  = ['Halal', 'Vegetarian', 'Vegan', 'Pescatarian', 'Keto', 'Mediterranean']
 const ALLERGY_OPTIONS  = ['Nuts', 'Dairy', 'Gluten', 'Shellfish', 'Eggs', 'Soy']
 
+// Display-only French labels — the stored value stays the canonical English string
+const DIETARY_LABELS_FR = {
+  Halal: 'Halal', Vegetarian: 'Végétarien', Vegan: 'Végan',
+  Pescatarian: 'Pescétarien', Keto: 'Kéto', Mediterranean: 'Méditerranéen',
+}
+const ALLERGY_LABELS_FR = {
+  Nuts: 'Noix', Dairy: 'Lait', Gluten: 'Gluten',
+  Shellfish: 'Fruits de mer', Eggs: 'Œufs', Soy: 'Soja',
+}
+
 const GOAL_OPTIONS = [
   { value: 'Lose weight',       emoji: '🔥' },
   { value: 'Build muscle',      emoji: '💪' },
@@ -314,7 +324,7 @@ export default function OnboardingFlow({ profile, updateProfile, updatePreferenc
             return (
               <button key={d} onClick={() => toggle(dietary, setDietary, d)}
                 style={{ padding: '14px 8px', borderRadius: 14, textAlign: 'center', cursor: 'pointer', border: `2px solid ${sel ? C.purple : C.divider}`, background: sel ? C.purpleLight : C.surface, color: sel ? C.purple : C.text, fontWeight: sel ? 700 : 500, fontSize: 13 }}>
-                {d}
+                {fr ? (DIETARY_LABELS_FR[d] || d) : d}
               </button>
             )
           })}
@@ -345,7 +355,7 @@ export default function OnboardingFlow({ profile, updateProfile, updatePreferenc
             return (
               <button key={a} onClick={() => toggle(allergies, setAllergies, a)}
                 style={{ padding: '14px 8px', borderRadius: 14, textAlign: 'center', cursor: 'pointer', border: `2px solid ${sel ? C.purple : C.divider}`, background: sel ? C.purpleLight : C.surface, color: sel ? C.purple : C.text, fontWeight: sel ? 700 : 500, fontSize: 13 }}>
-                {a}
+                {fr ? (ALLERGY_LABELS_FR[a] || a) : a}
               </button>
             )
           })}
