@@ -201,11 +201,6 @@ export function CoachHero({ mood = 'neutral', message = '', loading = false, act
           ) : null}
         </div>
       </div>
-
-      <div style={{ borderTop: `1px solid ${T.borderStrong}`, margin: '0 18px', padding: '11px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-        <span style={{ fontSize: 13 }}>✨</span>
-        <span style={{ fontSize: 13, color: T.purple, fontWeight: 600 }}>{t('coach.openAI')}</span>
-      </div>
     </div>
   )
 }
