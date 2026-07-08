@@ -77,25 +77,14 @@ export function AuronCharacter({ mood = 'happy', size = 'hero' }) {
         />
       )}
       {(!loaded || error) && (
-        <div style={{
-          width: '100%', height: '100%',
-          borderRadius: size === 'compact' ? 10 : 16,
-          background: `linear-gradient(160deg, ${T.heroGrad1}, ${T.heroGrad2})`,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: 6,
-        }}>
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+          <style>{`@keyframes auronPulse{0%,100%{opacity:.25;transform:scale(0.94)}50%{opacity:.5;transform:scale(1)}}`}</style>
           <div style={{
-            width: size === 'welcome' ? 48 : size === 'hero' ? 32 : 20,
-            height: size === 'welcome' ? 48 : size === 'hero' ? 32 : 20,
-            borderRadius: 10,
-            border: '1.5px solid rgba(255,255,255,0.35)',
-            background: 'rgba(255,255,255,0.12)',
+            width: '62%', height: '62%', marginBottom: '8%',
+            borderRadius: '50%',
+            background: `radial-gradient(circle, ${T.purpleMid || T.purpleLight} 0%, transparent 72%)`,
+            animation: 'auronPulse 1.6s ease-in-out infinite',
           }} />
-          {size !== 'compact' && (
-            <div style={{ fontSize: size === 'welcome' ? 13 : 9, color: 'rgba(255,255,255,0.9)', fontWeight: 700, textAlign: 'center' }}>
-              Auron
-            </div>
-          )}
         </div>
       )}
     </div>
