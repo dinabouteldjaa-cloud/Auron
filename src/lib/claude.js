@@ -16,7 +16,7 @@ function getKey() {
 }
 
 // Core fetch — shared by all AI calls
-async function callGroq(systemPrompt, userMessage, maxTokens = 1000) {
+async function callGroq(systemPrompt, userMessage, maxTokens = 1000, temperature = 0.7) {
   try {
     const res = await fetch(GROQ_URL, {
       method: 'POST',
@@ -27,7 +27,7 @@ async function callGroq(systemPrompt, userMessage, maxTokens = 1000) {
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         max_tokens: maxTokens,
-        temperature: 0.7,
+        temperature,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user',   content: userMessage  },
@@ -118,16 +118,26 @@ export async function askClaude(systemPrompt, userMessage) {
   return callGroq(systemPrompt, userMessage)
 }
 
-export async function askMealSuggestion(preferences, { totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF }, lang = 'en') {
+export async function askMealSuggestion(preferences, { totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF }, lang = 'en', options = {}) {
+  const { customRequest = '', avoidDish = '' } = options
   const system   = buildMealPrompt(preferences, lang)
   const calLeft  = calorieGoal - totalCal
   const protLeft = proteinGoal - totalP
 
-  const user = `The user has eaten ${totalCal} kcal today (goal: ${calorieGoal} kcal, ${calLeft > 0 ? calLeft + ' remaining' : Math.abs(calLeft) + ' over'}).
+  let user = `The user has eaten ${totalCal} kcal today (goal: ${calorieGoal} kcal, ${calLeft > 0 ? calLeft + ' remaining' : Math.abs(calLeft) + ' over'}).
 Macros so far: ${Math.round(totalP)}g protein (${Math.round(protLeft)}g left), ${Math.round(totalC)}g carbs, ${Math.round(totalF)}g fat.
-What should they eat next? Give 1 specific, practical suggestion in 2 sentences max. Name the food and approximate calories.`
+What should they eat next? Give 1 specific, practical suggestion in 2 sentences max. Name the food and approximate calories.
+Vary your suggestions — favour different proteins, cuisines, and preparations across requests rather than always defaulting to the same dish.`
 
-  return callGroq(system, user, 200)
+  if (avoidDish) {
+    user += `\n\nThe user was already suggested this and wants something different this time — do NOT suggest the same dish or a close variant of it: "${avoidDish}"`
+  }
+  if (customRequest && customRequest.trim()) {
+    user += `\n\nThe user added this note — take it into account when choosing the suggestion: "${customRequest.trim()}"`
+  }
+
+  // Slightly higher temperature here specifically so repeated taps give real variety
+  return callGroq(system, user, 200, 0.95)
 }
 
 export async function estimateMealFromDescription(preferences, description, lang = 'en') {
