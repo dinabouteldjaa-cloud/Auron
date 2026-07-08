@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { useTranslation } from '../lib/i18n.jsx'
+import { TabAuronCard } from './CoachAuron'
 import HealthPreferences from './HealthPreferences'
 
 // ─────────────────────────────────────────────
@@ -404,7 +405,7 @@ function MenuItem({ icon, label, onPress, badge, danger = false }) {
 // ─────────────────────────────────────────────
 // Main ProfileTab
 // ─────────────────────────────────────────────
-export default function ProfileTab({ user, profile, updateProfile, preferences, updatePreferences, lang, setLang }) {
+export default function ProfileTab({ user, profile, updateProfile, preferences, updatePreferences, lang, setLang, onOpenMeds }) {
   const { t } = useTranslation()
   const [page, setPage] = useState(null) // null = hub, or 'personal' | 'goals' | 'health' | 'language' | 'notifications' | 'privacy' | 'account'
 
@@ -419,6 +420,15 @@ export default function ProfileTab({ user, profile, updateProfile, preferences, 
     ...(preferences?.avoided_foods || []),
   ].length
 
+  const missingCount = [profile?.height_cm, profile?.weight_kg, profile?.primary_goal]
+    .filter(v => !v).length
+
+  const profileCtx = {
+    missingCount,
+    streakDays: profile?.streak_days || 0,
+    activePrefsCount: activePrefs,
+  }
+
   // Sub-pages
   if (page === 'personal')      return <PersonalInfoPage  profile={profile}         onSave={updateProfile}      onBack={() => setPage(null)} />
   if (page === 'goals')         return <GoalsPage          profile={profile}         onSave={updateProfile}      onBack={() => setPage(null)} />
@@ -431,6 +441,8 @@ export default function ProfileTab({ user, profile, updateProfile, preferences, 
   // ── Hub ──────────────────────────────────────
   return (
     <div>
+      <TabAuronCard tab="profile" ctx={profileCtx} lang={lang} />
+
       {/* Avatar + name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
         <Avatar name={profile?.full_name} email={user?.email} size={64} />
@@ -457,6 +469,7 @@ export default function ProfileTab({ user, profile, updateProfile, preferences, 
 
       {/* Menu */}
       <Card style={{ padding: '0 18px' }}>
+        <MenuItem icon="💊" label={t('meds.title')}         onPress={onOpenMeds} />
         <MenuItem icon="👤" label={t('profile.personalInfo')}  onPress={() => setPage('personal')} />
         <MenuItem icon="🎯" label={t('profile.fitnessGoal')}   onPress={() => setPage('goals')} />
         <MenuItem icon="🥗" label={t('profile.healthPrefs')}   onPress={() => setPage('health')}  badge={activePrefs > 0 ? `${activePrefs}` : null} />
