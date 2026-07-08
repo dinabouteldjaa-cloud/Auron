@@ -140,13 +140,41 @@ Vary your suggestions — favour different proteins, cuisines, and preparations 
   return callGroq(system, user, 200, 0.95)
 }
 
-export async function estimateMealFromDescription(preferences, description, lang = 'en') {
+export async function estimateMealFromDescription(preferences, description, lang = 'en', options = {}) {
+  const { answers = null } = options
+  const clarifying = !!answers
+
   const system = buildMealPrompt(preferences, lang) + `
 
-You are also a nutrition expert. When asked to estimate a meal, respond ONLY with valid JSON — no markdown, no explanation:
-{"meal":"meal name","calories":number,"protein":number,"carbs":number,"fat":number,"items":[{"name":"item","calories":number}],"confidence":"high/medium/low","note":"one brief tip"}`
+You are also a careful nutrition estimator. A user will describe a meal they ate and you must estimate its nutrition.
 
-  const user = `Estimate the nutritional content of this meal: ${description}`
+STEP 1 — Decide if the description is clear enough to estimate confidently.
+A description is CLEAR ENOUGH if it includes (even roughly): what the food is, and either a portion size, a common reference (e.g. "a bowl", "a plate", "one sandwich"), or enough detail that a reasonable assumption can be made.
+A description is TOO VAGUE if it's just a dish name with no sense of portion, ingredients, or preparation at all (e.g. "pasta", "a sandwich", "some chicken and rice") AND the user hasn't already answered clarifying questions.
+
+STEP 2 — If TOO VAGUE and no clarifying answers have been given yet, do NOT estimate. Instead ask 1–3 short follow-up questions, focused only on: portion size, cooking method, sauces/oils used, and main ingredients. Pick only the questions that are actually missing — don't ask about something already stated.
+
+STEP 3 — If clear enough (or the user has already answered clarifying questions), produce the estimate:
+- Use conservative (moderate, not generous) portion assumptions whenever exact quantity is still unknown.
+- If portion size is still uncertain even after any answers, prefer a calorie RANGE over a single confident number — populate calorieRangeLow and calorieRangeHigh, and set "calories" to the midpoint of that range.
+- If portion size is well known, set calorieRangeLow and calorieRangeHigh equal to "calories" (no artificial range).
+- Briefly state your portion assumption in "assumptions" so the user knows what was assumed.
+- Keep using the existing confidence field ("high"/"medium"/"low") based on how much was actually known vs assumed.
+
+Respond ONLY with valid JSON — no markdown, no explanation. Use exactly one of these two shapes:
+
+If asking clarifying questions:
+{"needsClarification":true,"questions":["short question 1","short question 2"]}
+
+If giving a final estimate:
+{"needsClarification":false,"meal":"meal name","calories":number,"calorieRangeLow":number,"calorieRangeHigh":number,"protein":number,"carbs":number,"fat":number,"items":[{"name":"item","calories":number}],"confidence":"high/medium/low","assumptions":"one short sentence on what was assumed","note":"one brief tip"}`
+
+  let user = `Meal description: ${description}`
+  if (clarifying) {
+    const qa = Object.entries(answers).map(([q, a]) => `Q: ${q}\nA: ${a || '(not specified)'}`).join('\n')
+    user += `\n\nThe user already answered these clarifying questions — use them and give a FINAL ESTIMATE now, do not ask further questions:\n${qa}`
+  }
+
   return callGroq(system, user, 600)
 }
 
