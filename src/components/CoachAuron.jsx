@@ -52,6 +52,8 @@ export function AuronCharacter({ mood = 'happy', size = 'hero' }) {
 
   const dim = size === 'welcome'
     ? { width: 240, height: 300 }
+    : size === 'onboarding'
+    ? { width: 150, height: 190 }
     : size === 'hero'
     ? { width: 110, height: 140 }
     : { width: 68, height: 80 }
@@ -190,11 +192,11 @@ export function CoachHero({ mood = 'neutral', message = '', loading = false, act
         </div>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '10px 16px 14px 8px' }}>
           {loading ? (
-            <div style={{ width: '100%' }}>
-              <style>{`@keyframes shimmer{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}`}</style>
-              {[90, 100, 65].map((w, i) => (
-                <div key={i} style={{ height: 10, borderRadius: 6, marginBottom: i < 2 ? 8 : 0, width: `${w}%`, background: T.purpleMid, animation: `shimmer 1.4s ease-in-out ${i*0.15}s infinite` }} />
-              ))}
+            <div style={{ width: '100%', textAlign: 'left' }}>
+              <style>{`@keyframes pulseName{0%,100%{opacity:.35}50%{opacity:.9}}`}</style>
+              <span style={{ fontSize: 15, fontWeight: 700, color: T.purple, animation: 'pulseName 1.4s ease-in-out infinite' }}>
+                {t('coach.name')}
+              </span>
             </div>
           ) : message ? (
             <div style={{ fontSize: 14.5, color: T.text, lineHeight: 1.6, fontWeight: 500 }}>{message}</div>
