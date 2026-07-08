@@ -177,7 +177,7 @@ const translations = {
     'cal.highConf':'high confidence',
     'cal.medConf':'medium confidence',
     'cal.lowConf':'low confidence',
-    'cal.nothingLogged':'Log your first meal in the Calories tab',
+    'cal.nothingLogged':'Tap to log your first meal in the Nutrition tab',
     'cal.protein':'Protein',
     'cal.carbs':'Carbs',
     'cal.fat':'Fat',
