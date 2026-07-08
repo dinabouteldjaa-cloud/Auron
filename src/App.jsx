@@ -195,6 +195,8 @@ export default function App() {
         onOpenMeds={() => setTab('medication')}
         onDateChange={setViewDate}
         onOpenWorkout={() => setTab('workout')}
+        onOpenNutrition={() => setTab('calories')}
+        onOpenProgress={() => setTab('workouts')}
       />
     ),
     workouts: (
