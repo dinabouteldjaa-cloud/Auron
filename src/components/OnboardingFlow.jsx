@@ -60,7 +60,7 @@ function Shell({ idx, total, mood, onBack, children }) {
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-          <AuronCharacter mood={mood} size="hero" />
+          <AuronCharacter mood={mood} size="onboarding" />
         </div>
         {children}
         <div style={{ height: 100 }} />
@@ -105,7 +105,7 @@ function Field({ label, value, onChange, placeholder, type = 'text' }) {
 // Main flow
 // ─────────────────────────────────────────────
 export default function OnboardingFlow({ profile, updateProfile, updatePreferences, onDismiss }) {
-  const { t, lang } = useTranslation()
+  const { t, lang, setLang } = useTranslation()
   const fr = lang === 'fr'
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
@@ -119,7 +119,7 @@ export default function OnboardingFlow({ profile, updateProfile, updatePreferenc
   const [dietary, setDietary]   = useState([])
   const [allergies, setAllergies] = useState([])
 
-  const total = 7 // welcome, goal, basics, activity, dietary, allergies, summary
+  const total = 8 // language, welcome, goal, basics, activity, dietary, allergies, summary
   const goBack = () => setStep(s => Math.max(0, s - 1))
   const goNext = () => setStep(s => s + 1)
 
@@ -154,8 +154,29 @@ export default function OnboardingFlow({ profile, updateProfile, updatePreferenc
     onDismiss()
   }
 
-  // ── Step 0 — Welcome ──────────────────────────
+  // ── Step 0 — Language ─────────────────────────
   if (step === 0) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: `linear-gradient(170deg, ${C.heroGrad1 || C.purple} 0%, ${C.heroGrad2 || C.purpleDark} 60%)`, zIndex: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', maxWidth: 480, margin: '0 auto' }}>
+        <AuronCharacter mood="greeting" size="onboarding" />
+        <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginTop: 20, marginBottom: 24, textAlign: 'center' }}>
+          {lang === 'fr' ? 'Choisis ta langue' : 'Choose your language'}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 280 }}>
+          {[['en', 'English', '🇬🇧'], ['fr', 'Français', '🇫🇷']].map(([code, label, flag]) => (
+            <button key={code} onClick={() => { setLang(code); goNext() }}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderRadius: 18, border: `2px solid ${lang === code ? '#fff' : 'rgba(255,255,255,0.35)'}`, background: lang === code ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
+              <span style={{ fontSize: 22 }}>{flag}</span>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Step 1 — Welcome ──────────────────────────
+  if (step === 1) {
     return (
       <div style={{ position: 'fixed', inset: 0, background: `linear-gradient(170deg, ${C.heroGrad1 || C.purple} 0%, ${C.heroGrad2 || C.purpleDark} 60%)`, zIndex: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', maxWidth: 480, margin: '0 auto' }}>
         <AuronCharacter mood="greeting" size="welcome" />
@@ -176,8 +197,8 @@ export default function OnboardingFlow({ profile, updateProfile, updatePreferenc
     )
   }
 
-  // ── Step 1 — Goal ─────────────────────────────
-  if (step === 1) {
+  // ── Step 2 — Goal ─────────────────────────────
+  if (step === 2) {
     const goalLabel = v => ({
       'Lose weight':       fr ? 'Perdre du poids' : 'Lose weight',
       'Build muscle':      fr ? 'Prendre du muscle' : 'Build muscle',
@@ -204,8 +225,8 @@ export default function OnboardingFlow({ profile, updateProfile, updatePreferenc
     )
   }
 
-  // ── Step 2 — Basic info ───────────────────────
-  if (step === 2) {
+  // ── Step 3 — Basic info ───────────────────────
+  if (step === 3) {
     const canNext = age && weight && height
     return (
       <Shell idx={step} total={total} mood="thinking" onBack={goBack}>
@@ -236,8 +257,8 @@ export default function OnboardingFlow({ profile, updateProfile, updatePreferenc
     )
   }
 
-  // ── Step 3 — Activity level ───────────────────
-  if (step === 3) {
+  // ── Step 4 — Activity level ───────────────────
+  if (step === 4) {
     const label = o => ({
       Sedentary: fr ? 'Sédentaire' : 'Sedentary',
       Light:     fr ? 'Léger' : 'Light',
@@ -275,8 +296,8 @@ export default function OnboardingFlow({ profile, updateProfile, updatePreferenc
     )
   }
 
-  // ── Step 4 — Dietary preferences ──────────────
-  if (step === 4) {
+  // ── Step 5 — Dietary preferences ──────────────
+  if (step === 5) {
     return (
       <Shell idx={step} total={total} mood="nutrition" onBack={goBack}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -298,13 +319,16 @@ export default function OnboardingFlow({ profile, updateProfile, updatePreferenc
             )
           })}
         </div>
+        <div style={{ fontSize: 12, color: C.textDim, textAlign: 'center', marginBottom: 8 }}>
+          {fr ? 'Tu pourras modifier ceci plus tard dans ton profil.' : 'You can change this anytime later in your profile.'}
+        </div>
         <NextButton onClick={goNext} disabled={false} label={dietary.length ? (fr ? 'Suivant →' : 'Next →') : (fr ? 'Passer →' : 'Skip →')} />
       </Shell>
     )
   }
 
-  // ── Step 5 — Allergies ────────────────────────
-  if (step === 5) {
+  // ── Step 6 — Allergies ────────────────────────
+  if (step === 6) {
     return (
       <Shell idx={step} total={total} mood="nutrition" onBack={goBack}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -326,18 +350,21 @@ export default function OnboardingFlow({ profile, updateProfile, updatePreferenc
             )
           })}
         </div>
+        <div style={{ fontSize: 12, color: C.textDim, textAlign: 'center', marginBottom: 8 }}>
+          {fr ? 'Tu pourras modifier ceci plus tard dans ton profil.' : 'You can change this anytime later in your profile.'}
+        </div>
         <NextButton onClick={goNext} disabled={false} label={allergies.length ? (fr ? 'Suivant →' : 'Next →') : (fr ? 'Passer →' : 'Skip →')} />
       </Shell>
     )
   }
 
-  // ── Step 6 — Summary / plan ready ─────────────
+  // ── Step 7 — Summary / plan ready ─────────────
   const plan = calcPlan()
   return (
     <div style={{ position: 'fixed', inset: 0, background: C.pageBg || '#F0EFF8', zIndex: 500, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto' }}>
       <div style={{ flex: 1, overflowY: 'auto', padding: '32px 24px 0' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-          <AuronCharacter mood="celebrating" size="hero" />
+          <AuronCharacter mood="celebrating" size="onboarding" />
         </div>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div style={{ fontSize: 24, fontWeight: 800, color: C.text, marginBottom: 8 }}>
