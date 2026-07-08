@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMedications } from '../hooks/useMedications'
 import { useTranslation } from '../lib/i18n.jsx'
+import { TabAuronCard } from './CoachAuron'
 
 const T = {
   surface:      '#FFFFFF',
@@ -311,7 +312,7 @@ export default function MedicationTab({ userId }) {
     addMedication, updateMedication, deleteMedication, markTaken,
     getStatusForMed, takenCount, missedCount, nextMed,
   } = useMedications(userId)
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const [modal,   setModal]   = useState(false)
   const [section, setSection] = useState('today')
 
@@ -326,8 +327,26 @@ export default function MedicationTab({ userId }) {
   const totalActive = medications.length
   const pendingCount = medications.filter(m => getStatusForMed(m.id) === 'pending').length
 
+  // Due-soon detection — same 30-min window used on the Today tab
+  const now        = new Date()
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  const pendingMedsDueSoon = medications.filter(m => {
+    if (getStatusForMed(m.id) !== 'pending') return false
+    try {
+      const timeStr = m.reminder_time || (m.reminder_times ? JSON.parse(m.reminder_times)[0] : null)
+      if (!timeStr) return false
+      const [mh, mm] = timeStr.split(':').map(Number)
+      return (mh * 60 + mm) - nowMinutes <= 30
+    } catch { return false }
+  }).length
+
+  const medicationCtx = loading ? null : {
+    pendingMedsDueSoon, missedCount, takenCount, pendingCount, totalActive,
+  }
+
   return (
     <div>
+      <TabAuronCard tab="medication" ctx={medicationCtx} lang={lang} />
 
       {/* ── Summary row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
