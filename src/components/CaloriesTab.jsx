@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { askMealSuggestion, estimateMealFromDescription } from '../lib/claude'
 import { T } from '../lib/theme'
 import { useTranslation } from '../lib/i18n.jsx'
+import { TabAuronCard } from './CoachAuron'
 
 // Map theme tokens to local alias
 const C = {
@@ -543,6 +544,14 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
   const totalC   = logs.reduce((s, f) => s + (f.carbs    || 0), 0)
   const totalF   = logs.reduce((s, f) => s + (f.fat      || 0), 0)
 
+  const nutritionCtx = loading ? null : {
+    totalCal, calorieGoal,
+    proteinPct: proteinGoal > 0 ? (totalP / proteinGoal) * 100 : 0,
+    foodLogsCount: logs.length,
+    hour: new Date().getHours(),
+    waterPct: null,
+  }
+
   if (subView === 'describe') {
     return (
       <DescribeMeal
@@ -556,6 +565,8 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
 
   return (
     <div>
+      <TabAuronCard tab="nutrition" ctx={nutritionCtx} lang={lang} />
+
       {/* AI Describe button */}
       <div style={{ marginBottom: 20 }}>
         <button
