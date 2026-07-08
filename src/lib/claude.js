@@ -167,7 +167,9 @@ If asking clarifying questions:
 {"needsClarification":true,"questions":["short question 1","short question 2"]}
 
 If giving a final estimate:
-{"needsClarification":false,"meal":"meal name","calories":number,"calorieRangeLow":number,"calorieRangeHigh":number,"protein":number,"carbs":number,"fat":number,"items":[{"name":"item","calories":number}],"confidence":"high/medium/low","assumptions":"one short sentence on what was assumed","note":"one brief tip"}`
+{"needsClarification":false,"meal":"meal name","calories":number,"calorieRangeLow":number,"calorieRangeHigh":number,"protein":number,"carbs":number,"fat":number,"items":[{"name":"item","calories":number}],"confidence":"high/medium/low","assumptions":"one short sentence describing exactly what portion/ingredients were assumed, with no suggestions or recommendations"}
+
+Important: only estimate the meal as described. Do not suggest additions, substitutions, spices, or any changes to the meal — your job is to estimate what was eaten, not to recommend anything.`
 
   let user = `Meal description: ${description}`
   if (clarifying) {
