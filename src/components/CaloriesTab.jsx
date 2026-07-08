@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import { askMealSuggestion, estimateMealFromDescription } from '../lib/claude'
 import { T } from '../lib/theme'
 import { useTranslation } from '../lib/i18n.jsx'
-import { TabAuronCard } from './CoachAuron'
+import { TabAuronCard, AuronCharacter } from './CoachAuron'
 
 // Map theme tokens to local alias
 const C = {
@@ -97,25 +97,60 @@ function MacroBar({ label, current, goal, color }) {
 function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
   const { t } = useTranslation()
   const MEAL_SLOTS = getMealSlotsNutrition(t)
-  const [desc,    setDesc]    = useState('')
-  const [loading, setLoading] = useState(false)
-  const [result,  setResult]  = useState(null)
-  const [meal,    setMeal]    = useState('breakfast')
+  const [desc,        setDesc]        = useState('')
+  const [loading,      setLoading]    = useState(false)
+  const [result,       setResult]     = useState(null)
+  const [meal,         setMeal]       = useState('breakfast')
+  const [questions,    setQuestions]  = useState(null)   // array of clarifying questions, or null
+  const [answerDrafts, setAnswerDrafts] = useState({})    // question -> typed answer
+
+  const parseResponse = (raw) => {
+    const clean = raw.replace(/```json|```/g, '').trim()
+    return JSON.parse(clean)
+  }
 
   const analyze = async () => {
     if (!desc.trim()) return
-    setLoading(true); setResult(null)
+    setLoading(true); setResult(null); setQuestions(null)
     try {
-      const raw   = await estimateMealFromDescription(preferences, desc, lang)
-      const clean = raw.replace(/```json|```/g, '').trim()
-      setResult(JSON.parse(clean))
+      const raw    = await estimateMealFromDescription(preferences, desc, lang)
+      const parsed = parseResponse(raw)
+      if (parsed.needsClarification && parsed.questions?.length > 0) {
+        setQuestions(parsed.questions)
+        setAnswerDrafts(Object.fromEntries(parsed.questions.map(q => [q, ''])))
+      } else {
+        setResult(parsed)
+      }
     } catch {
       setResult({ error: 'Could not estimate. Try describing in more detail — include portion sizes.' })
     }
     setLoading(false)
   }
 
+  const submitAnswers = async () => {
+    setLoading(true)
+    try {
+      const raw    = await estimateMealFromDescription(preferences, desc, lang, { answers: answerDrafts })
+      const parsed = parseResponse(raw)
+      setResult(parsed)
+      setQuestions(null)
+    } catch {
+      setResult({ error: 'Could not estimate. Try describing in more detail — include portion sizes.' })
+      setQuestions(null)
+    }
+    setLoading(false)
+  }
+
   const confColor = { high: C.green, medium: C.amber, low: C.red }
+
+  // Friendly, rule-based Auron caption — no extra AI call needed
+  const auronCaption = questions
+    ? (lang === 'fr' ? "Encore quelques détails et j'aurai une estimation précise pour toi !" : "Just a couple more details and I'll get you an accurate estimate!")
+    : loading
+    ? (lang === 'fr' ? 'Je regarde ça de près...' : 'Taking a close look at this...')
+    : result && !result.error
+    ? (lang === 'fr' ? 'Voici ce que je vois — ajuste si besoin, puis enregistre.' : "Here's what I see — adjust if needed, then log it.")
+    : (lang === 'fr' ? 'Dis-moi ce que tu as mangé, je t\'aide à l\'estimer.' : "Tell me what you ate — I'll help you estimate it.")
 
   return (
     <div>
@@ -123,8 +158,21 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
         ← Back
       </button>
       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, marginBottom: 6 }}>{t('cal.describeTitle')}</div>
-      <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 20 }}>
+      <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 16 }}>
         {t('cal.describeSubtitle')}
+      </div>
+
+      {/* Coach Auron — friendly nutrition guidance throughout the flow */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <div style={{ flexShrink: 0 }}>
+          <AuronCharacter mood="nutrition" size="compact" />
+        </div>
+        <div style={{
+          flex: 1, background: C.goldLight, borderRadius: 14, padding: '10px 14px',
+          fontSize: 13, color: C.text, lineHeight: 1.5,
+        }}>
+          {auronCaption}
+        </div>
       </div>
 
       {/* Meal slot selector */}
@@ -181,6 +229,47 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
         </div>
       )}
 
+      {/* Clarifying questions — shown when the description was too vague */}
+      {questions && !loading && (
+        <Card style={{ borderColor: C.gold, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <span style={{ fontSize: 15 }}>💬</span>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.gold }}>
+              {lang === 'fr' ? 'Juste quelques précisions' : 'Just a few quick details'}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
+            {questions.map((q, i) => (
+              <div key={i}>
+                <div style={{ fontSize: 13, color: C.text, marginBottom: 6, lineHeight: 1.4 }}>{q}</div>
+                <input
+                  value={answerDrafts[q] || ''}
+                  onChange={e => setAnswerDrafts(prev => ({ ...prev, [q]: e.target.value }))}
+                  placeholder={lang === 'fr' ? 'Ta réponse...' : 'Your answer...'}
+                  style={{
+                    width: '100%', padding: '9px 12px', borderRadius: 10,
+                    background: C.surfaceLight, border: `1px solid ${C.border}`,
+                    color: C.text, fontSize: 13, outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={submitAnswers}
+            style={{ width: '100%', padding: 13, borderRadius: 24, background: C.gold, color: C.dark, border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 8 }}
+          >
+            {lang === 'fr' ? "Obtenir l'estimation" : 'Get my estimate'}
+          </button>
+          <button
+            onClick={submitAnswers}
+            style={{ width: '100%', padding: 0, background: 'none', border: 'none', color: C.textMuted, fontSize: 12, cursor: 'pointer' }}
+          >
+            {lang === 'fr' ? 'Passer et estimer quand même' : 'Skip and estimate anyway'}
+          </button>
+        </Card>
+      )}
+
       {loading && (
         <Card style={{ textAlign: 'center', padding: 28 }}>
           <Spinner />
@@ -200,7 +289,7 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
                   </span>
                 )}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 6 }}>
                 {[['Calories', result.calories, 'kcal', C.gold], [t('cal.protein'), result.protein, 'g', C.blue], [t('cal.carbs'), result.carbs, 'g', C.amber], ['Fat', result.fat, 'g', C.green]].map(([l, v, u, col]) => (
                   <div key={l} style={{ background: C.surfaceLight, borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
                     <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, color: col }}>{v}</div>
@@ -208,6 +297,17 @@ function DescribeMeal({ preferences, onLog, onBack, lang = 'en' }) {
                   </div>
                 ))}
               </div>
+              {result.calorieRangeLow != null && result.calorieRangeHigh != null && result.calorieRangeHigh > result.calorieRangeLow && (
+                <div style={{ fontSize: 11, color: C.textMuted, textAlign: 'center', marginBottom: 14 }}>
+                  {lang === 'fr' ? 'Fourchette estimée' : 'Estimated range'}: {result.calorieRangeLow}–{result.calorieRangeHigh} kcal
+                </div>
+              )}
+              {result.calorieRangeLow == null && <div style={{ marginBottom: 8 }} />}
+              {result.assumptions && (
+                <div style={{ fontSize: 11.5, color: C.textDim, marginBottom: 10, lineHeight: 1.5 }}>
+                  📏 {result.assumptions}
+                </div>
+              )}
               {result.items?.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   {result.items.map((item, i) => (
