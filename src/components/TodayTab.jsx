@@ -894,6 +894,7 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
   const [loggedDates,   setLoggedDates]   = useState(new Set())
   const [loading,       setLoading]       = useState(true)
   const statsTimer = useRef(null)
+  const lastMoodRef = useRef(null)
 
   // Welcome screen — shown once per user, dismissed to localStorage
   const welcomeKey = userId ? `auron_welcomed_${userId}` : null
@@ -1029,8 +1030,29 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
   const workoutDone    = workoutLogs.length > 0
   const workoutMinutes = workoutLogs.reduce((s, w) => s + (w.duration_minutes || 0), 0)
 
+  // Time-aware medication check — only flag meds due within 30 min or overdue
+  const nowMinutes = hour * 60 + new Date().getMinutes()
+  const pendingMedsList = isToday
+    ? medications.filter(m => getStatusForMed(m.id) === 'pending')
+    : []
+  const medsDueSoon = pendingMedsList.filter(m => {
+    try {
+      const timeStr = m.reminder_time || (m.reminder_times ? JSON.parse(m.reminder_times)[0] : null)
+      if (!timeStr) return false
+      const [mh, mm] = timeStr.split(':').map(Number)
+      const medMinutes = mh * 60 + mm
+      const diff = medMinutes - nowMinutes
+      return diff <= 30 // due within next 30 min or already overdue
+    } catch { return false }
+  })
+  const nextDueMed     = medsDueSoon[0] || null
+  const nextDueMedTime = nextDueMed
+    ? (() => { try { return nextDueMed.reminder_time || JSON.parse(nextDueMed.reminder_times)[0] || '' } catch { return '' } })()
+    : ''
+
   const coachCtx = {
     firstName, isToday, hour,
+    minute: new Date().getMinutes(),
     totalCal, calorieGoal,
     calRemaining: Math.max(0, calorieGoal - totalCal),
     calOver:      Math.max(0, totalCal - calorieGoal),
@@ -1043,19 +1065,25 @@ export default function TodayTab({ userId, profile, updateProfile, medications =
     steps:        parseInt(dailyStats?.steps)  || 0,
     sleepHours:   parseFloat(dailyStats?.sleep) || 0,
     streakDays,
-    missedMeds:   missedCount  || 0,
-    pendingMeds:  isToday ? medications.filter(m => getStatusForMed(m.id) === 'pending').length : 0,
-    nextMedName:  nextMed?.medication_name || '',
-    proteinPct:   proteinGoal > 0 ? (totalP / proteinGoal) * 100 : 0,
-    foodLogsCount: foodLogs.length,
+    missedMeds:       missedCount  || 0,
+    pendingMeds:      pendingMedsList.length,
+    pendingMedsDueSoon: medsDueSoon.length,
+    nextMedName:      nextDueMed?.medication_name || nextMed?.medication_name || '',
+    nextMedTime:      nextDueMedTime,
+    proteinPct:       proteinGoal > 0 ? (totalP / proteinGoal) * 100 : 0,
+    foodLogsCount:    foodLogs.length,
     mood: '',
   }
 
-  const coachMood   = getAuronMoodFromContext(coachCtx)
+  const coachMood   = loading ? (lastMoodRef.current || 'greeting') : getAuronMoodFromContext(coachCtx)
   coachCtx.mood     = coachMood
+  lastMoodRef.current = coachMood
 
+  // Don't let the message lock in until the page's real data has loaded —
+  // otherwise the first render (empty foodLogs/calories) picks a message
+  // that immediately gets replaced once data arrives, causing a flicker.
   const { message: coachMessage, loading: coachLoading } = useCoachMessage(
-    coachCtx, lang,
+    loading ? null : coachCtx, lang,
   )
 
   return (
