@@ -1,462 +1,476 @@
 import { useRef } from 'react'
 
 // ─────────────────────────────────────────────────────────────
-// useCoachMessage — Two-layer coaching system
-// Memoized so the message never flashes on re-render
+// useCoachMessage — time-aware, priority-based coaching
+//
+// Architecture:
+//   buildPriority(ctx) → picks ONE most important insight for
+//     the current moment, time-aware and situation-specific.
+//   buildMessage(insight, ctx, lang, seed) → phrases it naturally.
+//   Stable: message only changes when the situation actually changes.
 // ─────────────────────────────────────────────────────────────
 
-// Seeded pick — same seed always returns same item, preventing flash on re-render
+// Seeded pick — deterministic, no re-render flash
 function pick(arr, seed) {
-  const idx = Math.abs(seed) % arr.length
-  return arr[idx]
+  return arr[Math.abs(Math.round(seed)) % arr.length]
 }
 
-// Build a stable seed from the context so the same state → same message
+// Stable seed that only changes when the situation meaningfully changes
+// Deliberately coarse so minor fluctuations don't re-trigger
 function buildSeed(ctx) {
+  const { hour = 0, foodLogsCount = 0, waterPct = 0, workoutDone = false,
+          totalCal = 0, calorieGoal = 1, pendingMedsDueSoon = 0,
+          steps = 0, streakDays = 0 } = ctx
   return (
-    Math.floor((ctx.totalCal || 0) / 50) * 1 +
-    Math.floor((ctx.totalP   || 0) / 10) * 7 +
-    Math.floor((ctx.waterAmount || 0))   * 13 +
-    (ctx.workoutDone ? 17 : 0) +
-    (ctx.streakDays  || 0) * 3 +
-    (ctx.pendingMeds || 0) * 11 +
-    (ctx.foodLogsCount || 0) * 5 +
-    Math.floor((ctx.steps || 0) / 1000) * 19 +
-    (ctx.hour || 0) * 2
+    hour * 100 +                                    // changes each hour
+    foodLogsCount * 7 +                             // changes when meals logged
+    Math.floor(waterPct / 20) * 13 +               // changes in ~20% chunks
+    (workoutDone ? 31 : 0) +
+    Math.floor((totalCal / Math.max(calorieGoal, 1)) * 10) * 3 +
+    pendingMedsDueSoon * 17 +
+    Math.floor(steps / 2000) * 5 +
+    streakDays * 2
   )
 }
 
 // ─────────────────────────────────────────────────────────────
-// LAYER 1 — Expression
-// Looks at the overall picture, not just one metric
+// PRIORITY ENGINE
+// Returns { type, ...relevant data } for the most important insight
+// ─────────────────────────────────────────────────────────────
+export function buildPriority(ctx) {
+  const {
+    isToday, hour, minute = 0,
+    totalCal, calorieGoal,
+    proteinPct, waterPct, waterGoal, waterAmount, waterUnit,
+    workoutDone, steps,
+    foodLogsCount, sleepHours,
+    pendingMeds, pendingMedsDueSoon, nextMedName, nextMedTime,
+    streakDays,
+    calOver, calRemaining,
+    proteinShort,
+  } = ctx
+
+  if (!isToday) return { type: 'mindset' }
+
+  const nowMinutes = hour * 60 + (minute || 0)
+
+  // ── 1. MEDICATION — only when due within 30 min or overdue ──
+  if (pendingMedsDueSoon > 0) {
+    return { type: 'med_due', name: nextMedName, time: nextMedTime }
+  }
+
+  // ── 2. CALORIES OVER ─────────────────────────────────────────
+  if (totalCal > calorieGoal * 1.08 && calorieGoal > 0) {
+    return { type: 'over_cal', calOver: Math.round(calOver) }
+  }
+
+  // ── 3. MEAL REMINDERS — time-aware ───────────────────────────
+  // Breakfast: 8:00–10:30, no food logged
+  if (nowMinutes >= 480 && nowMinutes < 630 && foodLogsCount === 0) {
+    return { type: 'meal_breakfast' }
+  }
+  // Lunch: 12:00–14:00, fewer than 1 meal logged
+  if (nowMinutes >= 720 && nowMinutes < 840 && foodLogsCount < 1) {
+    return { type: 'meal_lunch' }
+  }
+  // Dinner: 18:30–20:30, fewer than 2 meals logged
+  if (nowMinutes >= 1110 && nowMinutes < 1230 && foodLogsCount < 2) {
+    return { type: 'meal_dinner' }
+  }
+  // General: no food logged and it's been a significant part of the day
+  if (foodLogsCount === 0 && hour >= 11) {
+    return { type: 'no_food' }
+  }
+
+  // ── 4. WATER — only flag when meaningfully behind for the time ─
+  // Expected water progress: roughly waterPct should track hour/16 * 100
+  const expectedWaterPct = Math.min(100, (hour / 16) * 100)
+  if (waterPct < expectedWaterPct * 0.5 && hour >= 13) {
+    const deficit = Math.max(0, Math.round(waterGoal - waterAmount))
+    return { type: 'water_low', deficit, unit: waterUnit }
+  }
+
+  // ── 5. PROTEIN — afternoon/evening flag ───────────────────────
+  if (proteinPct < 35 && hour >= 15 && foodLogsCount > 0) {
+    return { type: 'protein_low', shortBy: Math.round(proteinShort || 0) }
+  }
+
+  // ── 6. STEPS — flag in afternoon only ─────────────────────────
+  if (steps < 3000 && hour >= 15 && hour < 20) {
+    return { type: 'steps_low', steps }
+  }
+
+  // ── 7. WORKOUT — suggest if evening and not done ──────────────
+  if (!workoutDone && hour >= 16 && hour < 20) {
+    return { type: 'workout_missing' }
+  }
+
+  // ── 8. POSITIVE STATES ───────────────────────────────────────
+  // Celebrating streak
+  if (streakDays >= 7) return { type: 'streak', days: streakDays }
+
+  // All going well
+  const positives = [
+    foodLogsCount >= 2,
+    waterPct >= 70,
+    proteinPct >= 60,
+    workoutDone,
+    steps >= 7000,
+  ].filter(Boolean).length
+
+  if (positives >= 4) return { type: 'all_good' }
+  if (workoutDone && positives >= 3) return { type: 'workout_done' }
+  if (positives >= 2) return { type: 'good_progress' }
+
+  // ── 9. GREETING / DEFAULT ────────────────────────────────────
+  if (hour < 10) return { type: 'greeting' }
+  if (hour >= 21) return { type: 'evening' }
+  return { type: 'default' }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Expression mapping
 // ─────────────────────────────────────────────────────────────
 export function getAuronMoodFromContext(ctx) {
-  const {
-    isToday, hour,
-    totalCal, calorieGoal,
-    proteinPct, waterPct,
-    workoutDone, steps,
-    streakDays, pendingMeds,
-    foodLogsCount,
-  } = ctx
-
-  if (!isToday) return 'mindset'
-
-  const overCalories   = totalCal > calorieGoal * 1.05
-  const hasFood        = foodLogsCount > 0 || totalCal > 0
-  const missingMeds    = pendingMeds > 0 && hour >= 12
-  const goodProtein    = proteinPct >= 70
-  const goodWater      = waterPct >= 70
-  const goodSteps      = steps >= 7000
-  const hasActivity    = workoutDone || steps >= 3000
-
-  // Score the day holistically
-  let positives = 0
-  let negatives = 0
-
-  if (hasFood && !overCalories) positives++
-  if (goodProtein)  positives++
-  if (goodWater)    positives++
-  if (workoutDone)  positives++
-  if (goodSteps)    positives++
-  if (streakDays >= 3) positives++
-
-  if (overCalories)              negatives += 2
-  if (missingMeds)               negatives += 2
-  if (!hasFood && hour >= 10)    negatives += 2
-  if (waterPct < 30 && hour >= 16) negatives++
-  if (proteinPct < 30 && hour >= 16 && hasFood) negatives++
-
-  // Expression decision
-  if (!hasFood && hour < 10) return 'greeting'
-  if (negatives >= 2)        return 'concerned'
-  if (streakDays >= 7 && positives >= 4) return 'celebrating'
-  if (workoutDone && positives >= 4) return 'happy'
-  if (workoutDone && !hasFood) return 'workout'
-  if (positives >= 3 && negatives === 0) return 'happy'
-  if (streakDays >= 3 && negatives <= 1) return 'habit'
-  if (streakDays >= 1 && negatives <= 1) return 'motivating'
-  if (negatives === 1 && positives >= 1) return 'thinking'
-  if (hour >= 20 && hasFood)  return 'resting'
-  if (!hasFood && hour >= 10) return 'concerned'
-  return 'motivating'
-}
-
-// ─────────────────────────────────────────────────────────────
-// LAYER 2 — Message builder
-// Combines 2–4 observations. Strengths first, gap second.
-// ─────────────────────────────────────────────────────────────
-
-// Observations — what's going well
-function getStrengths(ctx, lang) {
-  const {
-    totalCal, calorieGoal, proteinPct, waterPct,
-    workoutDone, workoutMinutes, steps, streakDays,
-    foodLogsCount, sleepHours,
-  } = ctx
-  const fr = lang === 'fr'
-  const strengths = []
-
-  const calPct = calorieGoal > 0 ? (totalCal / calorieGoal) * 100 : 0
-
-  if (workoutDone) {
-    if (workoutMinutes >= 45)
-      strengths.push(fr ? `séance de ${workoutMinutes} min accomplie` : `${workoutMinutes}-min workout done`)
-    else if (workoutMinutes > 0)
-      strengths.push(fr ? `entraînement de ${workoutMinutes} min enregistré` : `${workoutMinutes}-min session logged`)
-    else
-      strengths.push(fr ? `séance terminée` : `workout completed`)
+  const p = buildPriority(ctx)
+  switch (p.type) {
+    case 'greeting':      return 'greeting'
+    case 'med_due':       return 'concerned'
+    case 'over_cal':      return 'concerned'
+    case 'no_food':       return 'concerned'
+    case 'meal_breakfast':return 'greeting'
+    case 'meal_lunch':    return 'thinking'
+    case 'meal_dinner':   return 'thinking'
+    case 'water_low':     return 'thinking'
+    case 'protein_low':   return 'thinking'
+    case 'steps_low':     return 'motivating'
+    case 'workout_missing':return 'motivating'
+    case 'streak':        return 'celebrating'
+    case 'all_good':      return 'happy'
+    case 'workout_done':  return 'workout'
+    case 'good_progress': return 'motivating'
+    case 'evening':       return 'resting'
+    case 'mindset':       return 'mindset'
+    default:              return 'motivating'
   }
-
-  if (steps >= 8000)
-    strengths.push(fr ? `${steps.toLocaleString()} pas — objectif presque atteint` : `${steps.toLocaleString()} steps — nearly at goal`)
-  else if (steps >= 5000)
-    strengths.push(fr ? `${steps.toLocaleString()} pas en bonne voie` : `${steps.toLocaleString()} steps, good progress`)
-
-  if (proteinPct >= 80)
-    strengths.push(fr ? `protéines bien suivies` : `protein on track`)
-  else if (proteinPct >= 60)
-    strengths.push(fr ? `bons progrès en protéines` : `solid protein intake`)
-
-  if (waterPct >= 80)
-    strengths.push(fr ? `hydratation excellente` : `great hydration`)
-  else if (waterPct >= 60)
-    strengths.push(fr ? `bonne hydratation` : `good hydration`)
-
-  if (calPct >= 60 && calPct <= 105)
-    strengths.push(fr ? `calories bien gérées` : `calories well managed`)
-
-  if (foodLogsCount >= 3)
-    strengths.push(fr ? `${foodLogsCount} repas enregistrés` : `${foodLogsCount} meals logged`)
-  else if (foodLogsCount >= 2)
-    strengths.push(fr ? `${foodLogsCount} repas enregistrés` : `${foodLogsCount} meals logged`)
-
-  if (streakDays >= 7)
-    strengths.push(fr ? `série de ${streakDays} jours` : `${streakDays}-day streak`)
-  else if (streakDays >= 3)
-    strengths.push(fr ? `${streakDays} jours d'affilée` : `${streakDays} days straight`)
-
-  if (sleepHours >= 7)
-    strengths.push(fr ? `${sleepHours}h de sommeil` : `${sleepHours}h of sleep`)
-
-  return strengths
 }
 
-// What needs attention — pick the single most important one
-function getTopGap(ctx, lang) {
-  const {
-    totalCal, calorieGoal, calOver, calRemaining,
-    proteinPct, proteinShort, waterPct, waterAmount, waterGoal, waterUnit,
-    workoutDone, steps, sleepHours, pendingMeds, nextMedName,
-    foodLogsCount, hour,
-  } = ctx
+// ─────────────────────────────────────────────────────────────
+// MESSAGE BUILDER — one specific message per insight type
+// ─────────────────────────────────────────────────────────────
+function buildMessage(ctx, lang, seed) {
+  const priority = buildPriority(ctx)
+  const { firstName: name, hour, streakDays, steps,
+          waterGoal, waterAmount, waterUnit, waterPct,
+          totalCal, calorieGoal, proteinPct, proteinShort,
+          foodLogsCount, workoutDone, workoutMinutes } = ctx
+
   const fr = lang === 'fr'
+  const hi = name || (fr ? '' : '')
+  const greet = hi ? (fr ? `${hi}, ` : `${hi}, `) : ''
+  const G = hi ? (fr ? `${hi} ! ` : `${hi}! `) : ''
 
-  // Priority order — most urgent first
-  if (pendingMeds > 0 && hour >= 12)
-    return fr
-      ? `vous avez encore ${nextMedName ? nextMedName : 'un médicament'} à prendre`
-      : `you still have ${nextMedName ? nextMedName : 'medication'} to take`
+  const { type } = priority
 
-  if (totalCal > calorieGoal * 1.05)
-    return fr
-      ? `vous avez dépassé votre objectif de ${calOver} kcal — allégez le reste`
-      : `you're ${calOver} kcal over your goal — keep it light for the rest of the day`
-
-  if (foodLogsCount === 0 && hour >= 10)
-    return fr
-      ? `pensez à enregistrer vos repas pour rester sur la bonne voie`
-      : `don't forget to log your meals to stay on track`
-
-  if (proteinPct < 40 && hour >= 15)
-    return fr
-      ? `les protéines sont faibles à ${Math.round(proteinShort)}g de l'objectif — ajoutez de la viande, des œufs ou du yaourt`
-      : `protein is low — ${Math.round(proteinShort)}g short of your goal. Try chicken, eggs, or Greek yogurt`
-
-  if (waterPct < 40 && hour >= 14)
-    return fr
-      ? `l'hydratation est faible — encore ${waterGoal - waterAmount} ${waterUnit} à boire`
-      : `hydration is behind — try to drink ${waterGoal - waterAmount} more ${waterUnit}`
-
-  if (!workoutDone && hour >= 17)
-    return fr
-      ? `une courte séance d'entraînement pourrait encore faire la différence`
-      : `a short workout could still make a difference today`
-
-  if (steps < 5000 && hour >= 16)
-    return fr
-      ? `une petite marche vous aiderait à atteindre votre objectif de pas`
-      : `a short walk could help you reach your step goal`
-
-  if (calRemaining > 500 && hour >= 14)
-    return fr
-      ? `il reste ${calRemaining} kcal — assurez-vous de bien manger`
-      : `you have ${calRemaining} kcal left — make sure you're fuelling properly`
-
-  if (sleepHours > 0 && sleepHours < 6)
-    return fr
-      ? `vous avez dormi peu — essayez de vous coucher plus tôt ce soir`
-      : `you slept less than 6 hours — try to get to bed earlier tonight`
-
-  return null // no significant gap
-}
-
-// ─────────────────────────────────────────────────────────────
-// Compose the final message
-// ─────────────────────────────────────────────────────────────
-function buildMessage(mood, ctx, lang, seed) {
-  const { firstName: name, hour, streakDays,
-          totalCal, calorieGoal, workoutDone, workoutMinutes,
-          waterPct, waterGoal, waterAmount, waterUnit,
-          proteinPct, proteinShort, pendingMeds, steps } = ctx
-  const fr  = lang === 'fr'
-  const hi  = name || (fr ? 'toi' : 'you')
-  const n   = name ? `${name}, ` : ''
-
-  const strengths = getStrengths(ctx, lang)
-  const gap       = getTopGap(ctx, lang)
-
-  // Helper — join 1-3 strengths into a natural phrase
-  const joinStrengths = (arr) => {
-    const s = arr.slice(0, 3)
-    if (s.length === 0) return fr ? 'bonne journée en cours' : 'good progress today'
-    if (s.length === 1) return s[0]
-    if (s.length === 2) return fr ? `${s[0]} et ${s[1]}` : `${s[0]} and ${s[1]}`
-    return fr ? `${s[0]}, ${s[1]} et ${s[2]}` : `${s[0]}, ${s[1]}, and ${s[2]}`
-  }
-
-  const strengthPhrase = joinStrengths(strengths)
-
-  // ── Mood-specific openers with multi-factor awareness ──
   if (fr) {
-    switch (mood) {
+    switch (type) {
       case 'greeting':
         return pick([
-          `Bonjour ${hi} ! Nouvelle journée, nouvelles opportunités. Commencez par enregistrer votre petit-déjeuner.`,
-          `${n}la journée commence ! Vous avez ${calorieGoal} kcal pour aujourd'hui — faites-en quelque chose.`,
-          `Bonjour ${hi} ! C'est parti pour une nouvelle journée — premier repas, premier pas.`,
+          `${G}Bonne journée ! Commencez par enregistrer votre petit-déjeuner.`,
+          `${G}Nouvelle journée ! Notez votre premier repas pour bien démarrer.`,
+          `${greet}la journée commence. Premier réflexe : enregistrez votre petit-déjeuner.`,
         ], seed)
 
-      case 'happy':
-        if (gap)
-          return pick([
-            `${strengthPhrase.charAt(0).toUpperCase() + strengthPhrase.slice(1)} — belle journée ${hi}. ${gap.charAt(0).toUpperCase() + gap.slice(1)}.`,
-            `${n}${strengthPhrase}. Tout est bon. ${gap.charAt(0).toUpperCase() + gap.slice(1)}.`,
-          ], seed)
+      case 'meal_breakfast':
         return pick([
-          `Excellente journée ${hi} — ${strengthPhrase}. Continuez comme ça.`,
-          `${n}tout est aligné : ${strengthPhrase}. C'est ça la régularité.`,
-          `Belle journée ${hi}. ${strengthPhrase}. Vous pouvez être fier(e).`,
+          `${G}Il est l'heure du petit-déjeuner. Avez-vous déjà mangé ?`,
+          `${greet}n'oubliez pas d'enregistrer votre petit-déjeuner.`,
+          `Bon matin ${hi || ''}! Le petit-déjeuner est le carburant de votre matinée.`,
         ], seed)
 
-      case 'celebrating':
+      case 'meal_lunch':
         return pick([
-          `${streakDays} jours d'affilée ${hi} ! ${strengthPhrase}. C'est une vraie transformation.`,
-          `Incroyable ${hi} — ${streakDays} jours sans interruption et ${strengthPhrase}. Ne vous arrêtez pas !`,
-          `${n}${streakDays} jours ! ${strengthPhrase}. La plupart des gens ont déjà abandonné.`,
+          `${G}C'est l'heure du déjeuner — pensez à enregistrer votre repas.`,
+          `${greet}n'oubliez pas de manger et de noter votre déjeuner.`,
+          `Il est midi ${hi || ''}. Un bon repas maintenant aide à tenir l'après-midi.`,
         ], seed)
 
-      case 'concerned':
+      case 'meal_dinner':
         return pick([
-          `${n}${gap}.${strengths.length > 0 ? ` Par ailleurs, ${strengthPhrase}.` : ''}`,
-          `Attention ${hi} — ${gap}.${strengths.length > 0 ? ` Côté positif : ${strengthPhrase}.` : ''}`,
-          `${n}point important : ${gap}.${strengths.length > 0 ? ` Le reste se passe bien : ${strengthPhrase}.` : ''}`,
+          `${G}C'est l'heure du dîner. Pensez à l'enregistrer.`,
+          `${greet}n'oubliez pas votre dîner — vos macros ont besoin d'être complètes.`,
+          `Ce soir ${hi || ''}, pensez à enregistrer votre repas pour finir la journée correctement.`,
         ], seed)
 
-      case 'workout':
-        if (gap)
-          return pick([
-            `${n}${strengthPhrase}. La récupération est la prochaine priorité — ${gap}.`,
-            `Belle séance ${hi}. Maintenant, ${gap}.`,
-            `${n}séance terminée — bien joué. Pour la suite : ${gap}.`,
-          ], seed)
+      case 'no_food':
         return pick([
-          `${n}${strengthPhrase}. Continuez à nourrir votre récupération.`,
-          `Séance enregistrée ${hi} ! ${strengthPhrase}. Maintenant reposez-vous bien.`,
+          `${greet}aucun repas enregistré aujourd'hui. Prenez le temps de manger et de noter.`,
+          `${G}Il est important de manger régulièrement. Aucun repas enregistré pour l'instant.`,
+          `${greet}votre corps a besoin de carburant. Enregistrez votre prochain repas.`,
         ], seed)
 
-      case 'habit':
-        if (gap)
-          return pick([
-            `${n}${strengthPhrase} — belle régularité. Pour peaufiner : ${gap}.`,
-            `${streakDays} jours de suite ${hi}, avec ${strengthPhrase}. Petit point : ${gap}.`,
-          ], seed)
+      case 'med_due': {
+        const medName = priority.name || 'votre médicament'
+        const medTime = priority.time ? ` (${priority.time})` : ''
         return pick([
-          `${n}${strengthPhrase} et ${streakDays} jours de suite. Vous construisez de vraies habitudes.`,
-          `Belle constance ${hi} — ${strengthPhrase}. Encore ${7 - streakDays > 0 ? 7 - streakDays : 1} jours pour une semaine complète.`,
+          `${greet}c'est l'heure de prendre ${medName}${medTime}.`,
+          `N'oubliez pas ${medName}${medTime} — prenez-le maintenant.`,
+          `${G}${medName} est dû${medTime}. Prenez-le avant de passer à autre chose.`,
+        ], seed)
+      }
+
+      case 'over_cal':
+        return pick([
+          `${greet}vous avez dépassé votre objectif de ${priority.calOver} kcal. Allégez le reste de la journée.`,
+          `Objectif calorique dépassé de ${priority.calOver} kcal. Misez sur des options légères ce soir.`,
+          `${greet}${priority.calOver} kcal de trop aujourd'hui. Ce n'est pas grave — restez léger(e) ce soir.`,
         ], seed)
 
-      case 'motivating':
-        if (gap)
-          return pick([
-            `${n}${strengthPhrase}. Pour aller encore plus loin : ${gap}.`,
-            `Bonne journée ${hi} — ${strengthPhrase}. Un dernier effort : ${gap}.`,
-          ], seed)
+      case 'water_low': {
+        const def = priority.deficit
+        const u   = priority.unit || 'verres'
         return pick([
-          `${n}${strengthPhrase}. Vous avancez bien — continuez.`,
-          `Bonne progression ${hi} — ${strengthPhrase}. Chaque jour compte.`,
+          `${greet}vous êtes en retard sur l'hydratation. Essayez de boire encore ${def} ${u}.`,
+          `Pensez à boire davantage — il vous manque encore ${def} ${u} aujourd'hui.`,
+          `${G}restez hydraté(e) ! Encore ${def} ${u} à boire pour aujourd'hui.`,
+        ], seed)
+      }
+
+      case 'protein_low':
+        return pick([
+          `${greet}vos protéines sont faibles — il vous manque ${priority.shortBy}g. Ajoutez des œufs, du poulet ou du yaourt.`,
+          `Protéines insuffisantes pour l'instant (${priority.shortBy}g manquants). Une collation riche en protéines aiderait.`,
+          `${greet}pensez aux protéines — il vous en manque encore ${priority.shortBy}g pour atteindre votre objectif.`,
         ], seed)
 
-      case 'thinking':
+      case 'steps_low':
         return pick([
-          `${n}${strengthPhrase}. Cependant, ${gap}.`,
-          `Bonne base ${hi} — ${strengthPhrase}. Point à améliorer : ${gap}.`,
-          `${n}la journée avance bien avec ${strengthPhrase}. Mais ${gap}.`,
+          `${greet}seulement ${(priority.steps||0).toLocaleString()} pas pour l'instant. Une courte marche ferait la différence.`,
+          `Vous bougez peu aujourd'hui. Une marche de 15 min peut booster votre compteur de pas.`,
+          `${G}activez-vous un peu ! Vous n'avez que ${(priority.steps||0).toLocaleString()} pas pour l'instant.`,
         ], seed)
 
-      case 'resting':
-        if (gap)
-          return pick([
-            `${n}${strengthPhrase} — bonne journée. Dernière chose : ${gap}.`,
-            `Belle soirée ${hi}. ${strengthPhrase}. Avant de dormir : ${gap}.`,
-          ], seed)
+      case 'workout_missing':
         return pick([
-          `${n}${strengthPhrase}. Belle journée — reposez-vous bien.`,
-          `Bonsoir ${hi}. ${strengthPhrase}. La récupération fait partie de la progression.`,
+          `${greet}pas encore d'entraînement aujourd'hui. Même 20 minutes font la différence.`,
+          `Une séance rapide ce soir ? Vous pouvez encore atteindre votre objectif d'activité.`,
+          `${greet}pensez à bouger — une séance courte vaut mieux que rien.`,
+        ], seed)
+
+      case 'workout_done': {
+        const mins = workoutMinutes > 0 ? `${workoutMinutes} min` : ''
+        return pick([
+          `${greet}belle séance${mins ? ` de ${mins}` : ''} aujourd'hui ! Pensez à bien récupérer.`,
+          `Entraînement fait${mins ? ` (${mins})` : ''} — bien joué ! La récupération est aussi importante.`,
+          `${G}séance terminée${mins ? ` de ${mins}` : ''} ! Hydratez-vous et récupérez bien.`,
+        ], seed)
+      }
+
+      case 'streak':
+        return pick([
+          `${priority.days} jours de suite ${hi || ''} ! Vous êtes en train de bâtir de vraies habitudes.`,
+          `Incroyable — ${priority.days} jours consécutifs. La régularité paie toujours.`,
+          `${G}${priority.days} jours d'affilée ! Ne vous arrêtez pas maintenant.`,
+        ], seed)
+
+      case 'all_good':
+        return pick([
+          `${greet}tout est au vert aujourd'hui — repas, eau, activité. Excellente journée !`,
+          `${G}belle journée ! Repas, hydratation et activité sont tous bien engagés.`,
+          `${greet}vous gérez très bien votre journée. Continuez comme ça.`,
+        ], seed)
+
+      case 'good_progress':
+        return pick([
+          `${greet}bonne progression aujourd'hui. Gardez le cap.`,
+          `Vous avancez bien ${hi || ''}. Chaque bonne décision compte.`,
+          `${greet}journée en bonne voie. Continuez à enregistrer vos habitudes.`,
+        ], seed)
+
+      case 'evening':
+        return pick([
+          `${greet}bonne soirée ! La récupération fait partie de la progression.`,
+          `${G}belle journée. Reposez-vous bien ce soir.`,
+          `${greet}la journée touche à sa fin. Dormez suffisamment pour mieux performer demain.`,
         ], seed)
 
       case 'mindset':
         return pick([
-          `${n}vous regardez un jour passé. Chaque donnée est une leçon pour aujourd'hui.`,
-          `Analyser le passé aide à progresser ${hi}. Qu'est-ce que vous pouvez améliorer aujourd'hui ?`,
+          `${greet}vous consultez un jour passé. Chaque donnée est une leçon.`,
+          `Analyser ses habitudes passées, c'est déjà progresser ${hi || ''}.`,
         ], seed)
 
       default:
-        return `${n}prêt(e) quand vous voulez. Commencez par enregistrer un repas.`
+        return pick([
+          `${greet}bonne journée en cours. Continuez à enregistrer vos habitudes.`,
+          `${G}chaque petit effort compte. Vous avancez !`,
+        ], seed)
     }
   }
 
   // ── English ──────────────────────────────────────────────────
-  switch (mood) {
+  switch (type) {
     case 'greeting':
       return pick([
-        `Good morning ${hi}! New day, fresh start. Log breakfast to get things going.`,
-        `${n}the day is just starting — you've got ${calorieGoal} kcal to work with. Make them count.`,
-        `Morning ${hi}! Log your first meal and let's build on yesterday.`,
-        `${n}new day, new opportunity. Start with breakfast and keep that streak going.`,
+        `${G}Good morning! Start by logging your breakfast.`,
+        `${greet}new day, fresh start. Log your first meal to kick things off.`,
+        `Morning ${hi || ''}! Log breakfast and build on yesterday's progress.`,
       ], seed)
 
-    case 'happy':
-      if (gap)
-        return pick([
-          `${strengthPhrase.charAt(0).toUpperCase() + strengthPhrase.slice(1)} — great day ${hi}. One thing to note: ${gap}.`,
-          `${n}${strengthPhrase}. Everything's looking good. Just a heads up: ${gap}.`,
-          `Strong day ${hi} — ${strengthPhrase}. Worth mentioning: ${gap}.`,
-        ], seed)
+    case 'meal_breakfast':
       return pick([
-        `Excellent day ${hi} — ${strengthPhrase}. Keep this up.`,
-        `${n}${strengthPhrase}. This is what a great day looks like.`,
-        `Everything's aligned ${hi}: ${strengthPhrase}. You should feel good about today.`,
-        `${n}you've nailed it — ${strengthPhrase}. This is consistency in action.`,
+        `${G}Breakfast time — have you eaten yet? Log it to track your day.`,
+        `${greet}don't forget to log breakfast. It sets the tone for the day.`,
+        `Good morning! Log your breakfast to get your nutrition tracking started.`,
       ], seed)
 
-    case 'celebrating':
+    case 'meal_lunch':
       return pick([
-        `${streakDays} days straight ${hi}! ${strengthPhrase}. Most people quit long before this.`,
-        `${n}${streakDays}-day streak with ${strengthPhrase}. You're genuinely transforming your habits.`,
-        `Incredible ${hi} — ${streakDays} days and ${strengthPhrase}. Don't stop now.`,
+        `${G}It's around lunchtime — remember to eat and log your meal.`,
+        `${greet}lunch time. A good meal now keeps your energy steady all afternoon.`,
+        `Time for lunch ${hi || ''}! Log it to stay on track with your nutrition.`,
       ], seed)
 
-    case 'concerned':
+    case 'meal_dinner':
       return pick([
-        `${n}${gap}.${strengths.length > 0 ? ` On the bright side: ${strengthPhrase}.` : ''}`,
-        `Worth flagging ${hi}: ${gap}.${strengths.length > 0 ? ` Good news: ${strengthPhrase}.` : ''}`,
-        `${n}important: ${gap}.${strengths.length > 0 ? ` Everything else is going well — ${strengthPhrase}.` : ''}`,
+        `${G}Dinner time — log your evening meal to complete your nutrition picture.`,
+        `${greet}don't forget to log dinner. Your macros for the day need rounding out.`,
+        `Evening ${hi || ''}! Time to log dinner and see how the day finished up.`,
       ], seed)
 
-    case 'workout':
-      if (gap)
-        return pick([
-          `${n}${strengthPhrase}. Recovery is the next priority — ${gap}.`,
-          `Nice work ${hi} — ${strengthPhrase}. Next up: ${gap}.`,
-          `${n}session done — well earned. One more thing: ${gap}.`,
-          `Great effort ${hi}. ${strengthPhrase}. To round out the day: ${gap}.`,
-        ], seed)
+    case 'no_food':
       return pick([
-        `${n}${strengthPhrase}. Keep fuelling your recovery well.`,
-        `Session logged ${hi}! ${strengthPhrase}. Rest up and come back strong.`,
-        `${n}${strengthPhrase}. Strong day — your body will thank you tomorrow.`,
+        `${greet}no meals logged yet today. Make sure you're eating and tracking.`,
+        `${G}your body needs fuel. Log your next meal to stay on track.`,
+        `${greet}it's been a while with no food logged. Eat something and record it.`,
       ], seed)
 
-    case 'habit':
-      if (gap)
-        return pick([
-          `${n}${strengthPhrase} — solid consistency. One thing to tighten up: ${gap}.`,
-          `${streakDays} days straight ${hi}, with ${strengthPhrase}. Small note: ${gap}.`,
-          `${n}${strengthPhrase} and a ${streakDays}-day streak. Just watch: ${gap}.`,
-        ], seed)
+    case 'med_due': {
+      const medName = priority.name || 'your medication'
+      const medTime = priority.time ? ` (${priority.time})` : ''
       return pick([
-        `${n}${strengthPhrase} and ${streakDays} days straight. Real habits are forming.`,
-        `Solid consistency ${hi} — ${strengthPhrase}. ${7 - streakDays > 0 ? (7 - streakDays) + ' more days for a full week.' : 'Full week achieved!'}`,
-        `${n}${streakDays}-day streak with ${strengthPhrase}. You're in the zone now.`,
+        `${greet}time to take ${medName}${medTime}.`,
+        `Don't forget ${medName}${medTime} — take it now before you forget.`,
+        `${G}${medName} is due${medTime}. Take it before moving on with your day.`,
+      ], seed)
+    }
+
+    case 'over_cal':
+      return pick([
+        `${greet}you're ${priority.calOver} kcal over your goal. Keep it light for the rest of the day.`,
+        `Calorie goal exceeded by ${priority.calOver} kcal. Opt for lighter options tonight.`,
+        `${greet}${priority.calOver} kcal over — no big deal. Just keep dinner light.`,
       ], seed)
 
-    case 'motivating':
-      if (gap)
-        return pick([
-          `${n}${strengthPhrase}. To take it further: ${gap}.`,
-          `Good progress ${hi} — ${strengthPhrase}. One push left: ${gap}.`,
-          `${n}solid day building with ${strengthPhrase}. Worth working on: ${gap}.`,
-        ], seed)
+    case 'water_low': {
+      const def = priority.deficit
+      const u   = priority.unit || 'glasses'
       return pick([
-        `${n}${strengthPhrase}. You're moving in the right direction.`,
-        `Good progress ${hi} — ${strengthPhrase}. Every day adds up.`,
-        `${n}${strengthPhrase}. Keep showing up and the results will follow.`,
+        `${greet}you're behind on hydration. Try to drink ${def} more ${u} today.`,
+        `Hydration is low for this time of day — ${def} more ${u} to go.`,
+        `${G}drink up! You still need ${def} more ${u} to hit your water goal.`,
+      ], seed)
+    }
+
+    case 'protein_low':
+      return pick([
+        `${greet}protein is low — ${priority.shortBy}g short of your goal. Try eggs, chicken, or Greek yogurt.`,
+        `You're ${priority.shortBy}g short on protein. A high-protein snack would help right now.`,
+        `${greet}protein needs attention — ${priority.shortBy}g to go to reach your daily target.`,
       ], seed)
 
-    case 'thinking':
+    case 'steps_low':
       return pick([
-        `${n}${strengthPhrase}. Something to work on: ${gap}.`,
-        `Good base ${hi} — ${strengthPhrase}. One thing to improve: ${gap}.`,
-        `${n}the day's going well with ${strengthPhrase}. But ${gap}.`,
-        `Decent progress ${hi}. ${strengthPhrase}. Focus area: ${gap}.`,
+        `${greet}only ${(priority.steps||0).toLocaleString()} steps so far. A short walk would make a real difference.`,
+        `Movement is low today. Even a 15-minute walk can boost your step count.`,
+        `${G}time to move! You've only hit ${(priority.steps||0).toLocaleString()} steps today.`,
       ], seed)
 
-    case 'resting':
-      if (gap)
-        return pick([
-          `${n}${strengthPhrase} — good day overall. Before bed: ${gap}.`,
-          `Good evening ${hi}. ${strengthPhrase}. One last thing: ${gap}.`,
-          `${n}${strengthPhrase}. Wind down and rest — just note: ${gap}.`,
-        ], seed)
+    case 'workout_missing':
       return pick([
-        `${n}${strengthPhrase}. Great day — rest up and come back strong tomorrow.`,
-        `Good evening ${hi}. ${strengthPhrase}. Recovery is part of the process.`,
-        `${n}${strengthPhrase}. You've done the work today. Sleep well.`,
+        `${greet}no workout logged yet today. Even 20 minutes counts.`,
+        `Still time for a session today. A short workout is better than none.`,
+        `${greet}consider squeezing in a workout — you'll feel better for it.`,
+      ], seed)
+
+    case 'workout_done': {
+      const mins = workoutMinutes > 0 ? `${workoutMinutes}-min ` : ''
+      return pick([
+        `${greet}great ${mins}workout today! Make sure you're recovering well.`,
+        `${mins}session done — well earned. Focus on recovery now.`,
+        `${G}workout logged${mins ? ` (${mins}session)` : ''}! Hydrate and rest up.`,
+      ], seed)
+    }
+
+    case 'streak':
+      return pick([
+        `${priority.days} days straight ${hi || ''}! You're building real lasting habits.`,
+        `Incredible — ${priority.days}-day streak. Consistency is your superpower.`,
+        `${G}${priority.days} days in a row! Don't stop now.`,
+      ], seed)
+
+    case 'all_good':
+      return pick([
+        `${greet}everything's on track today — meals, water, and activity. Great day!`,
+        `${G}solid day! Nutrition, hydration, and movement are all looking good.`,
+        `${greet}you're managing your day really well. Keep it up.`,
+      ], seed)
+
+    case 'good_progress':
+      return pick([
+        `${greet}good progress today. Keep the momentum going.`,
+        `You're doing well ${hi || ''}. Every good choice adds up.`,
+        `${greet}day is on track. Keep logging your habits.`,
+      ], seed)
+
+    case 'evening':
+      return pick([
+        `${greet}good evening! Recovery is part of the process.`,
+        `${G}great day. Rest up well tonight.`,
+        `${greet}day is winding down. Get good sleep to perform better tomorrow.`,
       ], seed)
 
     case 'mindset':
       return pick([
-        `${n}looking back at a past day. Every piece of data is a lesson for today.`,
-        `Past data helps you improve ${hi}. What will you do differently today?`,
-        `${n}reflection is powerful. Use what you see here to build better habits.`,
-        `Analyzing your past ${hi} — good habit. Apply those insights right now.`,
+        `${greet}looking back at a past day. Every data point is a lesson.`,
+        `Reviewing past habits is already progress ${hi || ''}.`,
       ], seed)
 
     default:
-      return `${n}ready when you are. Log your first meal to get started.`
+      return pick([
+        `${greet}good day in progress. Keep logging your habits.`,
+        `${G}every small effort counts. You're moving forward!`,
+      ], seed)
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// Public hook — instant, stable, zero flash
-// Uses a ref to lock the message between renders
+// Public hook — stable, zero flash
 // ─────────────────────────────────────────────────────────────
 export function useCoachMessage(ctx, lang) {
-  const messageRef = useRef('')
-  const seedRef    = useRef(null)
-  const moodRef    = useRef(null)
-  const langRef    = useRef(null)
+  const messageRef  = useRef('')
+  const seedRef     = useRef(null)
+  const typeRef     = useRef(null)
+  const langRef     = useRef(null)
 
-  if (!ctx || !ctx.mood) return { message: '', loading: false }
+  // ctx is null while the caller's data is still loading — hold whatever
+  // message we already have (empty string on first-ever render) rather
+  // than computing a message from incomplete/default data that would
+  // immediately get replaced once real data arrives (causes flicker).
+  if (!ctx || !ctx.mood) return { message: messageRef.current, loading: !ctx }
 
-  const seed = buildSeed(ctx)
+  const seed     = buildSeed(ctx)
+  const priority = buildPriority(ctx)
 
-  // Only recompute if seed, mood, or lang actually changed
-  if (seed !== seedRef.current || ctx.mood !== moodRef.current || lang !== langRef.current) {
-    messageRef.current = buildMessage(ctx.mood, ctx, lang, seed)
+  // Only recompute when the situation type, seed bucket, or lang actually changes
+  if (
+    priority.type !== typeRef.current ||
+    seed          !== seedRef.current ||
+    lang          !== langRef.current
+  ) {
+    messageRef.current = buildMessage(ctx, lang, seed)
+    typeRef.current    = priority.type
     seedRef.current    = seed
-    moodRef.current    = ctx.mood
     langRef.current    = lang
   }
 
