@@ -285,98 +285,545 @@ export const LEVEL_COLOR = {
 // ─────────────────────────────────────────────
 // Library workouts
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// Exercise prescription helper
+// sets/reps map directly onto what the workout session already
+// consumes (WorkoutSession.initExercises reads ex.sets / ex.reps),
+// so populating real values here replaces the old generic 3x10
+// defaults with the actual prescribed workout — no session logic
+// needed to change.
+// For timed moves, `reps` holds the duration in seconds (this is
+// the same convention the session already uses as its duration
+// fallback). `note` is an optional short coaching cue shown in the
+// workout detail view only.
+// ─────────────────────────────────────────────
+function rx(name, sets, reps, note) {
+  return note ? { name, sets, reps, note } : { name, sets, reps }
+}
+
 export const LIBRARY_WORKOUTS = [
-  // GYM
-  { id:'push_day',     sport:'gym',         name:'Push Day',           icon:'💪', level:'Intermediate', duration:'45–60 min', muscles:'Chest · Shoulders · Triceps',     description:'Classic push day targeting chest, shoulders and triceps.',           exercises:['Bench Press','Overhead Press','Incline Bench Press','Lateral Raise','Tricep Pushdown'] },
-  { id:'pull_day',     sport:'gym',         name:'Pull Day',           icon:'🔙', level:'Intermediate', duration:'45–60 min', muscles:'Back · Biceps · Rear Delts',      description:'Full back and bicep development with compound and isolation moves.',   exercises:['Pull Ups','Bent Over Row','Lat Pulldown','Seated Cable Row','Bicep Curl','Face Pull'] },
-  { id:'leg_day',      sport:'gym',         name:'Leg Day',            icon:'🦵', level:'Intermediate', duration:'50–65 min', muscles:'Quads · Hamstrings · Glutes',     description:'Complete lower body session. The workout everyone skips.',            exercises:['Squat','Romanian Deadlift','Leg Press','Lunges','Hip Thrust','Calf Raises'] },
-  { id:'full_body',    sport:'gym',         name:'Full Body',          icon:'🏋️', level:'Beginner',     duration:'50–70 min', muscles:'All muscle groups',                description:'Efficient full body workout. Great for 2–3x per week training.',      exercises:['Squat','Bench Press','Bent Over Row','Overhead Press','Romanian Deadlift','Plank'] },
-  { id:'upper_body',   sport:'gym',         name:'Upper Body',         icon:'💪', level:'Beginner',     duration:'40–55 min', muscles:'Chest · Back · Shoulders · Arms',  description:'Complete upper body session.',                                        exercises:['Bench Press','Bent Over Row','Overhead Press','Lateral Raise','Bicep Curl','Tricep Pushdown'] },
-  { id:'core_blast',   sport:'gym',         name:'Core Blast',         icon:'🧘', level:'Beginner',     duration:'20–30 min', muscles:'Core · Abs · Obliques',            description:'High-intensity core session.',                                        exercises:['Plank','Crunches','Leg Raises','Russian Twist','Mountain Climbers'] },
-  // CROSSFIT
-  { id:'wod_classic',  sport:'crossfit',    name:'Classic WOD',        icon:'🔥', level:'Advanced',     duration:'20 min',    muscles:'Full Body',                        description:'CrossFit-style workout of the day. Go hard.',                        exercises:['Burpee','Kettlebell Swing','Box Jump','Thruster','Wall Ball'] },
-  { id:'wod_beginner', sport:'crossfit',    name:'Beginner WOD',       icon:'🔥', level:'Beginner',     duration:'20 min',    muscles:'Full Body',                        description:'Introduction to CrossFit-style training.',                           exercises:['Burpee','Jump Squat','Mountain Climbers','Jumping Jacks'] },
-  // CALISTHENICS
-  { id:'cali_basics',  sport:'calisthenics',name:'Calisthenics Basics',icon:'💪', level:'Beginner',     duration:'35 min',    muscles:'Full Body, Bodyweight',            description:'Master your bodyweight with fundamental movements.',                 exercises:['Push Ups','Pull Ups','Squat','Dips','Plank'] },
-  { id:'cali_advanced',sport:'calisthenics',name:'Advanced Skills',    icon:'💪', level:'Advanced',     duration:'40 min',    muscles:'Full Body Strength',               description:'Elite calisthenics requiring exceptional strength and balance.',     exercises:['Handstand Hold','L-Sit','Pistol Squat','Pull Ups','Dips'] },
-  // KETTLEBELL
-  { id:'kb_beginner',  sport:'kettlebell',  name:'KB Foundations',     icon:'🔔', level:'Beginner',     duration:'30 min',    muscles:'Full Body',                        description:'Learn the fundamental kettlebell movements safely.',                 exercises:['Kettlebell Swing','Goblet Squat','Kettlebell Clean'] },
-  { id:'kb_power',     sport:'kettlebell',  name:'KB Power Circuit',   icon:'🔔', level:'Intermediate', duration:'35 min',    muscles:'Full Body, Power',                 description:'Build explosive power with a kettlebell circuit.',                   exercises:['Kettlebell Swing','Turkish Get Up','Kettlebell Clean','Goblet Squat'] },
-  // FUNCTIONAL
-  { id:'functional1',  sport:'functional',  name:'Functional Fitness', icon:'⚙️', level:'Intermediate', duration:'40 min',    muscles:'Full Body',                        description:'Real-world movement patterns for everyday strength.',                exercises:['Farmer\'s Carry','Battle Ropes','Medicine Ball Slam','Burpee','Squat'] },
-  // RUNNING
-  { id:'run_easy',     sport:'running',     name:'Easy Run',           icon:'🏃', level:'Beginner',     duration:'30 min',    muscles:'Legs, Cardiovascular',             description:'Comfortable paced run to build aerobic base.',                      exercises:['Running'] },
-  { id:'run_interval', sport:'running',     name:'Interval Training',  icon:'🏃', level:'Intermediate', duration:'40 min',    muscles:'Speed, Endurance',                 description:'Sprint and recovery intervals to build speed.',                      exercises:['Running','High Knees','Walking'] },
-  { id:'run_long',     sport:'running',     name:'Long Run',           icon:'🏃', level:'Intermediate', duration:'60–90 min', muscles:'Legs, Endurance',                  description:'Build your aerobic base and mental toughness.',                      exercises:['Running','Walking'] },
-  { id:'run_5k',       sport:'running',     name:'5K Training',        icon:'🏃', level:'Beginner',     duration:'25–35 min', muscles:'Legs, Cardiovascular',             description:'Build up to running 5km without stopping.',                         exercises:['Running','Walking'] },
-  // WALKING
-  { id:'walk_power',   sport:'walking',     name:'Power Walk',         icon:'🚶', level:'Beginner',     duration:'45 min',    muscles:'Legs, Cardiovascular',             description:'Brisk walking for cardio and fat burn.',                            exercises:['Walking'] },
-  { id:'walk_hiit',    sport:'walking',     name:'Walk-Run Intervals', icon:'🚶', level:'Beginner',     duration:'30 min',    muscles:'Legs, Cardio',                     description:'Alternate walking and jogging for beginners.',                      exercises:['Walking','Running'] },
-  // CYCLING
-  { id:'cycle_endur',  sport:'cycling',     name:'Endurance Ride',     icon:'🚴', level:'Beginner',     duration:'45 min',    muscles:'Legs, Cardiovascular',             description:'Steady-state cycling for aerobic endurance.',                        exercises:['Cycling'] },
-  { id:'cycle_hiit',   sport:'cycling',     name:'Cycling Intervals',  icon:'🚴', level:'Intermediate', duration:'30 min',    muscles:'Legs, Cardio',                     description:'High and low intensity cycling intervals.',                          exercises:['Cycling'] },
-  // HIIT
-  { id:'hiit_20',      sport:'hiit',        name:'20-Min HIIT',        icon:'⚡', level:'Intermediate', duration:'20 min',    muscles:'Full Body',                        description:'Maximum calorie burn in minimum time.',                              exercises:['HIIT','Mountain Climbers','Jump Rope','High Knees'] },
-  { id:'hiit_tabata',  sport:'hiit',        name:'Tabata Protocol',    icon:'⚡', level:'Advanced',     duration:'16 min',    muscles:'Full Body',                        description:'20 sec on, 10 sec off. 8 rounds per exercise.',                     exercises:['Jump Squat','Burpee','Mountain Climbers','High Knees','Jumping Jacks'] },
-  { id:'hiit_beginner',sport:'hiit',        name:'HIIT for Beginners', icon:'⚡', level:'Beginner',     duration:'15 min',    muscles:'Full Body',                        description:'Introduction to high intensity training. Work at your own pace.',   exercises:['Jumping Jacks','High Knees','Jump Squat','Mountain Climbers'] },
-  // JUMP ROPE
-  { id:'rope_basics',  sport:'jumpRope',    name:'Jump Rope Basics',   icon:'🪢', level:'Beginner',     duration:'20 min',    muscles:'Full Body, Calves',                description:'Master the fundamentals of jump rope training.',                    exercises:['Jump Rope'] },
-  { id:'rope_hiit',    sport:'jumpRope',    name:'Jump Rope HIIT',     icon:'🪢', level:'Intermediate', duration:'20 min',    muscles:'Full Body, Cardio',                description:'Jump rope intervals for maximum conditioning.',                     exercises:['Jump Rope','Jumping Jacks','High Knees'] },
-  // SWIMMING
-  { id:'swim_laps',    sport:'swimming',    name:'Lap Swimming',       icon:'🏊', level:'Beginner',     duration:'30 min',    muscles:'Full Body, Low Impact',            description:'Low-impact full body cardio.',                                       exercises:['Swimming'] },
-  { id:'swim_endur',   sport:'swimming',    name:'Endurance Swim',     icon:'🏊', level:'Intermediate', duration:'45 min',    muscles:'Full Body, Endurance',             description:'Build swimming stamina with longer sets.',                           exercises:['Swimming'] },
-  // ROWING
-  { id:'row_endur',    sport:'rowing',      name:'Rowing Endurance',   icon:'🚣', level:'Intermediate', duration:'30 min',    muscles:'Full Body, Back',                  description:'Sustained rowing for full body conditioning.',                       exercises:['Rowing Machine'] },
-  { id:'row_power',    sport:'rowing',      name:'Rowing Power',       icon:'🚣', level:'Advanced',     duration:'25 min',    muscles:'Full Body, Power',                 description:'High intensity rowing intervals.',                                   exercises:['Rowing Machine'] },
-  // YOGA
-  { id:'yoga_morning', sport:'yoga',        name:'Morning Flow',       icon:'🌅', level:'Beginner',     duration:'20 min',    muscles:'Full Body, Flexibility',           description:'Energising morning yoga routine.',                                   exercises:['Sun Salutation','Warrior Pose','Downward Dog','Child\'s Pose'] },
-  { id:'yoga_yin',     sport:'yoga',        name:'Yin Yoga',           icon:'🧘', level:'Beginner',     duration:'45 min',    muscles:'Deep Tissue, Flexibility',         description:'Long-held passive poses for deep flexibility.',                      exercises:['Child\'s Pose','Pigeon Pose','Downward Dog'] },
-  { id:'yoga_power',   sport:'yoga',        name:'Power Yoga',         icon:'🧘', level:'Intermediate', duration:'45 min',    muscles:'Strength, Flexibility',            description:'Dynamic, flowing yoga that builds strength.',                        exercises:['Sun Salutation','Warrior Pose','Downward Dog','Plank'] },
-  // PILATES
-  { id:'pilates_core', sport:'pilates',     name:'Core Pilates',       icon:'🧘', level:'Beginner',     duration:'30 min',    muscles:'Core, Spine, Posture',             description:'Low-impact Pilates for core strength and body awareness.',           exercises:['The Hundred','Roll Up','Plank'] },
-  { id:'pilates_full', sport:'pilates',     name:'Full Body Pilates',  icon:'🧘', level:'Intermediate', duration:'45 min',    muscles:'Full Body, Core',                  description:'Complete Pilates session targeting all muscle groups.',              exercises:['The Hundred','Roll Up','Plank','Leg Raises'] },
-  // STRETCHING
-  { id:'stretch_full', sport:'stretching',  name:'Full Body Stretch',  icon:'🤸', level:'Beginner',     duration:'20 min',    muscles:'Full Body Flexibility',            description:'Complete stretching routine to reduce soreness.',                    exercises:['Hamstring Stretch','Hip Flexor Stretch','Chest Opener','Pigeon Pose','Child\'s Pose'] },
-  { id:'stretch_post', sport:'stretching',  name:'Post-Workout Stretch',icon:'🤸',level:'Beginner',     duration:'15 min',    muscles:'Muscles Worked',                   description:'Cool down and stretch after any workout.',                           exercises:['Hamstring Stretch','Chest Opener','Pigeon Pose'] },
-  // BOXING
-  { id:'box_basics',   sport:'boxing',      name:'Boxing Basics',      icon:'🥊', level:'Beginner',     duration:'30 min',    muscles:'Full Body, Cardio',                description:'Learn fundamental punches and footwork.',                           exercises:['Shadow Boxing','Jab-Cross'] },
-  { id:'box_advanced', sport:'boxing',      name:'Boxing Conditioning', icon:'🥊',level:'Advanced',     duration:'45 min',    muscles:'Full Body, Power',                 description:'Heavy bag work and combinations for serious boxers.',               exercises:['Heavy Bag','Shadow Boxing','Jab-Cross','Jump Rope'] },
-  // MUAY THAI
-  { id:'muay_basics',  sport:'muay_thai',   name:'Muay Thai Basics',   icon:'🥊', level:'Beginner',     duration:'30 min',    muscles:'Full Body, Kicks',                 description:'Introduction to the Art of Eight Limbs.',                           exercises:['Shadow Boxing','Roundhouse Kick','Jab-Cross'] },
-  // MARTIAL ARTS
-  { id:'martial1',     sport:'martial',     name:'Martial Arts Basics', icon:'🥋',level:'Beginner',     duration:'30 min',    muscles:'Full Body',                        description:'Fundamentals covering stances, punches and kicks.',                 exercises:['Shadow Boxing','Jab-Cross','Roundhouse Kick','Kata Practice'] },
-  // MMA
-  { id:'mma_cond',     sport:'mma',         name:'MMA Conditioning',   icon:'🥋', level:'Advanced',     duration:'45 min',    muscles:'Full Body, Power, Cardio',         description:'Mixed martial arts conditioning circuit.',                           exercises:['Burpee','Shadow Boxing','Roundhouse Kick','Battle Ropes','Mountain Climbers'] },
-  // TENNIS
-  { id:'tennis_cond',  sport:'tennis',      name:'Tennis Conditioning', icon:'🎾',level:'Intermediate', duration:'35 min',    muscles:'Agility, Shoulder, Core',          description:'Footwork and strength for tennis players.',                         exercises:['Tennis Forehand','High Knees','Lateral Raise','Plank'] },
-  // BADMINTON
-  { id:'badminton1',   sport:'badminton',   name:'Badminton Training',  icon:'🏸',level:'Beginner',     duration:'30 min',    muscles:'Shoulder, Legs, Agility',          description:'Build smash power and court movement.',                             exercises:['Badminton Smash','High Knees','Jumping Jacks'] },
-  // FOOTBALL / SOCCER
-  { id:'football_fit', sport:'football',    name:'Football Fitness',    icon:'⚽',level:'Intermediate', duration:'40 min',    muscles:'Speed, Legs, Agility',             description:'Sprint and conditioning drills for football players.',              exercises:['Football Sprint','High Knees','Jump Squat','Plank'] },
-  // BASKETBALL
-  { id:'bball_cond',   sport:'basketball',  name:'Basketball Conditioning',icon:'🏀',level:'Intermediate',duration:'35 min', muscles:'Legs, Agility, Cardio',            description:'Agility and conditioning for basketball players.',                  exercises:['Basketball Dribbling','Jump Squat','High Knees','Plank'] },
-  // VOLLEYBALL
-  { id:'volley_cond',  sport:'volleyball',  name:'Volleyball Training', icon:'🏐',level:'Intermediate', duration:'35 min',    muscles:'Legs, Shoulder, Jump',             description:'Jump training and shoulder power for volleyball.',                  exercises:['Volleyball Spike','Jump Squat','Lateral Raise','Plank'] },
-  // GOLF
-  { id:'golf_fitness', sport:'golf',        name:'Golf Fitness',        icon:'⛳',level:'Beginner',     duration:'30 min',    muscles:'Core, Rotation, Stability',        description:'Core strength and rotation for a better golf swing.',               exercises:['Golf Swing','Russian Twist','Plank','Hip Flexor Stretch'] },
-  // DANCE
-  { id:'dance_zumba',  sport:'dance',       name:'Zumba Flow',          icon:'💃',level:'Beginner',     duration:'45 min',    muscles:'Full Body, Coordination',          description:'Dance your way to fitness. No experience needed.',                  exercises:['Zumba Basic Step','Jumping Jacks'] },
-  { id:'hiphop1',      sport:'hiphop',      name:'Hip Hop Dance',       icon:'🎤',level:'Beginner',     duration:'40 min',    muscles:'Full Body, Coordination',          description:'Fun cardio through hip hop movement.',                              exercises:['Zumba Basic Step','High Knees','Jumping Jacks'] },
-  // GYMNASTICS
-  { id:'gymn_basics',  sport:'gymnastics',  name:'Gymnastics Basics',   icon:'🤸',level:'Beginner',     duration:'30 min',    muscles:'Full Body, Coordination',          description:'Fundamental gymnastics skills for beginners.',                      exercises:['Cartwheel','Handstand Hold','Plank','Push Ups'] },
-  // HIKING
-  { id:'hike_prep',    sport:'hiking',      name:'Hiking Prep',         icon:'🥾',level:'Beginner',     duration:'40 min',    muscles:'Legs, Core, Endurance',            description:'Build leg strength and endurance for hiking.',                      exercises:['Walking','Lunges','Calf Raises','Hip Flexor Stretch'] },
-  { id:'hike_strength',sport:'hiking',      name:'Hiker\'s Strength',   icon:'🥾',level:'Intermediate', duration:'45 min',    muscles:'Legs, Back, Core',                 description:'Functional strength for the trails.',                               exercises:['Squat','Romanian Deadlift','Calf Raises','Plank','Farmer\'s Carry'] },
-  // ROCK CLIMBING
-  { id:'climb_cond',   sport:'rockClimbing',name:'Climbing Conditioning',icon:'🧗',level:'Intermediate', duration:'45 min',   muscles:'Grip, Back, Core',                 description:'Upper body and grip strength for rock climbing.',                   exercises:['Pull Ups','Deadlift','Plank','Farmer\'s Carry','Calf Raises'] },
-  // TRIATHLON
-  { id:'tri_cond',     sport:'triathlon',   name:'Triathlon Training',  icon:'🏅',level:'Advanced',     duration:'60 min',    muscles:'Full Body, Endurance',             description:'Combined swim, bike, run conditioning.',                            exercises:['Swimming','Cycling','Running'] },
-  // POWERLIFTING
-  { id:'pl_beginner',  sport:'powerlifting',name:'Powerlifting Basics', icon:'💪',level:'Beginner',     duration:'60 min',    muscles:'Full Body, Strength',              description:'The three big lifts: squat, bench, deadlift.',                     exercises:['Squat','Bench Press','Deadlift'] },
-  { id:'pl_advanced',  sport:'powerlifting',name:'Powerlifting Peak',   icon:'💪',level:'Advanced',     duration:'75 min',    muscles:'Full Body, Max Strength',          description:'Peak strength phase for competitive powerlifting.',                 exercises:['Squat','Bench Press','Deadlift','Romanian Deadlift','Plank'] },
-  // BODYBUILDING
-  { id:'bb_chest',     sport:'bodybuilding',name:'Chest Hypertrophy',   icon:'🦾',level:'Intermediate', duration:'50 min',    muscles:'Chest, Triceps',                   description:'High volume chest workout for muscle growth.',                      exercises:['Bench Press','Incline Bench Press','Chest Fly','Cable Crossover','Dips'] },
-  { id:'bb_back',      sport:'bodybuilding',name:'Back Thickness',      icon:'🦾',level:'Intermediate', duration:'55 min',    muscles:'Back, Lats, Biceps',               description:'Width and thickness for a V-taper physique.',                       exercises:['Pull Ups','Deadlift','Bent Over Row','Lat Pulldown','Seated Cable Row'] },
+  // ── GYM ───────────────────────────────────
+  { id:'push_day', sport:'gym', name:'Push Day', icon:'💪', level:'Intermediate', duration:'45–60 min', muscles:'Chest · Shoulders · Triceps',
+    description:'Chest, shoulders and triceps — compound lifts first, isolation work to finish. Rest fully between heavy sets.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Bench Press', 4, 8, 'Rest ~90s. Add weight once you hit 8 clean reps on all 4 sets.'),
+      rx('Overhead Press', 3, 10, 'Rest ~75s.'),
+      rx('Incline Bench Press', 3, 10, 'Rest ~75s.'),
+      rx('Lateral Raise', 3, 15, 'Light weight, controlled tempo. Rest ~45s.'),
+      rx('Tricep Pushdown', 3, 12, 'Rest ~45s.'),
+    ] },
+  { id:'pull_day', sport:'gym', name:'Pull Day', icon:'🔙', level:'Intermediate', duration:'45–60 min', muscles:'Back · Biceps · Rear Delts',
+    description:'Back width and thickness, finished with rear delts and arms. Full range of motion matters more than weight here.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Pull Ups', 4, 8, 'Use an assisted machine or band if 8 strict reps isn\'t there yet. Rest ~90s.'),
+      rx('Bent Over Row', 4, 8, 'Keep the back flat. Rest ~90s.'),
+      rx('Lat Pulldown', 3, 10, 'Rest ~75s.'),
+      rx('Seated Cable Row', 3, 12, 'Rest ~60s.'),
+      rx('Bicep Curl', 3, 12, 'Rest ~45s.'),
+      rx('Face Pull', 3, 15, 'Light weight — this is for shoulder health, not size. Rest ~45s.'),
+    ] },
+  { id:'leg_day', sport:'gym', name:'Leg Day', icon:'🦵', level:'Intermediate', duration:'50–65 min', muscles:'Quads · Hamstrings · Glutes',
+    description:'Full lower-body session covering quads, hamstrings, glutes and calves. Take the rest periods seriously — these are the heaviest lifts of the week.',
+    suggestedRestSec:90,
+    exercises:[
+      rx('Squat', 4, 8, 'Rest ~2 min between sets.'),
+      rx('Romanian Deadlift', 3, 10, 'Rest ~90s.'),
+      rx('Leg Press', 3, 12, 'Rest ~90s.'),
+      rx('Lunges', 3, 12, 'Per leg. Rest ~60s.'),
+      rx('Hip Thrust', 3, 12, 'Squeeze glutes hard at the top. Rest ~75s.'),
+      rx('Calf Raises', 4, 15, 'Full range of motion. Rest ~45s.'),
+    ] },
+  { id:'full_body', sport:'gym', name:'Full Body', icon:'🏋️', level:'Beginner', duration:'50–70 min', muscles:'All muscle groups',
+    description:'One session that hits every major muscle group — ideal if you\'re training 2–3x per week and want maximum efficiency.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Squat', 3, 10, 'Rest ~90s.'),
+      rx('Bench Press', 3, 10, 'Rest ~90s.'),
+      rx('Bent Over Row', 3, 10, 'Rest ~75s.'),
+      rx('Overhead Press', 3, 10, 'Rest ~75s.'),
+      rx('Romanian Deadlift', 3, 10, 'Rest ~90s.'),
+      rx('Plank', 3, 30, 'Hold, breathing steadily.'),
+    ] },
+  { id:'upper_body', sport:'gym', name:'Upper Body', icon:'💪', level:'Beginner', duration:'40–55 min', muscles:'Chest · Back · Shoulders · Arms',
+    description:'Covers chest, back, shoulders and arms in one session — a solid starting point if you\'re new to structured training.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Bench Press', 3, 10, 'Rest ~90s.'),
+      rx('Bent Over Row', 3, 10, 'Rest ~90s.'),
+      rx('Overhead Press', 3, 10, 'Rest ~75s.'),
+      rx('Lateral Raise', 3, 15, 'Rest ~45s.'),
+      rx('Bicep Curl', 3, 12, 'Rest ~45s.'),
+      rx('Tricep Pushdown', 3, 12, 'Rest ~45s.'),
+    ] },
+  { id:'core_blast', sport:'gym', name:'Core Blast', icon:'🧘', level:'Beginner', duration:'20–30 min', muscles:'Core · Abs · Obliques',
+    description:'A focused 20–30 minute core session. Move through each exercise with control — quality beats speed here.',
+    suggestedRestSec:30,
+    exercises:[
+      rx('Plank', 3, 40, 'Hold, keep hips level. Rest ~30s.'),
+      rx('Crunches', 3, 20, 'Rest ~30s.'),
+      rx('Leg Raises', 3, 15, 'Lower slowly. Rest ~30s.'),
+      rx('Russian Twist', 3, 20, 'Total reps, both sides. Rest ~30s.'),
+      rx('Mountain Climbers', 3, 30, 'Steady pace. Rest ~30s.'),
+    ] },
+
+  // ── CROSSFIT ──────────────────────────────
+  { id:'wod_classic', sport:'crossfit', name:'Classic WOD', icon:'🔥', level:'Advanced', duration:'20 min', muscles:'Full Body',
+    description:'5 rounds for time: burpees, kettlebell swings, box jumps, thrusters and wall balls. Scale the reps down if form starts to break down.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Burpee', 5, 10, 'Round 1 of 5.'),
+      rx('Kettlebell Swing', 5, 15, ''),
+      rx('Box Jump', 5, 10, 'Step down between reps if jumping down feels risky.'),
+      rx('Thruster', 5, 8, ''),
+      rx('Wall Ball', 5, 12, 'Rest 60–90s between full rounds, less as fitness improves.'),
+    ] },
+  { id:'wod_beginner', sport:'crossfit', name:'Beginner WOD', icon:'🔥', level:'Beginner', duration:'20 min', muscles:'Full Body',
+    description:'A gentler introduction to CrossFit-style circuits — 4 rounds at a controlled pace. Technique first, speed later.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Burpee', 4, 6, ''),
+      rx('Jump Squat', 4, 10, ''),
+      rx('Mountain Climbers', 4, 20, ''),
+      rx('Jumping Jacks', 4, 20, 'Rest 60–90s between rounds as needed.'),
+    ] },
+
+  // ── CALISTHENICS ──────────────────────────
+  { id:'cali_basics', sport:'calisthenics', name:'Calisthenics Basics', icon:'💪', level:'Beginner', duration:'35 min', muscles:'Full Body, Bodyweight',
+    description:'Fundamental bodyweight movements everyone should own before progressing to harder skills.',
+    suggestedRestSec:60,
+    exercises:[
+      rx('Push Ups', 3, 12, 'Rest ~60s.'),
+      rx('Pull Ups', 3, 6, 'Use an assisted band if needed. Rest ~90s.'),
+      rx('Squat', 3, 15, 'Rest ~60s.'),
+      rx('Dips', 3, 10, 'Rest ~75s.'),
+      rx('Plank', 3, 30, 'Hold, breathe steadily.'),
+    ] },
+  { id:'cali_advanced', sport:'calisthenics', name:'Advanced Skills', icon:'💪', level:'Advanced', duration:'40 min', muscles:'Full Body Strength',
+    description:'Advanced bodyweight skills requiring real strength and balance — expect these to take practice over several sessions.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Handstand Hold', 4, 20, 'Against a wall until balance is solid freestanding. Rest ~60s.'),
+      rx('L-Sit', 4, 15, 'Bent knees is fine while building strength. Rest ~60s.'),
+      rx('Pistol Squat', 3, 6, 'Per leg — hold a support if needed. Rest ~90s.'),
+      rx('Pull Ups', 4, 8, 'Rest ~90s.'),
+      rx('Dips', 4, 10, 'Rest ~75s.'),
+    ] },
+
+  // ── KETTLEBELL ────────────────────────────
+  { id:'kb_beginner', sport:'kettlebell', name:'KB Foundations', icon:'🔔', level:'Beginner', duration:'30 min', muscles:'Full Body',
+    description:'The three kettlebell movements everyone should learn first, at a pace that lets you focus on technique.',
+    suggestedRestSec:60,
+    exercises:[
+      rx('Kettlebell Swing', 3, 12, 'Power from the hips, not the arms. Rest ~60s.'),
+      rx('Goblet Squat', 3, 12, 'Rest ~60s.'),
+      rx('Kettlebell Clean', 3, 8, 'Per side. Rest ~75s.'),
+    ] },
+  { id:'kb_power', sport:'kettlebell', name:'KB Power Circuit', icon:'🔔', level:'Intermediate', duration:'35 min', muscles:'Full Body, Power',
+    description:'Builds on the fundamentals with more volume and the Turkish get-up for full-body stability.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Kettlebell Swing', 4, 15, 'Rest ~60s.'),
+      rx('Turkish Get Up', 3, 5, 'Per side, slow and controlled. Rest ~90s.'),
+      rx('Kettlebell Clean', 4, 8, 'Rest ~75s.'),
+      rx('Goblet Squat', 4, 12, 'Rest ~60s.'),
+    ] },
+
+  // ── FUNCTIONAL ────────────────────────────
+  { id:'functional1', sport:'functional', name:'Functional Fitness', icon:'⚙️', level:'Intermediate', duration:'40 min', muscles:'Full Body',
+    description:'Real-world movement patterns — carrying, slamming, swinging — for everyday strength that carries over outside the gym.',
+    suggestedRestSec:60,
+    exercises:[
+      rx('Farmer\'s Carry', 3, 40, 'Tall posture, don\'t let shoulders round. Rest ~60s.'),
+      rx('Battle Ropes', 4, 30, 'Rest ~45s.'),
+      rx('Medicine Ball Slam', 3, 15, 'Rest ~45s.'),
+      rx('Burpee', 3, 10, 'Rest ~60s.'),
+      rx('Squat', 3, 15, 'Rest ~60s.'),
+    ] },
+
+  // ── RUNNING ───────────────────────────────
+  { id:'run_easy', sport:'running', name:'Easy Run', icon:'🏃', level:'Beginner', duration:'30 min', muscles:'Legs, Cardiovascular',
+    description:'A comfortable, conversational-pace run to build your aerobic base. You should be able to talk in full sentences throughout.',
+    exercises:[ rx('Running', 1, 1800, 'Continuous, easy pace — walk if you need to.') ] },
+  { id:'run_interval', sport:'running', name:'Interval Training', icon:'🏃', level:'Intermediate', duration:'40 min', muscles:'Speed, Endurance',
+    description:'6 rounds of 90 seconds brisk running with 90 seconds walking to recover. Repeat the full set, building speed each round.',
+    suggestedRestSec:90,
+    exercises:[
+      rx('Running', 6, 90, '90s at a brisk, faster-than-easy pace.'),
+      rx('Walking', 6, 90, '90s recovery walk between running efforts.'),
+    ] },
+  { id:'run_long', sport:'running', name:'Long Run', icon:'🏃', level:'Intermediate', duration:'60–90 min', muscles:'Legs, Endurance',
+    description:'A longer, steady-state run to build aerobic endurance and mental toughness. Keep the pace easy — this is about time on your feet, not speed.',
+    exercises:[ rx('Running', 1, 4500, 'Steady, easy pace for 60–90 min. Walk breaks are fine.') ] },
+  { id:'run_5k', sport:'running', name:'5K Training', icon:'🏃', level:'Beginner', duration:'25–35 min', muscles:'Legs, Cardiovascular',
+    description:'Building block for running a continuous 5K. Run as much as you can, walk when you need to, and aim to run a little more each week.',
+    exercises:[ rx('Running', 1, 1500, 'Run continuously if possible; alternate walk/jog if still building up.') ] },
+
+  // ── WALKING ───────────────────────────────
+  { id:'walk_power', sport:'walking', name:'Power Walk', icon:'🚶', level:'Beginner', duration:'45 min', muscles:'Legs, Cardiovascular',
+    description:'A brisk 45-minute walk for cardio and fat burn — low impact, accessible to almost everyone.',
+    exercises:[ rx('Walking', 1, 2700, 'Brisk pace, arms swinging naturally.') ] },
+  { id:'walk_hiit', sport:'walking', name:'Walk-Run Intervals', icon:'🚶', level:'Beginner', duration:'30 min', muscles:'Legs, Cardio',
+    description:'Alternating walk and light jog intervals — a gentle way to build toward continuous running.',
+    suggestedRestSec:0,
+    exercises:[
+      rx('Walking', 5, 180, '3 min walk.'),
+      rx('Running', 5, 60, '1 min light jog. Repeat the pair 5 times.'),
+    ] },
+
+  // ── CYCLING ───────────────────────────────
+  { id:'cycle_endur', sport:'cycling', name:'Endurance Ride', icon:'🚴', level:'Beginner', duration:'45 min', muscles:'Legs, Cardiovascular',
+    description:'Steady-state cycling at a moderate, sustainable effort to build aerobic endurance.',
+    exercises:[ rx('Cycling', 1, 2700, 'Moderate, steady effort — cadence 80–100 RPM.') ] },
+  { id:'cycle_hiit', sport:'cycling', name:'Cycling Intervals', icon:'🚴', level:'Intermediate', duration:'30 min', muscles:'Legs, Cardio',
+    description:'8 rounds of hard 1-minute efforts with easy recovery spins between — a proven way to build speed and power.',
+    suggestedRestSec:90,
+    exercises:[ rx('Cycling', 8, 60, '1 min hard effort, then ~90s easy recovery spin between rounds.') ] },
+
+  // ── HIIT ──────────────────────────────────
+  { id:'hiit_20', sport:'hiit', name:'20-Min HIIT', icon:'⚡', level:'Intermediate', duration:'20 min', muscles:'Full Body',
+    description:'8 rounds of 40 seconds work with 20 seconds rest, rotating through 4 exercises. High effort, short and effective.',
+    suggestedRestSec:20,
+    exercises:[
+      rx('HIIT', 8, 40, '40s work / 20s rest.'),
+      rx('Mountain Climbers', 6, 30, '40s work / 20s rest.'),
+      rx('Jump Rope', 6, 45, '40s work / 20s rest.'),
+      rx('High Knees', 6, 30, '40s work / 20s rest.'),
+    ] },
+  { id:'hiit_tabata', sport:'hiit', name:'Tabata Protocol', icon:'⚡', level:'Advanced', duration:'16 min', muscles:'Full Body',
+    description:'True Tabata: 20 seconds maximum effort, 10 seconds rest, 8 rounds per exercise. Brutal but short.',
+    suggestedRestSec:10,
+    exercises:[
+      rx('Jump Squat', 8, 20, '20s on / 10s off.'),
+      rx('Burpee', 8, 20, '20s on / 10s off.'),
+      rx('Mountain Climbers', 8, 20, '20s on / 10s off.'),
+      rx('High Knees', 8, 20, '20s on / 10s off.'),
+      rx('Jumping Jacks', 8, 20, '20s on / 10s off.'),
+    ] },
+  { id:'hiit_beginner', sport:'hiit', name:'HIIT for Beginners', icon:'⚡', level:'Beginner', duration:'15 min', muscles:'Full Body',
+    description:'5 rounds of 20 seconds work with a generous 40 seconds rest — a gentle introduction to interval training.',
+    suggestedRestSec:40,
+    exercises:[
+      rx('Jumping Jacks', 5, 20, '20s work / 40s rest.'),
+      rx('High Knees', 5, 20, '20s work / 40s rest.'),
+      rx('Jump Squat', 5, 20, '20s work / 40s rest.'),
+      rx('Mountain Climbers', 5, 20, '20s work / 40s rest. Work at your own pace.'),
+    ] },
+
+  // ── JUMP ROPE ─────────────────────────────
+  { id:'rope_basics', sport:'jumpRope', name:'Jump Rope Basics', icon:'🪢', level:'Beginner', duration:'20 min', muscles:'Full Body, Calves',
+    description:'Learn to find a steady rhythm before building speed — the fundamental skill behind every jump rope workout.',
+    suggestedRestSec:45,
+    exercises:[ rx('Jump Rope', 5, 60, 'Focus on rhythm, not speed. Rest ~45s between sets.') ] },
+  { id:'rope_hiit', sport:'jumpRope', name:'Jump Rope HIIT', icon:'🪢', level:'Intermediate', duration:'20 min', muscles:'Full Body, Cardio',
+    description:'Jump rope intervals mixed with bodyweight cardio for a well-rounded conditioning session.',
+    suggestedRestSec:20,
+    exercises:[
+      rx('Jump Rope', 6, 45, ''),
+      rx('Jumping Jacks', 6, 30, ''),
+      rx('High Knees', 6, 30, 'Rest ~20s between each set.'),
+    ] },
+
+  // ── SWIMMING ──────────────────────────────
+  { id:'swim_laps', sport:'swimming', name:'Lap Swimming', icon:'🏊', level:'Beginner', duration:'30 min', muscles:'Full Body, Low Impact',
+    description:'Easy, technique-focused laps — zero joint impact, great for building base fitness or recovering.',
+    exercises:[ rx('Swimming', 1, 1500, 'Easy pace, rest at the wall between lengths as needed.') ] },
+  { id:'swim_endur', sport:'swimming', name:'Endurance Swim', icon:'🏊', level:'Intermediate', duration:'45 min', muscles:'Full Body, Endurance',
+    description:'Longer continuous swimming to build real stamina — increase distance gradually week to week.',
+    exercises:[ rx('Swimming', 1, 2400, 'Steady pace, minimal rest at the wall.') ] },
+
+  // ── ROWING ────────────────────────────────
+  { id:'row_endur', sport:'rowing', name:'Rowing Endurance', icon:'🚣', level:'Intermediate', duration:'30 min', muscles:'Full Body, Back',
+    description:'Steady-state rowing to build conditioning. Focus on the legs-back-arms sequence on every stroke.',
+    exercises:[ rx('Rowing Machine', 1, 1500, 'Steady pace — legs drive first, then lean back, then pull arms.') ] },
+  { id:'row_power', sport:'rowing', name:'Rowing Power', icon:'🚣', level:'Advanced', duration:'25 min', muscles:'Full Body, Power',
+    description:'6 rounds of hard 90-second pulls with equal rest — a demanding way to build rowing power.',
+    suggestedRestSec:90,
+    exercises:[ rx('Rowing Machine', 6, 90, 'Hard effort for 90s, then ~90s easy rest.') ] },
+
+  // ── YOGA ──────────────────────────────────
+  { id:'yoga_morning', sport:'yoga', name:'Morning Flow', icon:'🌅', level:'Beginner', duration:'20 min', muscles:'Full Body, Flexibility',
+    description:'A gentle flow to wake the body up. Move with your breath — inhale to extend, exhale to fold.',
+    exercises:[
+      rx('Sun Salutation', 3, 60, 'One full round per set — inhale to extend, exhale to fold.'),
+      rx('Warrior Pose', 2, 30, 'Hold each side, breathing steadily.'),
+      rx('Downward Dog', 2, 30, 'Press heels toward the floor, relax the neck.'),
+      rx('Child\'s Pose', 1, 60, 'Rest here — return anytime you need to during the flow.'),
+    ] },
+  { id:'yoga_yin', sport:'yoga', name:'Yin Yoga', icon:'🧘', level:'Beginner', duration:'45 min', muscles:'Deep Tissue, Flexibility',
+    description:'Long, passive holds (1–3 minutes each) for deep flexibility. Breathe slowly and let gravity do the work — never force a stretch.',
+    exercises:[
+      rx('Child\'s Pose', 1, 120, 'Slow, deep breathing throughout.'),
+      rx('Pigeon Pose', 2, 90, 'Per side. Ease in gradually.'),
+      rx('Downward Dog', 2, 60, 'Bend knees if hamstrings are tight.'),
+    ] },
+  { id:'yoga_power', sport:'yoga', name:'Power Yoga', icon:'🧘', level:'Intermediate', duration:'45 min', muscles:'Strength, Flexibility',
+    description:'A dynamic, flowing practice that builds strength alongside flexibility — expect to work up a sweat.',
+    exercises:[
+      rx('Sun Salutation', 4, 45, 'Keep the pace flowing between poses.'),
+      rx('Warrior Pose', 2, 30, 'Per side.'),
+      rx('Downward Dog', 3, 30, ''),
+      rx('Plank', 3, 30, 'Hold with control.'),
+    ] },
+
+  // ── PILATES ───────────────────────────────
+  { id:'pilates_core', sport:'pilates', name:'Core Pilates', icon:'🧘', level:'Beginner', duration:'30 min', muscles:'Core, Spine, Posture',
+    description:'Low-impact core work built around control and breath, not speed or heavy load.',
+    exercises:[
+      rx('The Hundred', 1, 100, 'Pump the arms in time with 5-count breaths — lower back stays pressed into the mat.'),
+      rx('Roll Up', 3, 8, 'Slow and controlled — this is spine articulation, not a sit-up.'),
+      rx('Plank', 3, 30, 'Hold with control.'),
+    ] },
+  { id:'pilates_full', sport:'pilates', name:'Full Body Pilates', icon:'🧘', level:'Intermediate', duration:'45 min', muscles:'Full Body, Core',
+    description:'A complete Pilates session working the whole body with an emphasis on control and precision.',
+    exercises:[
+      rx('The Hundred', 1, 100, 'Steady breathing throughout.'),
+      rx('Roll Up', 3, 8, ''),
+      rx('Plank', 3, 30, ''),
+      rx('Leg Raises', 3, 12, 'Lower slowly — control over speed.'),
+    ] },
+
+  // ── STRETCHING ────────────────────────────
+  { id:'stretch_full', sport:'stretching', name:'Full Body Stretch', icon:'🤸', level:'Beginner', duration:'20 min', muscles:'Full Body Flexibility',
+    description:'A complete stretching routine to reduce soreness and improve mobility. Never force a stretch — ease in and breathe.',
+    exercises:[
+      rx('Hamstring Stretch', 1, 45, 'Per side, breathe deeply.'),
+      rx('Hip Flexor Stretch', 1, 45, 'Per side.'),
+      rx('Chest Opener', 1, 30, ''),
+      rx('Pigeon Pose', 1, 90, 'Per side — one of the best hip openers, take your time.'),
+      rx('Child\'s Pose', 1, 60, 'Finish here, relaxed breathing.'),
+    ] },
+  { id:'stretch_post', sport:'stretching', name:'Post-Workout Stretch', icon:'🤸', level:'Beginner', duration:'15 min', muscles:'Muscles Worked',
+    description:'A short cool-down stretch to do after any workout — helps with recovery and next-day soreness.',
+    exercises:[
+      rx('Hamstring Stretch', 1, 30, 'Per side.'),
+      rx('Chest Opener', 1, 30, ''),
+      rx('Pigeon Pose', 1, 60, 'Per side.'),
+    ] },
+
+  // ── BOXING ────────────────────────────────
+  { id:'box_basics', sport:'boxing', name:'Boxing Basics', icon:'🥊', level:'Beginner', duration:'30 min', muscles:'Full Body, Cardio',
+    description:'Learn the fundamental punches and footwork over 3 rounds. Focus on form, not power, while the technique is new.',
+    suggestedRestSec:60,
+    exercises:[
+      rx('Shadow Boxing', 3, 120, '2-min rounds, 1 min rest between.'),
+      rx('Jab-Cross', 3, 60, '1-min rounds — keep hands up, return to guard after every punch.'),
+    ] },
+  { id:'box_advanced', sport:'boxing', name:'Boxing Conditioning', icon:'🥊', level:'Advanced', duration:'45 min', muscles:'Full Body, Power',
+    description:'5 rounds of heavy bag work mixed with shadow boxing and combinations — real conditioning for experienced boxers.',
+    suggestedRestSec:60,
+    exercises:[
+      rx('Heavy Bag', 5, 180, '3-min rounds, 1 min rest.'),
+      rx('Shadow Boxing', 3, 120, ''),
+      rx('Jab-Cross', 4, 90, ''),
+      rx('Jump Rope', 3, 120, 'Between-round conditioning.'),
+    ] },
+
+  // ── MUAY THAI ─────────────────────────────
+  { id:'muay_basics', sport:'muay_thai', name:'Muay Thai Basics', icon:'🥊', level:'Beginner', duration:'30 min', muscles:'Full Body, Kicks',
+    description:'An introduction to the Art of Eight Limbs — punches and kicks over controlled rounds. Beginner-safe pace.',
+    suggestedRestSec:60,
+    exercises:[
+      rx('Shadow Boxing', 3, 120, '2-min rounds, 1 min rest.'),
+      rx('Roundhouse Kick', 3, 10, 'Per leg — slow and controlled while learning the technique.'),
+      rx('Jab-Cross', 3, 90, ''),
+    ] },
+
+  // ── MARTIAL ARTS ──────────────────────────
+  { id:'martial1', sport:'martial', name:'Martial Arts Basics', icon:'🥋', level:'Beginner', duration:'30 min', muscles:'Full Body',
+    description:'Fundamentals covering stances, punches and kicks, finished with kata practice for precision. A safe, beginner pace throughout.',
+    suggestedRestSec:60,
+    exercises:[
+      rx('Shadow Boxing', 3, 90, ''),
+      rx('Jab-Cross', 3, 60, ''),
+      rx('Roundhouse Kick', 3, 8, 'Per leg, controlled tempo.'),
+      rx('Kata Practice', 2, 60, 'Slow and deliberate — precision over speed.'),
+    ] },
+
+  // ── MMA ───────────────────────────────────
+  { id:'mma_cond', sport:'mma', name:'MMA Conditioning', icon:'🥋', level:'Advanced', duration:'45 min', muscles:'Full Body, Power, Cardio',
+    description:'A demanding mixed martial arts conditioning circuit. Scale the rounds down if you\'re new to combat conditioning.',
+    suggestedRestSec:45,
+    exercises:[
+      rx('Burpee', 5, 10, ''),
+      rx('Shadow Boxing', 5, 90, ''),
+      rx('Roundhouse Kick', 4, 10, 'Per leg.'),
+      rx('Battle Ropes', 4, 30, ''),
+      rx('Mountain Climbers', 4, 30, 'Rest ~45s between exercises.'),
+    ] },
+
+  // ── TENNIS ────────────────────────────────
+  { id:'tennis_cond', sport:'tennis', name:'Tennis Conditioning', icon:'🎾', level:'Intermediate', duration:'35 min', muscles:'Agility, Shoulder, Core',
+    description:'Off-court conditioning to build the footwork, shoulder endurance and core strength tennis demands.',
+    suggestedRestSec:45,
+    exercises:[
+      rx('Tennis Forehand', 3, 20, 'Shadow swings, both sides.'),
+      rx('High Knees', 4, 30, ''),
+      rx('Lateral Raise', 3, 15, ''),
+      rx('Plank', 3, 40, ''),
+    ] },
+
+  // ── BADMINTON ─────────────────────────────
+  { id:'badminton1', sport:'badminton', name:'Badminton Training', icon:'🏸', level:'Beginner', duration:'30 min', muscles:'Shoulder, Legs, Agility',
+    description:'Builds smash power and the quick court movement badminton needs, with beginner-friendly conditioning.',
+    suggestedRestSec:45,
+    exercises:[
+      rx('Badminton Smash', 3, 15, 'Shadow swings.'),
+      rx('High Knees', 4, 30, ''),
+      rx('Jumping Jacks', 4, 30, ''),
+    ] },
+
+  // ── FOOTBALL / SOCCER ─────────────────────
+  { id:'football_fit', sport:'football', name:'Football Fitness', icon:'⚽', level:'Intermediate', duration:'40 min', muscles:'Speed, Legs, Agility',
+    description:'Sprint and conditioning work for football players — most of the game is short explosive bursts, so that\'s what this trains.',
+    suggestedRestSec:40,
+    exercises:[
+      rx('Football Sprint', 6, 20, '20s sprint effort, ~40s recovery between.'),
+      rx('High Knees', 4, 30, ''),
+      rx('Jump Squat', 3, 12, ''),
+      rx('Plank', 3, 40, ''),
+    ] },
+
+  // ── BASKETBALL ────────────────────────────
+  { id:'bball_cond', sport:'basketball', name:'Basketball Conditioning', icon:'🏀', level:'Intermediate', duration:'35 min', muscles:'Legs, Agility, Cardio',
+    description:'Agility and conditioning work to support quick direction changes and repeated jumping on the court.',
+    suggestedRestSec:45,
+    exercises:[
+      rx('Basketball Dribbling', 3, 60, 'Both hands.'),
+      rx('Jump Squat', 4, 12, ''),
+      rx('High Knees', 4, 30, ''),
+      rx('Plank', 3, 40, ''),
+    ] },
+
+  // ── VOLLEYBALL ────────────────────────────
+  { id:'volley_cond', sport:'volleyball', name:'Volleyball Training', icon:'🏐', level:'Intermediate', duration:'35 min', muscles:'Legs, Shoulder, Jump',
+    description:'Jump training and shoulder conditioning to support repeated spikes and blocks.',
+    suggestedRestSec:45,
+    exercises:[
+      rx('Volleyball Spike', 3, 10, 'Shadow reps, full arm swing.'),
+      rx('Jump Squat', 4, 12, ''),
+      rx('Lateral Raise', 3, 15, ''),
+      rx('Plank', 3, 40, ''),
+    ] },
+
+  // ── GOLF ──────────────────────────────────
+  { id:'golf_fitness', sport:'golf', name:'Golf Fitness', icon:'⛳', level:'Beginner', duration:'30 min', muscles:'Core, Rotation, Stability',
+    description:'Core strength and rotational work to support a more powerful, injury-resistant golf swing.',
+    exercises:[
+      rx('Golf Swing', 3, 15, 'Shadow swings, both directions.'),
+      rx('Russian Twist', 3, 20, ''),
+      rx('Plank', 3, 40, ''),
+      rx('Hip Flexor Stretch', 1, 45, 'Per side.'),
+    ] },
+
+  // ── DANCE ─────────────────────────────────
+  { id:'dance_zumba', sport:'dance', name:'Zumba Flow', icon:'💃', level:'Beginner', duration:'45 min', muscles:'Full Body, Coordination',
+    description:'Dance your way to fitness — no experience needed. This is about moving to the music, not perfect form.',
+    exercises:[
+      rx('Zumba Basic Step', 4, 180, 'Follow your own rhythm, 3-min blocks.'),
+      rx('Jumping Jacks', 3, 30, ''),
+    ] },
+  { id:'hiphop1', sport:'hiphop', name:'Hip Hop Dance', icon:'🎤', level:'Beginner', duration:'40 min', muscles:'Full Body, Coordination',
+    description:'Fun cardio through hip hop movement — a beginner-friendly way to build coordination and get your heart rate up.',
+    exercises:[
+      rx('Zumba Basic Step', 4, 180, ''),
+      rx('High Knees', 3, 30, ''),
+      rx('Jumping Jacks', 3, 30, ''),
+    ] },
+
+  // ── GYMNASTICS ────────────────────────────
+  { id:'gymn_basics', sport:'gymnastics', name:'Gymnastics Basics', icon:'🤸', level:'Beginner', duration:'30 min', muscles:'Full Body, Coordination',
+    description:'Fundamental gymnastics skills for beginners. Practice on a soft mat and get a spot if you\'re new to these movements.',
+    exercises:[
+      rx('Cartwheel', 3, 6, 'Per side, on a mat.'),
+      rx('Handstand Hold', 3, 15, 'Against a wall.'),
+      rx('Plank', 3, 30, ''),
+      rx('Push Ups', 3, 10, ''),
+    ] },
+
+  // ── HIKING ────────────────────────────────
+  { id:'hike_prep', sport:'hiking', name:'Hiking Prep', icon:'🥾', level:'Beginner', duration:'40 min', muscles:'Legs, Core, Endurance',
+    description:'Builds the leg strength and endurance hiking demands — walk on an incline if you can to mimic trail conditions.',
+    exercises:[
+      rx('Walking', 1, 1800, 'Incline if possible.'),
+      rx('Lunges', 3, 12, 'Per leg.'),
+      rx('Calf Raises', 3, 15, ''),
+      rx('Hip Flexor Stretch', 1, 45, 'Per side.'),
+    ] },
+  { id:'hike_strength', sport:'hiking', name:'Hiker\'s Strength', icon:'🥾', level:'Intermediate', duration:'45 min', muscles:'Legs, Back, Core',
+    description:'Functional strength work for the trails — legs, back and core, plus a loaded carry to build real-world resilience.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Squat', 4, 12, ''),
+      rx('Romanian Deadlift', 3, 10, ''),
+      rx('Calf Raises', 3, 15, ''),
+      rx('Plank', 3, 40, ''),
+      rx('Farmer\'s Carry', 3, 40, ''),
+    ] },
+
+  // ── ROCK CLIMBING ─────────────────────────
+  { id:'climb_cond', sport:'rockClimbing', name:'Climbing Conditioning', icon:'🧗', level:'Intermediate', duration:'45 min', muscles:'Grip, Back, Core',
+    description:'Upper body and grip strength work that directly transfers to climbing performance.',
+    suggestedRestSec:90,
+    exercises:[
+      rx('Pull Ups', 4, 6, ''),
+      rx('Deadlift', 3, 8, ''),
+      rx('Plank', 3, 40, ''),
+      rx('Farmer\'s Carry', 3, 40, 'Grip strength carryover.'),
+      rx('Calf Raises', 3, 15, ''),
+    ] },
+
+  // ── TRIATHLON ─────────────────────────────
+  { id:'tri_cond', sport:'triathlon', name:'Triathlon Training', icon:'🏅', level:'Advanced', duration:'60 min', muscles:'Full Body, Endurance',
+    description:'A "brick" session — swim, bike and run back to back, training your body to transition between disciplines.',
+    exercises:[
+      rx('Swimming', 1, 900, '15 min swim.'),
+      rx('Cycling', 1, 1500, '25 min bike, straight after swimming.'),
+      rx('Running', 1, 1200, '20 min run, straight off the bike — legs will feel heavy at first, that\'s normal.'),
+    ] },
+
+  // ── POWERLIFTING ──────────────────────────
+  { id:'pl_beginner', sport:'powerlifting', name:'Powerlifting Basics', icon:'💪', level:'Beginner', duration:'60 min', muscles:'Full Body, Strength',
+    description:'The three competition lifts using a classic beginner linear-progression structure. Add weight each session while form stays clean.',
+    suggestedRestSec:120,
+    exercises:[
+      rx('Squat', 3, 5, 'Rest ~2 min.'),
+      rx('Bench Press', 3, 5, 'Rest ~2 min.'),
+      rx('Deadlift', 1, 5, 'One heavy top set. Rest ~2.5 min before if needed.'),
+    ] },
+  { id:'pl_advanced', sport:'powerlifting', name:'Powerlifting Peak', icon:'💪', level:'Advanced', duration:'75 min', muscles:'Full Body, Max Strength',
+    description:'A peaking-phase session with heavier loads and lower reps on the big three, plus accessory work.',
+    suggestedRestSec:150,
+    exercises:[
+      rx('Squat', 5, 3, 'Rest ~3 min.'),
+      rx('Bench Press', 5, 3, 'Rest ~3 min.'),
+      rx('Deadlift', 3, 3, 'Rest ~3 min.'),
+      rx('Romanian Deadlift', 3, 8, 'Rest ~90s.'),
+      rx('Plank', 3, 40, ''),
+    ] },
+
+  // ── BODYBUILDING ──────────────────────────
+  { id:'bb_chest', sport:'bodybuilding', name:'Chest Hypertrophy', icon:'🦾', level:'Intermediate', duration:'50 min', muscles:'Chest, Triceps',
+    description:'A high-volume chest session across multiple angles — built for muscle growth, not 1-rep max strength.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Bench Press', 4, 8, 'Rest ~90s.'),
+      rx('Incline Bench Press', 4, 10, 'Rest ~75s.'),
+      rx('Chest Fly', 3, 12, 'Rest ~60s.'),
+      rx('Cable Crossover', 3, 15, 'Rest ~45s.'),
+      rx('Dips', 3, 12, 'Rest ~60s.'),
+    ] },
+  { id:'bb_back', sport:'bodybuilding', name:'Back Thickness', icon:'🦾', level:'Intermediate', duration:'55 min', muscles:'Back, Lats, Biceps',
+    description:'Targets both width and thickness in the back for a fuller, more defined V-taper.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Pull Ups', 4, 8, 'Rest ~90s.'),
+      rx('Deadlift', 3, 6, 'Rest ~2 min.'),
+      rx('Bent Over Row', 4, 10, 'Rest ~75s.'),
+      rx('Lat Pulldown', 3, 12, 'Rest ~60s.'),
+      rx('Seated Cable Row', 3, 12, 'Rest ~60s.'),
+    ] },
 ]
 
 export const SPORT_I18N_KEYS = {
