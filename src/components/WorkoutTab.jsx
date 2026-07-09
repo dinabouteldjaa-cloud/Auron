@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
-import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LEVEL_COLOR, getExercise } from '../lib/workoutData.js'
+import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise } from '../lib/workoutData.js'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 import { TabAuronCard } from './CoachAuron'
 
@@ -174,6 +174,7 @@ function LibraryTab({ onUseAsTemplate }) {
   if (sport) {
     const s        = SPORTS.find(s => s.id === sport) || {}
     const LEVELS   = ['All','Beginner','Intermediate','Advanced']
+    const totalForSport = LIBRARY_WORKOUTS.filter(w => w.sport === sport).length
     const workouts = LIBRARY_WORKOUTS.filter(w => w.sport === sport && (filter === 'All' || w.level === filter))
     return (
       <div>
@@ -191,7 +192,19 @@ function LibraryTab({ onUseAsTemplate }) {
           ))}
         </div>
         {workouts.length === 0 ? (
-          <Card style={{ textAlign:'center', padding:'24px', color:C.textMuted }}>{t('workout.comingSoon')}</Card>
+          totalForSport === 0 ? (
+            <Card style={{ textAlign:'center', padding:'24px', color:C.textMuted }}>{t('workout.comingSoon')}</Card>
+          ) : (
+            <Card style={{ textAlign:'center', padding:'24px' }}>
+              <div style={{ color:C.textMuted, marginBottom:12 }}>
+                {t('workout.noLevelWorkouts').replace('{level}', tFilterLabel(filter))}
+              </div>
+              <button onClick={() => setFilter('All')}
+                style={{ padding:'8px 16px', borderRadius:14, background:C.purpleLight, border:`1px solid ${C.purple}44`, color:C.purple, fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
+                {t('workout.showAllLevels')}
+              </button>
+            </Card>
+          )
         ) : workouts.map(w => (
           <button key={w.id} onClick={() => setWorkout(w)}
             style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', marginBottom:10, boxShadow:C.shadowCard }}>
@@ -260,28 +273,39 @@ function LibraryTab({ onUseAsTemplate }) {
           {allWorkouts.length === 0 && <Card style={{ textAlign:'center', padding:24, color:C.textMuted }}>{t('workout.noResults','')} "{search}"</Card>}
         </div>
       ) : (
-      /* Sports categorized grid */
+      /* Library groups — only sports with real workouts are ever shown */
         <div>
-          {SPORTS_CATEGORIES.map(cat => (
-            <div key={cat.category} style={{ marginBottom:24 }}>
-              <Label>{tCatName(cat.category)}</Label>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-                {cat.sports.map(s => {
-                  const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id && (filter==='All'||w.level===filter)).length
-                  return (
-                    <button key={s.id} onClick={() => setSport(s.id)}
-                      style={{ padding:'14px 12px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:5 }}>
-                      <span style={{ fontSize:26 }}>{s.icon}</span>
-                      <div style={{ fontSize:13, fontWeight:700, color:C.text, lineHeight:1.2 }}>{tSport(s.id)}</div>
-                      <div style={{ fontSize:10, color:count>0?C.purple:C.textDim }}>
-                        {count>0 ? `${count} ${count===1?t('workout.workout1','workout'):t('workout.workouts','workouts')}` : t('workout.comingSoon')}
-                      </div>
-                    </button>
-                  )
-                })}
+          {LIBRARY_GROUPS.map(group => {
+            const availableSports = group.sportIds
+              .map(id => SPORTS.find(s => s.id === id))
+              .filter(Boolean)
+              .filter(s => LIBRARY_WORKOUTS.some(w => w.sport === s.id))
+            if (availableSports.length === 0) return null // hide empty groups entirely
+
+            return (
+              <div key={group.key} style={{ marginBottom:24 }}>
+                <Label>{t(`libgroup.${group.key}`)}</Label>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                  {availableSports.map(s => {
+                    // Total workout count for this sport, independent of the
+                    // level filter — a sport never appears to be "coming soon"
+                    // just because the current filter has no match.
+                    const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id).length
+                    return (
+                      <button key={s.id} onClick={() => setSport(s.id)}
+                        style={{ padding:'14px 12px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:5 }}>
+                        <span style={{ fontSize:26 }}>{s.icon}</span>
+                        <div style={{ fontSize:13, fontWeight:700, color:C.text, lineHeight:1.2 }}>{tSport(s.id)}</div>
+                        <div style={{ fontSize:10, color:C.purple }}>
+                          {count} {count===1?t('workout.workout1','workout'):t('workout.workouts','workouts')}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
