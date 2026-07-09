@@ -239,6 +239,43 @@ export const SPORTS_CATEGORIES = [
 // Flat SPORTS array for compatibility
 export const SPORTS = SPORTS_CATEGORIES.flatMap(cat => cat.sports)
 
+// ─────────────────────────────────────────────
+// LIBRARY_GROUPS — user-facing grouping for the Workout Library.
+// This is purely a presentation grouping layered on top of the
+// existing sports data above; SPORTS_CATEGORIES is left untouched
+// so nothing here is deleted and content can expand later.
+// Only sports that currently have real workouts are ever shown —
+// the WorkoutTab filters each group down to available sports.
+// ─────────────────────────────────────────────
+export const LIBRARY_GROUPS = [
+  {
+    key: 'strength',
+    sportIds: ['gym', 'powerlifting', 'bodybuilding', 'crossfit', 'calisthenics', 'kettlebell', 'functional', 'strongman'],
+  },
+  {
+    key: 'cardio',
+    sportIds: ['running', 'walking', 'cycling', 'hiit', 'jumpRope', 'rowing', 'swimming', 'elliptical', 'stairclimber', 'treadmill'],
+  },
+  {
+    key: 'mobility',
+    sportIds: ['yoga', 'pilates', 'stretching', 'mobility', 'foam_rolling', 'tai_chi', 'breathwork', 'meditation'],
+  },
+  {
+    key: 'sports',
+    sportIds: [
+      'boxing', 'muay_thai', 'mma', 'martial', 'bjj', 'wrestling', 'judo', 'kickboxing', 'karate', 'taekwondo',
+      'tennis', 'badminton', 'squash', 'pickleball', 'tableTennis', 'padel',
+      'football', 'basketball', 'volleyball', 'rugby', 'hockey', 'handball', 'baseball', 'cricket', 'lacrosse', 'futsal',
+      'golf', 'archery', 'fencing', 'shooting', 'bowling', 'darts',
+      'hiking', 'rockClimbing', 'trailRunning', 'triathlon', 'mountainBike', 'skiing', 'snowboard', 'skateboard', 'surfing_out', 'paragliding',
+      'dance', 'zumba', 'hiphop', 'ballet', 'contemporary', 'salsa',
+      'gymnastics', 'aerobics', 'trampoline', 'parkour', 'cheerleading',
+      'openWater', 'diving', 'surfing', 'kayaking', 'waterPolo', 'kitesurfing',
+      'horseRiding', 'polo',
+    ],
+  },
+]
+
 export const LEVEL_COLOR = {
   Beginner:     '#2ECC71',
   Intermediate: '#F5A623',
