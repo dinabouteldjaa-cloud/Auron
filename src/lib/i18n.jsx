@@ -347,7 +347,7 @@ const translations = {
     'workout.cancelWorkout':'Cancel workout',
     'workout.addExercise':'+ Add exercise',
     'workout.addSet':'+ Add set',
-    'workout.restBetween':'⏱ Rest between sets',
+    'workout.restBetween':'Rest between sets',
     'workout.restOff':'Off',
     'workout.logWithoutTimer':'Log without timer',
     'workout.begin':'▶ Begin workout',
@@ -829,6 +829,7 @@ const translations = {
     'cal.saveMeal':'Save meal','cal.savedMeal':'✓ Saved','cal.recentMeals':'Recent','cal.savedMeals':'Saved','cal.noRecent':'No recent meals yet','cal.noSaved':'No saved meals yet','cal.chooseMealType':'Choose meal type',
     'cal.seeAll':'See all',
     'libgroup.strength':'Strength & Gym','libgroup.cardio':'Cardio','libgroup.mobility':'Mobility & Recovery','libgroup.sports':'Sports Training','workout.noLevelWorkouts':'No {level} workouts here yet.','workout.showAllLevels':'Show all levels',
+    'workout.warmupSection':'Warm-up','workout.mainSection':'Main Workout','workout.cooldownSection':'Cool-down','workout.eachSide':'each side',
     'workout.sec':'sec','lang.en':'English','lang.fr':'Français'
   },
 
@@ -1178,7 +1179,7 @@ const translations = {
     "workout.cancelWorkout":"Annuler l'entraînement",
     'workout.addExercise':'+ Ajouter un exercice',
     'workout.addSet':'+ Ajouter une série',
-    'workout.restBetween':'⏱ Repos entre les séries',
+    'workout.restBetween':'Repos entre les séries',
     'workout.restOff':'Non',
     'workout.logWithoutTimer':'Enregistrer sans minuteur',
     'workout.begin':'▶ Commencer la séance',
@@ -1688,6 +1689,7 @@ const translations = {
     'cal.saveMeal':'Enregistrer le repas','cal.savedMeal':'✓ Enregistré','cal.recentMeals':'Récents','cal.savedMeals':'Enregistrés','cal.noRecent':'Aucun repas récent','cal.noSaved':'Aucun repas enregistré','cal.chooseMealType':'Choisir le type de repas',
     'cal.seeAll':'Voir tout',
     'libgroup.strength':'Force & Muscu','libgroup.cardio':'Cardio','libgroup.mobility':'Mobilité & Récupération','libgroup.sports':'Sports','workout.noLevelWorkouts':'Aucun entraînement {level} pour le moment.','workout.showAllLevels':'Afficher tous les niveaux',
+    'workout.warmupSection':'Échauffement','workout.mainSection':'Séance principale','workout.cooldownSection':'Retour au calme','workout.eachSide':'chaque côté',
     'workout.sec':'sec','lang.en':'English','lang.fr':'Français'
   }
 }

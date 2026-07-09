@@ -81,6 +81,72 @@ export const EXERCISES = {
   'Golf Swing':          { icon:'⛳', muscles:'Core, Shoulders, Rotation',   category:'Golf', howTo:['Address ball, slight knee bend','Takeaway: club and shoulders together','Coil torso on backswing','Hips lead downswing','Impact: weight forward, follow through'], tips:'Grip firmly but gently.' },
   'Zumba Basic Step':    { icon:'💃', muscles:'Full Body, Cardio', timed:true, category:'Dance', howTo:['Step side to side with hip sway','Add arm movements to the beat','Let the music guide rhythm'], tips:'Just move and have fun.' },
   'Cartwheel':           { icon:'🤸', muscles:'Full Body, Coordination',     category:'Gymnastics', howTo:['Lead foot forward','Plant lead hand, then trail hand','Kick legs up and over','Land feet apart'], tips:'Keep arms straight throughout.' },
+
+  // ── Weight Training — warm-up cardio options ─────────────────
+  'Brisk Walk or Easy Bike': { icon:'🚶', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Pick either — a brisk walk or an easy bike spin','Keep effort light, just enough to raise your heart rate'], tips:'This is preparation, not the workout — keep it easy.' },
+  'Easy Rowing or Bike':     { icon:'🚴', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Pick either — easy rowing or an easy bike spin','Light, steady effort to raise body temperature'], tips:'Save your energy for the working sets.' },
+  'Easy Rowing Machine':     { icon:'🚣', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Light, steady rowing pace','Focus on smooth technique, not effort'], tips:'Just enough to break a light sweat.' },
+  'Easy Bike':               { icon:'🚴', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Easy, steady pedalling pace','Raise your heart rate gently before loading the legs'], tips:'Keep resistance light.' },
+  'Easy Bike or Row':        { icon:'🚴', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Pick either — easy bike or easy row','Light steady effort only'], tips:'This is preparation, not the workout.' },
+  'Easy Walk':               { icon:'🚶', muscles:'Full Body, Cool-down', timed:true, category:'Cool-down', howTo:['Slow, relaxed walking pace','Let your heart rate settle gradually'], tips:'A great way to start bringing your body back down.' },
+  'Slow Walk':               { icon:'🚶', muscles:'Full Body, Cool-down', timed:true, category:'Cool-down', howTo:['Very easy walking pace','Breathe normally, let the body cool down'], tips:'No effort required — this is pure recovery.' },
+
+  // ── Weight Training — warm-up / activation drills ────────────
+  'Bodyweight Squat':    { icon:'🦵', muscles:'Quads, Glutes', category:'Warm-up', howTo:['Feet shoulder-width apart','Sit back and down, chest up','Knees track over toes','Stand back up with control'], tips:'No weight needed — this is about waking up the pattern.' },
+  'Arm Circles':         { icon:'💪', muscles:'Shoulders', category:'Warm-up', howTo:['Extend arms out to sides','Make small circles, then gradually larger','Reverse direction halfway through'], tips:'Great simple shoulder warm-up.' },
+  'Hip Hinge Drill':     { icon:'🏋️', muscles:'Hamstrings, Glutes', category:'Warm-up', howTo:['Stand tall, soft knees','Push hips back while keeping back flat','Feel a stretch in the hamstrings','Drive hips forward to stand back up'], tips:'This is the movement pattern behind every deadlift variation.' },
+  'Wall Push-Up':        { icon:'💪', muscles:'Chest, Shoulders, Triceps', category:'Warm-up', howTo:['Stand facing a wall, hands at chest height','Lower chest toward the wall','Push back to start'], tips:'A gentle way to activate the pushing muscles before bench work.' },
+  'Band Pull-Aparts':    { icon:'💪', muscles:'Rear Delts, Upper Back', category:'Warm-up', howTo:['Hold a light band at chest height, arms extended','Pull the band apart until it touches your chest','Control the return'], tips:'Excellent shoulder health and posture activation.' },
+  'Scapular Push-Ups':   { icon:'💪', muscles:'Shoulders, Upper Back', category:'Warm-up', howTo:['Start in a plank or push-up position, arms straight','Let shoulder blades pinch together, then push them apart','Elbows stay straight throughout'], tips:'Small movement — this activates the shoulder blades, not the arms.' },
+  'Band Straight-Arm Pulldown': { icon:'💪', muscles:'Lats, Back', category:'Warm-up', howTo:['Hold band overhead, arms straight','Pull the band down to the thighs, arms staying straight','Control the return'], tips:'Great lat activation before pulling work.' },
+  'Scapular Pull-Up or Scapular Pulldown': { icon:'💪', muscles:'Lats, Upper Back', category:'Warm-up', howTo:['Hang from the bar (or hold a pulldown bar)','Without bending the elbows, pull shoulder blades down and together','Release with control'], tips:'This primes the lats before real pulling work.' },
+  'Light Cable Row':     { icon:'🚣', muscles:'Back, Biceps', category:'Warm-up', howTo:['Very light weight on the cable row','Focus purely on technique and full range of motion'], tips:'This is a warm-up set, not a working set.' },
+  'Glute Bridge':        { icon:'🦵', muscles:'Glutes, Hamstrings', category:'Warm-up', howTo:['Lie on back, knees bent, feet flat','Drive hips up, squeezing glutes at the top','Lower with control'], tips:'Wakes up the glutes before squats and deadlifts.' },
+  'Reverse Lunge':       { icon:'🦵', muscles:'Quads, Glutes', category:'Warm-up', howTo:['Step backward into a lunge','Front knee stays over the ankle','Push through the front foot to return to standing'], tips:'Gentler on the knees than a forward lunge — good for warming up.' },
+  'Cat-Cow':             { icon:'🧘', muscles:'Spine, Core', category:'Warm-up', howTo:['On hands and knees','Arch the back, dropping belly, looking up (cow)','Round the back, tucking chin (cat)','Move slowly between the two'], tips:'Gently mobilises the whole spine.' },
+  'Pelvic Tilt':         { icon:'🧘', muscles:'Core, Lower Back', category:'Warm-up', howTo:['Lie on back, knees bent','Flatten the lower back into the floor by tilting the pelvis','Release and repeat'], tips:'A subtle but effective core activation drill.' },
+  'Bird Dog Practice':   { icon:'🧘', muscles:'Core, Balance', category:'Warm-up', howTo:['On hands and knees','Extend one arm and the opposite leg','Keep hips level, hold briefly','Return and switch sides'], tips:'Practice slowly here — this primes the movement for the main set.' },
+
+  // ── Weight Training — main lifts ─────────────────────────────
+  'Barbell Bench Press': { icon:'🏋️', muscles:'Chest, Triceps, Shoulders', category:'Chest', howTo:['Lie flat, feet on floor','Grip bar slightly wider than shoulders','Lower to mid-chest with control','Press up explosively'], tips:'Never bounce the bar off your chest.' },
+  'Dumbbell Bench Press':{ icon:'🏋️', muscles:'Chest, Triceps, Shoulders', category:'Chest', howTo:['Lie on a bench holding dumbbells at chest level','Press up until arms are extended','Lower with control back to chest level'], tips:'Dumbbells allow a slightly deeper stretch than a barbell.' },
+  'Incline Dumbbell Press': { icon:'🏋️', muscles:'Upper Chest, Shoulders', category:'Chest', howTo:['Set bench to 30-45 degrees','Press dumbbells up above the upper chest','Lower with control'], tips:'Targets the upper chest more than a flat press.' },
+  'Cable Chest Fly':     { icon:'🦋', muscles:'Chest', category:'Chest', howTo:['Set cables to chest height, step forward','Bring handles together in front of the chest, slight elbow bend','Control the return to a full stretch'], tips:'Squeeze the chest at the point where your hands meet.' },
+  'Seated Dumbbell Shoulder Press': { icon:'🏋️', muscles:'Shoulders, Triceps', category:'Shoulders', howTo:['Sit with back supported, dumbbells at shoulder height','Press overhead until arms are extended','Lower with control back to shoulders'], tips:'Keep core braced to protect the lower back.' },
+  'Dumbbell Lateral Raise': { icon:'💪', muscles:'Side Delts', category:'Shoulders', howTo:['Hold dumbbells at your sides','Raise arms out to the sides to shoulder height','Lower with control'], tips:'Lighter weight with strict form beats heavier weight with momentum.' },
+  'Triceps Rope Pushdown': { icon:'💪', muscles:'Triceps', category:'Arms', howTo:['Stand at the cable with a rope attachment','Elbows fixed at your sides','Push down until arms are fully extended, spreading the rope at the bottom'], tips:'Keep elbows pinned — only the forearms should move.' },
+  'Lat Pulldown or Assisted Pull-Up': { icon:'💪', muscles:'Lats, Biceps', category:'Back', howTo:['Use the lat pulldown machine, or an assisted pull-up machine','Pull the bar to your upper chest (or pull your body up)','Control the return to a full stretch'], tips:'Choose whichever option lets you complete all reps with good form.' },
+  'Chest-Supported Dumbbell Row': { icon:'🏋️', muscles:'Back, Biceps', category:'Back', howTo:['Lie chest-down on an incline bench holding dumbbells','Row the dumbbells up toward your hips','Squeeze the shoulder blades, then lower with control'], tips:'Chest support removes momentum, isolating the back muscles.' },
+  'Dumbbell Curl':       { icon:'💪', muscles:'Biceps', category:'Arms', howTo:['Stand holding dumbbells, arms extended','Curl the weights up toward the shoulders','Lower with control'], tips:"Don't swing the body to help the weight up." },
+  'Back Squat':          { icon:'🏋️', muscles:'Quads, Glutes, Hamstrings', category:'Legs', howTo:['Bar on the upper back, feet shoulder-width apart','Brace the core, sit back and down','Descend until thighs are at least parallel','Drive through the floor to stand'], tips:'Knees should track in line with the toes throughout.' },
+  'Dumbbell Romanian Deadlift': { icon:'🏋️', muscles:'Hamstrings, Glutes', category:'Legs', howTo:['Hold dumbbells in front of thighs','Push hips back, lowering the weights along the legs','Feel the hamstring stretch, then drive hips forward to stand'], tips:'This is a hip hinge, not a squat — keep the weights close to the legs.' },
+  'Walking Lunge':       { icon:'🦵', muscles:'Quads, Glutes', category:'Legs', howTo:['Step forward into a lunge','Push through the front foot to bring the back leg through into the next lunge','Continue alternating legs while moving forward'], tips:'Keep the torso upright throughout.' },
+  'Seated or Lying Leg Curl': { icon:'🦵', muscles:'Hamstrings', category:'Legs', howTo:['Use either the seated or lying leg curl machine','Curl the pad toward your glutes','Control the return to full extension'], tips:'Avoid using momentum — control both the lift and the lowering.' },
+  'Standing Calf Raise': { icon:'🦵', muscles:'Calves', category:'Legs', howTo:['Stand on the edge of a step or platform','Rise onto the balls of the feet as high as possible','Lower the heels below the step for a full stretch'], tips:'Full range of motion matters more than the weight used.' },
+
+  // ── Weight Training — core stability ──────────────────────────
+  'Front Plank':         { icon:'🧘', muscles:'Core, Shoulders', timed:true, category:'Core', howTo:['Forearms on the floor, elbows under shoulders','Body in a straight line from head to heels','Squeeze the core and glutes throughout'], tips:'Stop the set once good alignment can no longer be held.' },
+  'Side Plank from Knees or Feet': { icon:'🧘', muscles:'Obliques, Core', timed:true, category:'Core', howTo:['Lie on your side, prop up on one forearm','Lift hips so the body forms a straight line','Support on the knees for an easier version, or feet for harder'], tips:'Choose the variation that lets you hold with good form.' },
+  'Pallof Press':        { icon:'🧘', muscles:'Core, Obliques', category:'Core', howTo:['Hold a band or cable at chest height, anchored to your side','Press the handle straight out in front of you','Resist the pull rotating your torso, then return'], tips:'The goal is to resist rotation — the torso should stay square.' },
+  'Suitcase Carry':      { icon:'🏋️', muscles:'Core, Grip, Obliques', timed:true, category:'Core', howTo:['Hold a weight in one hand at your side, like a suitcase','Walk tall, resisting the pull to one side','Keep shoulders level throughout'], tips:'Resisting the side-bend is the whole point of this exercise.' },
+  'Bird Dog':            { icon:'🧘', muscles:'Core, Balance', category:'Core', howTo:['On hands and knees','Extend one arm and the opposite leg fully','Keep hips level, hold briefly','Return with control and switch sides'], tips:"Move slowly — this is about control, not speed." },
+
+  // ── Weight Training — cool-down stretches & breathing ────────
+  'Standing Quadriceps Stretch': { icon:'🤸', muscles:'Quads', timed:true, category:'Stretching', howTo:['Stand on one leg, hold onto something for balance if needed','Pull the opposite heel toward the glutes','Keep knees close together'], tips:'Hold steady, avoid pulling the foot too high.' },
+  'Doorway Chest Stretch': { icon:'🤸', muscles:'Chest, Shoulders', timed:true, category:'Stretching', howTo:['Place forearm on a door frame, elbow bent to 90 degrees','Gently lean forward through the doorway','Feel the stretch across the chest'], tips:'A great release after any pressing work.' },
+  'Seated Hamstring Stretch': { icon:'🤸', muscles:'Hamstrings', timed:true, category:'Stretching', howTo:['Sit with one leg extended, the other bent','Hinge forward from the hips over the extended leg','Keep the back as flat as possible'], tips:'Never force the stretch — ease in gradually.' },
+  'Slow Diaphragmatic Breathing': { icon:'🧘', muscles:'Recovery, Breathing', timed:true, category:'Cool-down', howTo:['Lie or sit comfortably','Breathe in slowly through the nose, expanding the belly','Exhale slowly through the mouth'], tips:'This helps shift the body out of training mode and into recovery.' },
+  'Diaphragmatic Breathing': { icon:'🧘', muscles:'Recovery, Breathing', timed:true, category:'Cool-down', howTo:['Lie comfortably on your back','Breathe in slowly through the nose, belly rising','Exhale slowly and fully through the mouth'], tips:'Slow breathing signals the nervous system to relax.' },
+  'Slow Breathing':      { icon:'🧘', muscles:'Recovery, Breathing', timed:true, category:'Cool-down', howTo:['Sit or stand comfortably','Inhale slowly through the nose','Exhale slowly through the mouth'], tips:'A simple way to close out the session calmly.' },
+  'Cross-Body Shoulder Stretch': { icon:'🤸', muscles:'Shoulders', timed:true, category:'Stretching', howTo:['Bring one arm across the chest','Use the other arm to gently pull it closer','Keep the shoulder relaxed, away from the ear'], tips:'Great release after pressing movements.' },
+  'Cross-Body Rear Shoulder Stretch': { icon:'🤸', muscles:'Rear Delts, Shoulders', timed:true, category:'Stretching', howTo:['Bring one arm across the chest at shoulder height','Use the other arm to press it gently closer','Focus on the back of the shoulder'], tips:'Targets the rear delts worked during pulling exercises.' },
+  'Overhead Triceps Stretch': { icon:'🤸', muscles:'Triceps', timed:true, category:'Stretching', howTo:['Raise one arm overhead, bend the elbow to drop the hand behind the head','Use the other hand to gently press the elbow back','Keep the torso upright'], tips:'Move gently — the triceps can be tight after pushing work.' },
+  'Lat Stretch':         { icon:'🤸', muscles:'Lats, Back', timed:true, category:'Stretching', howTo:['Hold onto a bar or door frame','Sink hips back and down, letting the lats stretch','Keep arms extended'], tips:'A good release after pulling work.' },
+  'Forearm Flexor Stretch': { icon:'🤸', muscles:'Forearms', timed:true, category:'Stretching', howTo:['Extend one arm in front, palm facing up','Use the other hand to gently pull the fingers back','Feel the stretch through the forearm'], tips:'Helps after curls and grip-heavy pulling work.' },
+  'Half-Kneeling Hip Flexor Stretch': { icon:'🤸', muscles:'Hip Flexors', timed:true, category:'Stretching', howTo:['Kneel on one knee, other foot forward, flat on floor','Shift weight forward until a stretch is felt at the front of the hip','Keep the torso upright'], tips:'Great after squats and lunges.' },
+  'Calf Stretch':        { icon:'🤸', muscles:'Calves', timed:true, category:'Stretching', howTo:['Stand facing a wall, one foot back with heel flat on the floor','Lean forward gently until a stretch is felt in the calf','Keep the back leg straight'], tips:'Hold steady, avoid bouncing.' },
+  'Supine Knee-to-Chest Stretch': { icon:'🤸', muscles:'Lower Back, Glutes', timed:true, category:'Stretching', howTo:['Lie on your back','Pull one knee gently toward the chest','Keep the other leg relaxed on the floor'], tips:'A gentle release for the lower back.' },
+  'Gentle Supine Trunk Rotation': { icon:'🤸', muscles:'Spine, Obliques', timed:true, category:'Stretching', howTo:['Lie on your back, knees bent','Let both knees fall gently to one side','Keep shoulders flat on the floor'], tips:'Move slowly — this is a gentle spinal release, not a deep twist.' },
 }
 
 // ─────────────────────────────────────────────
@@ -297,75 +363,158 @@ export const LEVEL_COLOR = {
 // fallback). `note` is an optional short coaching cue shown in the
 // workout detail view only.
 // ─────────────────────────────────────────────
-function rx(name, sets, reps, note) {
-  return note ? { name, sets, reps, note } : { name, sets, reps }
+function rx(name, sets, reps, extra) {
+  if (extra === undefined) return { name, sets, reps }
+  if (typeof extra === 'string') return { name, sets, reps, note: extra }
+  // extra is an options object: { note, restSec, repRange, unilateral, unilateralLabel, section }
+  return { name, sets, reps, ...extra }
 }
 
 export const LIBRARY_WORKOUTS = [
-  // ── GYM ───────────────────────────────────
-  { id:'push_day', sport:'gym', name:'Push Day', icon:'💪', level:'Intermediate', duration:'45–60 min', muscles:'Chest · Shoulders · Triceps',
-    description:'Chest, shoulders and triceps — compound lifts first, isolation work to finish. Rest fully between heavy sets.',
+  // ── GYM (WEIGHT TRAINING) ─────────────────
+  { id:'full_body', sport:'gym', name:'Beginner Full Body', icon:'🏋️', level:'Beginner', duration:'45 min', muscles:'All muscle groups',
+    description:'Learn fundamental movement patterns and build a balanced strength foundation across the whole body.',
     suggestedRestSec:75,
     exercises:[
-      rx('Bench Press', 4, 8, 'Rest ~90s. Add weight once you hit 8 clean reps on all 4 sets.'),
-      rx('Overhead Press', 3, 10, 'Rest ~75s.'),
-      rx('Incline Bench Press', 3, 10, 'Rest ~75s.'),
-      rx('Lateral Raise', 3, 15, 'Light weight, controlled tempo. Rest ~45s.'),
-      rx('Tricep Pushdown', 3, 12, 'Rest ~45s.'),
+      rx('Brisk Walk or Easy Bike', 1, 180, { section:'warmup', restSec:0, note:'3 minutes, easy effort.' }),
+      rx('Bodyweight Squat', 2, 10, { section:'warmup', restSec:30 }),
+      rx('Arm Circles', 1, 10, { section:'warmup', restSec:0, note:'10 forward + 10 backward.' }),
+      rx('Hip Hinge Drill', 1, 10, { section:'warmup', restSec:0 }),
+      rx('Wall Push-Up', 1, 10, { section:'warmup', restSec:30, note:'Rest 30s before starting the main workout.' }),
+
+      rx('Goblet Squat', 3, 10, { section:'main', restSec:75 }),
+      rx('Dumbbell Bench Press', 3, 10, { section:'main', restSec:75 }),
+      rx('Seated Cable Row', 3, 12, { section:'main', restSec:60 }),
+      rx('Dumbbell Romanian Deadlift', 3, 10, { section:'main', restSec:90 }),
+      rx('Seated Dumbbell Shoulder Press', 2, 10, { section:'main', restSec:60 }),
+      rx('Plank', 3, 30, { section:'main', restSec:45, note:'Use light-to-moderate resistance throughout. Finish each set with ~2–3 good reps still possible.' }),
+
+      rx('Slow Walk', 1, 120, { section:'cooldown', restSec:0 }),
+      rx('Standing Quadriceps Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Doorway Chest Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Seated Hamstring Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Slow Diaphragmatic Breathing', 1, 30, { section:'cooldown', restSec:0, note:'5 controlled breaths.' }),
     ] },
-  { id:'pull_day', sport:'gym', name:'Pull Day', icon:'🔙', level:'Intermediate', duration:'45–60 min', muscles:'Back · Biceps · Rear Delts',
-    description:'Back width and thickness, finished with rear delts and arms. Full range of motion matters more than weight here.',
-    suggestedRestSec:75,
-    exercises:[
-      rx('Pull Ups', 4, 8, 'Use an assisted machine or band if 8 strict reps isn\'t there yet. Rest ~90s.'),
-      rx('Bent Over Row', 4, 8, 'Keep the back flat. Rest ~90s.'),
-      rx('Lat Pulldown', 3, 10, 'Rest ~75s.'),
-      rx('Seated Cable Row', 3, 12, 'Rest ~60s.'),
-      rx('Bicep Curl', 3, 12, 'Rest ~45s.'),
-      rx('Face Pull', 3, 15, 'Light weight — this is for shoulder health, not size. Rest ~45s.'),
-    ] },
-  { id:'leg_day', sport:'gym', name:'Leg Day', icon:'🦵', level:'Intermediate', duration:'50–65 min', muscles:'Quads · Hamstrings · Glutes',
-    description:'Full lower-body session covering quads, hamstrings, glutes and calves. Take the rest periods seriously — these are the heaviest lifts of the week.',
+
+  { id:'push_day', sport:'gym', name:'Push Day', icon:'💪', level:'Intermediate', duration:'55–65 min', muscles:'Chest · Shoulders · Triceps',
+    description:'Develop chest, shoulder and triceps strength and muscular development.',
     suggestedRestSec:90,
     exercises:[
-      rx('Squat', 4, 8, 'Rest ~2 min between sets.'),
-      rx('Romanian Deadlift', 3, 10, 'Rest ~90s.'),
-      rx('Leg Press', 3, 12, 'Rest ~90s.'),
-      rx('Lunges', 3, 12, 'Per leg. Rest ~60s.'),
-      rx('Hip Thrust', 3, 12, 'Squeeze glutes hard at the top. Rest ~75s.'),
-      rx('Calf Raises', 4, 15, 'Full range of motion. Rest ~45s.'),
+      rx('Easy Rowing or Bike', 1, 180, { section:'warmup', restSec:0 }),
+      rx('Arm Circles', 1, 10, { section:'warmup', restSec:0, note:'10 forward + 10 backward.' }),
+      rx('Band Pull-Aparts', 2, 15, { section:'warmup', restSec:30 }),
+      rx('Scapular Push-Ups', 2, 8, { section:'warmup', restSec:30 }),
+      rx('Push Ups', 1, 8, { section:'warmup', restSec:45, note:'8 easy, controlled reps.' }),
+      rx('Barbell Bench Press', 1, 5, { section:'warmup', restSec:45, note:'Progressive light warm-up sets before your first working set below — these do not count as working sets.' }),
+
+      rx('Barbell Bench Press', 4, 7, { section:'main', restSec:120, repRange:'6–8' }),
+      rx('Incline Dumbbell Press', 3, 9, { section:'main', restSec:90, repRange:'8–10' }),
+      rx('Seated Dumbbell Shoulder Press', 3, 9, { section:'main', restSec:90, repRange:'8–10' }),
+      rx('Cable Chest Fly', 3, 13, { section:'main', restSec:60, repRange:'12–15' }),
+      rx('Dumbbell Lateral Raise', 3, 13, { section:'main', restSec:60, repRange:'12–15' }),
+      rx('Triceps Rope Pushdown', 3, 11, { section:'main', restSec:60, repRange:'10–12', note:'Use controlled reps and keep ~1–2 in reserve on most sets.' }),
+
+      rx('Easy Walk', 1, 60, { section:'cooldown', restSec:0 }),
+      rx('Doorway Chest Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Cross-Body Shoulder Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Overhead Triceps Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Slow Breathing', 1, 30, { section:'cooldown', restSec:0, note:'5 controlled breaths.' }),
     ] },
-  { id:'full_body', sport:'gym', name:'Full Body', icon:'🏋️', level:'Beginner', duration:'50–70 min', muscles:'All muscle groups',
-    description:'One session that hits every major muscle group — ideal if you\'re training 2–3x per week and want maximum efficiency.',
+
+  { id:'pull_day', sport:'gym', name:'Pull Day', icon:'🦾', level:'Intermediate', duration:'55–65 min', muscles:'Back · Biceps · Rear Delts',
+    description:'Develop the back, rear shoulders and biceps through balanced vertical and horizontal pulling.',
+    suggestedRestSec:90,
+    exercises:[
+      rx('Easy Rowing Machine', 1, 180, { section:'warmup', restSec:0 }),
+      rx('Band Pull-Aparts', 2, 15, { section:'warmup', restSec:30 }),
+      rx('Band Straight-Arm Pulldown', 2, 12, { section:'warmup', restSec:30 }),
+      rx('Scapular Pull-Up or Scapular Pulldown', 2, 8, { section:'warmup', restSec:30 }),
+      rx('Light Cable Row', 1, 15, { section:'warmup', restSec:45, note:'Rest 45s before starting the main workout.' }),
+
+      rx('Lat Pulldown or Assisted Pull-Up', 4, 9, { section:'main', restSec:90, repRange:'8–10' }),
+      rx('Seated Cable Row', 3, 9, { section:'main', restSec:90, repRange:'8–10' }),
+      rx('Chest-Supported Dumbbell Row', 3, 10, { section:'main', restSec:90 }),
+      rx('Face Pull', 3, 13, { section:'main', restSec:60, repRange:'12–15' }),
+      rx('Dumbbell Curl', 3, 11, { section:'main', restSec:60, repRange:'10–12' }),
+      rx('Hammer Curl', 2, 12, { section:'main', restSec:60, note:'Lead with controlled shoulder-blade movement — avoid body momentum on rows and curls.' }),
+
+      rx('Easy Walk', 1, 60, { section:'cooldown', restSec:0 }),
+      rx('Lat Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Cross-Body Rear Shoulder Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Forearm Flexor Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Slow Breathing', 1, 30, { section:'cooldown', restSec:0, note:'5 controlled breaths.' }),
+    ] },
+
+  { id:'leg_day', sport:'gym', name:'Leg Day', icon:'🦵', level:'Intermediate', duration:'60–70 min', muscles:'Quads · Hamstrings · Glutes',
+    description:'Train the quadriceps, hamstrings, glutes and calves through complementary lower-body movement patterns.',
+    suggestedRestSec:120,
+    exercises:[
+      rx('Easy Bike', 1, 240, { section:'warmup', restSec:0 }),
+      rx('Bodyweight Squat', 2, 10, { section:'warmup', restSec:30 }),
+      rx('Glute Bridge', 2, 10, { section:'warmup', restSec:30 }),
+      rx('Reverse Lunge', 1, 6, { section:'warmup', restSec:30, unilateral:true, unilateralLabel:'each leg' }),
+      rx('Hip Hinge Drill', 1, 10, { section:'warmup', restSec:30 }),
+      rx('Back Squat', 1, 5, { section:'warmup', restSec:30, note:'Progressive light warm-up sets before your first working set below — these do not count as working sets.' }),
+
+      rx('Back Squat', 4, 7, { section:'main', restSec:150, repRange:'6–8' }),
+      rx('Romanian Deadlift', 3, 9, { section:'main', restSec:120, repRange:'8–10' }),
+      rx('Leg Press', 3, 11, { section:'main', restSec:90, repRange:'10–12' }),
+      rx('Walking Lunge', 3, 10, { section:'main', restSec:90, unilateral:true, unilateralLabel:'each leg', note:'Rest 90s after both legs are completed.' }),
+      rx('Seated or Lying Leg Curl', 3, 11, { section:'main', restSec:60, repRange:'10–12' }),
+      rx('Standing Calf Raise', 4, 13, { section:'main', restSec:60, repRange:'12–15', note:'Prioritise controlled range of motion — use loads that allow the prescribed reps without technical breakdown.' }),
+
+      rx('Slow Walk', 1, 120, { section:'cooldown', restSec:0 }),
+      rx('Standing Quadriceps Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Hamstring Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Half-Kneeling Hip Flexor Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Calf Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+    ] },
+
+  { id:'upper_body', sport:'gym', name:'Upper Body Foundation', icon:'🏋️', level:'Beginner', duration:'45–50 min', muscles:'Chest · Back · Shoulders · Arms',
+    description:'Build balanced upper-body pushing and pulling strength.',
     suggestedRestSec:75,
     exercises:[
-      rx('Squat', 3, 10, 'Rest ~90s.'),
-      rx('Bench Press', 3, 10, 'Rest ~90s.'),
-      rx('Bent Over Row', 3, 10, 'Rest ~75s.'),
-      rx('Overhead Press', 3, 10, 'Rest ~75s.'),
-      rx('Romanian Deadlift', 3, 10, 'Rest ~90s.'),
-      rx('Plank', 3, 30, 'Hold, breathing steadily.'),
+      rx('Easy Bike or Row', 1, 180, { section:'warmup', restSec:0 }),
+      rx('Arm Circles', 1, 10, { section:'warmup', restSec:0, note:'10 each direction.' }),
+      rx('Band Pull-Aparts', 2, 12, { section:'warmup', restSec:30 }),
+      rx('Wall Push-Up', 1, 10, { section:'warmup', restSec:30 }),
+      rx('Light Cable Row', 1, 12, { section:'warmup', restSec:45, note:'Rest 45s before starting the main workout.' }),
+
+      rx('Dumbbell Bench Press', 3, 10, { section:'main', restSec:90 }),
+      rx('Lat Pulldown or Assisted Pull-Up', 3, 10, { section:'main', restSec:90 }),
+      rx('Seated Dumbbell Shoulder Press', 3, 10, { section:'main', restSec:75 }),
+      rx('Seated Cable Row', 3, 12, { section:'main', restSec:75 }),
+      rx('Dumbbell Lateral Raise', 2, 13, { section:'main', restSec:45, repRange:'12–15' }),
+      rx('Triceps Rope Pushdown', 2, 12, { section:'main', restSec:60 }),
+      rx('Dumbbell Curl', 2, 12, { section:'main', restSec:60, note:'Choose manageable resistance — focus on learning the movement patterns rather than reaching muscular failure.' }),
+
+      rx('Easy Walk', 1, 60, { section:'cooldown', restSec:0 }),
+      rx('Doorway Chest Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Lat Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Cross-Body Shoulder Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Slow Breathing', 1, 30, { section:'cooldown', restSec:0, note:'5 controlled breaths.' }),
     ] },
-  { id:'upper_body', sport:'gym', name:'Upper Body', icon:'💪', level:'Beginner', duration:'40–55 min', muscles:'Chest · Back · Shoulders · Arms',
-    description:'Covers chest, back, shoulders and arms in one session — a solid starting point if you\'re new to structured training.',
-    suggestedRestSec:75,
+
+  { id:'core_blast', sport:'gym', name:'Core Stability', icon:'🧘', level:'Beginner', duration:'25–30 min', muscles:'Core · Abs · Obliques',
+    description:'Improve trunk control, anti-extension, anti-rotation and lateral stability.',
+    suggestedRestSec:45,
     exercises:[
-      rx('Bench Press', 3, 10, 'Rest ~90s.'),
-      rx('Bent Over Row', 3, 10, 'Rest ~90s.'),
-      rx('Overhead Press', 3, 10, 'Rest ~75s.'),
-      rx('Lateral Raise', 3, 15, 'Rest ~45s.'),
-      rx('Bicep Curl', 3, 12, 'Rest ~45s.'),
-      rx('Tricep Pushdown', 3, 12, 'Rest ~45s.'),
-    ] },
-  { id:'core_blast', sport:'gym', name:'Core Blast', icon:'🧘', level:'Beginner', duration:'20–30 min', muscles:'Core · Abs · Obliques',
-    description:'A focused 20–30 minute core session. Move through each exercise with control — quality beats speed here.',
-    suggestedRestSec:30,
-    exercises:[
-      rx('Plank', 3, 40, 'Hold, keep hips level. Rest ~30s.'),
-      rx('Crunches', 3, 20, 'Rest ~30s.'),
-      rx('Leg Raises', 3, 15, 'Lower slowly. Rest ~30s.'),
-      rx('Russian Twist', 3, 20, 'Total reps, both sides. Rest ~30s.'),
-      rx('Mountain Climbers', 3, 30, 'Steady pace. Rest ~30s.'),
+      rx('Cat-Cow', 1, 8, { section:'warmup', restSec:0, note:'8 controlled reps.' }),
+      rx('Pelvic Tilt', 1, 10, { section:'warmup', restSec:0 }),
+      rx('Glute Bridge', 2, 10, { section:'warmup', restSec:30 }),
+      rx('Bird Dog Practice', 1, 6, { section:'warmup', restSec:30, unilateral:true, unilateralLabel:'each side' }),
+
+      rx('Dead Bug', 3, 8, { section:'main', restSec:45, unilateral:true, unilateralLabel:'each side' }),
+      rx('Front Plank', 3, 35, { section:'main', restSec:45, repRange:'30–40s' }),
+      rx('Bird Dog', 3, 8, { section:'main', restSec:45, unilateral:true, unilateralLabel:'each side' }),
+      rx('Side Plank from Knees or Feet', 2, 25, { section:'main', restSec:45, repRange:'20–30s', unilateral:true, unilateralLabel:'each side', note:'Rest 45s after both sides.' }),
+      rx('Pallof Press', 3, 10, { section:'main', restSec:60, unilateral:true, unilateralLabel:'each side', note:'Rest 60s after both sides.' }),
+      rx('Suitcase Carry', 3, 30, { section:'main', restSec:60, unilateral:true, unilateralLabel:'each side', note:'Rest 60s after both sides. Prioritise breathing, control and trunk position — stop a set once good alignment can no longer be held.' }),
+
+      rx('Child\'s Pose', 1, 45, { section:'cooldown', restSec:0 }),
+      rx('Supine Knee-to-Chest Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Gentle Supine Trunk Rotation', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Diaphragmatic Breathing', 1, 30, { section:'cooldown', restSec:0, note:'6 slow breaths.' }),
     ] },
 
   // ── CROSSFIT ──────────────────────────────
