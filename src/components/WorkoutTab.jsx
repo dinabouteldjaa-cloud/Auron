@@ -151,22 +151,38 @@ function LibraryTab({ onUseAsTemplate }) {
           )}
         </div>
 
-        <Label>{t('workout.exercises')} ({exercises.length})</Label>
-        <Card style={{ padding:0, overflow:'hidden', marginBottom:20 }}>
-          {exercises.map((ex, i) => {
+        {(() => {
+          // Group into Warm-up / Main Workout / Cool-down when the workout
+          // provides section tags; otherwise fall back to one flat list
+          // (unchanged behaviour for every other sport's workouts).
+          const hasSections = exercises.some(ex => ex.section)
+          const sections = hasSections
+            ? [
+                { key:'warmup',   label:t('workout.warmupSection')||'Warm-up',     items:exercises.filter(ex=>ex.section==='warmup') },
+                { key:'main',     label:t('workout.mainSection')||'Main Workout',   items:exercises.filter(ex=>ex.section==='main' || !ex.section) },
+                { key:'cooldown', label:t('workout.cooldownSection')||'Cool-down',  items:exercises.filter(ex=>ex.section==='cooldown') },
+              ].filter(s => s.items.length > 0)
+            : [{ key:'all', label:`${t('workout.exercises')} (${exercises.length})`, items:exercises }]
+
+          const renderExercise = (ex, i, arr) => {
             const isTimed = !!ex.timed
+            const repDisplay = ex.repRange || ex.reps
+            const unilateralText = ex.unilateral ? ` (${ex.unilateralLabel || t('workout.eachSide') || 'each side'})` : ''
             const prescription = ex.sets && ex.reps
               ? (isTimed
-                  ? `${ex.sets} × ${ex.reps}s`
-                  : `${ex.sets} × ${ex.reps} ${t('session.reps') || 'reps'}`)
+                  ? `${ex.sets} × ${repDisplay}${typeof repDisplay === 'number' || /^\d+$/.test(String(repDisplay)) ? 's' : ''}${unilateralText}`
+                  : `${ex.sets} × ${repDisplay} ${t('session.reps') || 'reps'}${unilateralText}`)
               : (ex.timed ? t('workout.duration2') : t('session.reps'))
+            const restLabel = ex.restSec != null
+              ? (ex.restSec === 0 ? null : `${t('workout.restBetween')||'Rest'}: ${ex.restSec}s`)
+              : null
             return (
-              <div key={i} style={{ padding:'14px 16px', borderBottom: i < exercises.length-1 ? `1px solid ${C.divider}` : 'none' }}>
+              <div key={i} style={{ padding:'14px 16px', borderBottom: i < arr.length-1 ? `1px solid ${C.divider}` : 'none' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                   <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{ex.icon}</div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
-                    <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)} · {prescription}</div>
+                    <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)} · {prescription}{restLabel ? ` · ${restLabel}` : ''}</div>
                     {ex.note && (
                       <div style={{ fontSize:11, color:C.purple, marginTop:3, lineHeight:1.4 }}>💡 {ex.note}</div>
                     )}
@@ -175,8 +191,17 @@ function LibraryTab({ onUseAsTemplate }) {
                 <ExerciseHowTo name={ex.name} />
               </div>
             )
-          })}
-        </Card>
+          }
+
+          return sections.map(section => (
+            <div key={section.key} style={{ marginBottom:20 }}>
+              <Label>{section.label}</Label>
+              <Card style={{ padding:0, overflow:'hidden' }}>
+                {section.items.map((ex, i) => renderExercise(ex, i, section.items))}
+              </Card>
+            </div>
+          ))
+        })()}
 
         <button onClick={() => onUseAsTemplate({ ...workout, startNow:true })}
           style={{ width:'100%', padding:14, borderRadius:16, background:C.green, border:'none', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:10 }}>
@@ -978,6 +1003,16 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
           <div style={{ fontSize:13, color:C.purple, fontWeight:600, marginTop:4 }}>
             Set {setIdx+1}/{totalSets} · {doneCount} {t('session.doneMark').replace('✓ ','')}
           </div>
+          {(exercise.repRange || exercise.unilateral) && (
+            <div style={{ fontSize:12, color:C.textDim, marginTop:6 }}>
+              {exercise.repRange && `${exercise.repRange} ${timed ? '' : (t('session.reps')||'reps')}`}
+              {exercise.repRange && exercise.unilateral ? ' · ' : ''}
+              {exercise.unilateral && (exercise.unilateralLabel || t('workout.eachSide') || 'each side')}
+            </div>
+          )}
+          {exercise.note && (
+            <div style={{ fontSize:12, color:C.purple, marginTop:8, lineHeight:1.5, padding:'0 8px' }}>💡 {exercise.note}</div>
+          )}
         </div>
 
         {/* Weight & Reps — big tap targets */}
@@ -1081,11 +1116,20 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
     const name  = typeof ex === 'string' ? ex : (ex.name || ex)
     const data  = getExercise(name, lang)
     const count = parseInt(ex.sets) || 3
+    const isObj = typeof ex === 'object'
     return {
       name, timed: data.timed || false,
       sets: Array.from({ length: count }, () => ({
         weight: '', reps: String(parseInt(ex.reps)||10), duration: String(parseInt(ex.reps)||30), done: false
       })),
+      // Carry the exact prescription through to the active session —
+      // used for per-exercise rest, rep-range display, and unilateral cues.
+      section:          isObj ? ex.section : undefined,
+      restSec:          isObj && ex.restSec != null ? ex.restSec : undefined,
+      repRange:         isObj ? ex.repRange : undefined,
+      unilateral:       isObj ? ex.unilateral : undefined,
+      unilateralLabel:  isObj ? ex.unilateralLabel : undefined,
+      note:             isObj ? ex.note : undefined,
     }
   })
 
@@ -1129,6 +1173,10 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
 
   // Mark current set done and advance
   const [workoutDone, setWorkoutDone] = useState(false)
+  // The rest duration for whichever exercise/set was just completed — an
+  // exercise-specific prescribed restSec always wins over the universal
+  // picker value, so different rest lengths line up with the plan exactly.
+  const [activeRestSec, setActiveRestSec] = useState(null)
 
   const handleSetDone = ({ weight, reps, duration }) => {
     const ex   = exercises[activeEx]
@@ -1145,8 +1193,13 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
       return
     }
 
-    // Show rest timer between sets
-    if (restSecs > 0) setShowRest(true)
+    // Show rest timer between sets — the exercise's own prescribed rest
+    // (including 0 for cool-down/no-rest steps) overrides the universal picker.
+    const thisRestSec = ex.restSec != null ? ex.restSec : restSecs
+    if (thisRestSec > 0) {
+      setActiveRestSec(thisRestSec)
+      setShowRest(true)
+    }
 
     // Advance to next set or next exercise
     if (!isLastSet) {
@@ -1267,7 +1320,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   // Render rest timer as fullscreen overlay while exercise view is still mounted
   return (
     <>
-      {showRest && <RestTimer duration={restSecs} onDone={() => setShowRest(false)} />}
+      {showRest && <RestTimer duration={activeRestSec != null ? activeRestSec : restSecs} onDone={() => setShowRest(false)} />}
       <FullscreenExercise
         exercise={exercises[activeEx]}
         setIdx={activeSet}
