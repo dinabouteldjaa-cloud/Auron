@@ -126,7 +126,11 @@ function LibraryTab({ onUseAsTemplate }) {
 
   // ── Workout detail ────────────────────────
   if (workout) {
-    const exercises = workout.exercises.map(name => getExercise(name, lang))
+    const exercises = workout.exercises.map(item => {
+      const exName = typeof item === 'string' ? item : item.name
+      const data   = getExercise(exName, lang)
+      return { ...data, ...(typeof item === 'string' ? {} : item), name: data.name || exName }
+    })
     const sport_obj = SPORTS.find(s => s.id === workout.sport) || {}
     return (
       <div>
@@ -140,22 +144,38 @@ function LibraryTab({ onUseAsTemplate }) {
               <div key={l}><div style={{ fontSize:13, fontWeight:700 }}>{v}</div><div style={{ fontSize:10, opacity:0.7 }}>{l}</div></div>
             ))}
           </div>
+          {workout.suggestedRestSec != null && (
+            <div style={{ marginTop:12, fontSize:11.5, opacity:0.85 }}>
+              ⏱ {t('workout.restBetween') || 'Rest between sets'}: {workout.suggestedRestSec === 0 ? (t('session.restOff')||'Off') : `${workout.suggestedRestSec}s`}
+            </div>
+          )}
         </div>
 
         <Label>{t('workout.exercises')} ({exercises.length})</Label>
         <Card style={{ padding:0, overflow:'hidden', marginBottom:20 }}>
-          {exercises.map((ex, i) => (
-            <div key={i} style={{ padding:'14px 16px', borderBottom: i < exercises.length-1 ? `1px solid ${C.divider}` : 'none' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{ex.icon}</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
-                  <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)}{ex.timed ? ' · ' + t('workout.duration2') : ` · ${t('session.reps')}`}</div>
+          {exercises.map((ex, i) => {
+            const isTimed = !!ex.timed
+            const prescription = ex.sets && ex.reps
+              ? (isTimed
+                  ? `${ex.sets} × ${ex.reps}s`
+                  : `${ex.sets} × ${ex.reps} ${t('session.reps') || 'reps'}`)
+              : (ex.timed ? t('workout.duration2') : t('session.reps'))
+            return (
+              <div key={i} style={{ padding:'14px 16px', borderBottom: i < exercises.length-1 ? `1px solid ${C.divider}` : 'none' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{ex.icon}</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
+                    <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)} · {prescription}</div>
+                    {ex.note && (
+                      <div style={{ fontSize:11, color:C.purple, marginTop:3, lineHeight:1.4 }}>💡 {ex.note}</div>
+                    )}
+                  </div>
                 </div>
+                <ExerciseHowTo name={ex.name} />
               </div>
-              <ExerciseHowTo name={ex.name} />
-            </div>
-          ))}
+            )
+          })}
         </Card>
 
         <button onClick={() => onUseAsTemplate({ ...workout, startNow:true })}
@@ -597,9 +617,18 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBui
 
   if (editing) {
     const initPlan = editing.preload
-      ? { name: editing.preload.name, exercises: editing.preload.exercises.map(name => {
-          const ex = getExercise(name)
-          return { name, icon:ex.icon||'💪', muscles:ex.muscles||'', timed:ex.timed||false, sets:3, reps:ex.timed?30:10, notes:'' }
+      ? { name: editing.preload.name, exercises: editing.preload.exercises.map(item => {
+          const exName = typeof item === 'string' ? item : item.name
+          const ex = getExercise(exName)
+          return {
+            name: exName,
+            icon: ex.icon || '💪',
+            muscles: ex.muscles || '',
+            timed: ex.timed || false,
+            sets: (typeof item === 'object' && item.sets) || 3,
+            reps: (typeof item === 'object' && item.reps) || (ex.timed ? 30 : 10),
+            notes: (typeof item === 'object' && item.note) || '',
+          }
         }), notes:'' }
       : editing.id ? editing : null
     return <PlanEditor plan={initPlan} onSave={savePlan} onCancel={() => setEditing(null)} />
@@ -1066,7 +1095,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   const [started,    setStarted]    = useState(false)
   const [paused,     setPaused]     = useState(false)
   const [elapsed,    setElapsed]    = useState(0)
-  const [restSecs,   setRestSecs]   = useState(60)
+  const [restSecs,   setRestSecs]   = useState(plan?.suggestedRestSec != null ? plan.suggestedRestSec : 60)
   const [showPicker, setShowPicker] = useState(false)
   const [saving,     setSaving]     = useState(false)
   const [showRest,   setShowRest]   = useState(false)  // ← lifted here so it survives re-renders
@@ -1401,7 +1430,7 @@ export default function WorkoutTab({ userId, profile }) {
 
   const handleUseAsTemplate = workout => {
     if (workout.startNow) {
-      setSession({ name: workout.name, exercises: workout.exercises, fromLibrary: true })
+      setSession({ name: workout.name, exercises: workout.exercises, fromLibrary: true, suggestedRestSec: workout.suggestedRestSec })
     } else {
       setPreloadPlan({ name: workout.name, exercises: workout.exercises })
       setTab('plans')
