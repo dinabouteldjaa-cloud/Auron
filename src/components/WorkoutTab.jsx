@@ -3,11 +3,32 @@ import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
-import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise } from '../lib/workoutData.js'
+import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconSrc } from '../lib/workoutData.js'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 import { TabAuronCard } from './CoachAuron'
 
 const C = T
+
+// ─────────────────────────────────────────────
+// ExerciseIcon — renders a custom Weight Training SVG silhouette when
+// one is mapped for this exercise, falling back to the plain emoji
+// icon otherwise (every non-Weight-Training exercise, or any load
+// error). Same footprint as the emoji it replaces — drop-in swap,
+// no layout changes.
+// ─────────────────────────────────────────────
+function ExerciseIcon({ name, fallback, size = 20 }) {
+  const [failed, setFailed] = useState(false)
+  const src = !failed && getExerciseIconSrc(name)
+  if (!src) return <span style={{ fontSize: size, lineHeight: 1 }}>{fallback}</span>
+  return (
+    <img
+      src={src}
+      alt=""
+      onError={() => setFailed(true)}
+      style={{ width: size, height: size, opacity: 0.85 }}
+    />
+  )
+}
 
 // ─────────────────────────────────────────────
 // ─────────────────────────────────────────────
@@ -71,55 +92,6 @@ function BackBtn({ onBack, label }) {
       ‹ {label}
     </button>
   )
-}
-
-
-
-function FitnessIcon({ icon, size=20, color=C.purple }) {
-  const value = String(icon || '')
-  if (!value.startsWith('icon:')) {
-    return <span style={{ fontSize:size, lineHeight:1 }}>{icon || '💪'}</span>
-  }
-
-  const key = value.slice(5)
-  const common = {
-    width:size,
-    height:size,
-    viewBox:'0 0 24 24',
-    fill:'none',
-    stroke:'currentColor',
-    strokeWidth:2,
-    strokeLinecap:'round',
-    strokeLinejoin:'round',
-    style:{ color, display:'block' }
-  }
-
-  switch (key) {
-    case 'dumbbell':
-      return <svg {...common}><path d="M6 7v10"/><path d="M9 6v12"/><path d="M15 6v12"/><path d="M18 7v10"/><path d="M6 12h12"/></svg>
-    case 'bodyweight':
-      return <svg {...common}><circle cx="12" cy="5" r="2"/><path d="M12 7v6"/><path d="M8 10h8"/><path d="M10 13l-3 6"/><path d="M14 13l3 6"/></svg>
-    case 'lower':
-      return <svg {...common}><path d="M8 4v7l-2 7"/><path d="M14 4v6l4 8"/><path d="M6 20h4"/><path d="M16 20h4"/></svg>
-    case 'core':
-      return <svg {...common}><path d="M12 3c3 3 4 6 4 9a4 4 0 0 1-8 0c0-3 1-6 4-9z"/><path d="M9 13h6"/><path d="M10 17h4"/></svg>
-    case 'mobility':
-      return <svg {...common}><circle cx="12" cy="5" r="2"/><path d="M12 7v5"/><path d="M7 10h10"/><path d="M9 20l3-8 3 8"/></svg>
-    case 'stretch':
-      return <svg {...common}><circle cx="12" cy="5" r="2"/><path d="M12 7v5"/><path d="M6 12h12"/><path d="M12 12l-4 7"/><path d="M12 12l4 7"/></svg>
-    case 'breath':
-      return <svg {...common}><path d="M4 8h8a3 3 0 1 0-3-3"/><path d="M4 13h12a3 3 0 1 1-3 3"/><path d="M4 18h7"/></svg>
-    case 'cardio':
-      return <svg {...common}><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>
-    case 'bike':
-      return <svg {...common}><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17l4-8h3l5 8"/><path d="M10 9l-2-3"/><path d="M13 9h3"/></svg>
-    case 'row':
-      return <svg {...common}><path d="M4 17h16"/><path d="M7 14l5-8 5 8"/><path d="M9 11h6"/><path d="M5 20h14"/></svg>
-    case 'walk':
-      return <svg {...common}><circle cx="12" cy="4" r="2"/><path d="M12 6l-2 6 4 2"/><path d="M10 12l-3 7"/><path d="M14 14l3 5"/></svg>
-    default:
-      return <span style={{ fontSize:size, lineHeight:1 }}>💪</span>
-  }
 }
 
 // ─────────────────────────────────────────────
@@ -228,7 +200,7 @@ function LibraryTab({ onUseAsTemplate }) {
             return (
               <div key={i} style={{ padding:'14px 16px', borderBottom: i < arr.length-1 ? `1px solid ${C.divider}` : 'none' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                  <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}><FitnessIcon icon={ex.icon} size={20} /></div>
+                  <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}><ExerciseIcon name={ex.name} fallback={ex.icon} size={20} /></div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
                     <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)} · {prescription}{restLabel ? ` · ${restLabel}` : ''}</div>
@@ -462,7 +434,7 @@ function ExercisePickerModal({ onAdd, onClose }) {
           {filtered.map((ex, i) => (
             <button key={i} onClick={() => { onAdd(ex); onClose() }}
               style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 0', background:'none', border:'none', borderBottom:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left' }}>
-              <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}><FitnessIcon icon={ex.icon} size={20} /></div>
+              <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}><ExerciseIcon name={ex.name} fallback={ex.icon} size={20} /></div>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:14, fontWeight:500, color:C.text }}>{ex.name}</div>
                 <div style={{ fontSize:11, color:C.textMuted }}>{ex.category} · {tMuscles(ex.muscles)}</div>
@@ -551,7 +523,7 @@ function PlanEditor({ plan, onSave, onCancel }) {
       {exercises.map((ex, i) => (
         <div key={i} style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, padding:'12px 14px', marginBottom:8 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
-            <FitnessIcon icon={ex.icon} size={20} />
+            <span style={{ fontSize:20 }}><ExerciseIcon name={ex.name} fallback={ex.icon} size={20} /></span>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
               <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)}</div>
@@ -932,7 +904,7 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration, onRestStart }) {
         {/* Header */}
         <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px 10px', borderBottom:`1px solid ${C.divider}` }}>
           <div style={{ width:42, height:42, borderRadius:12, background:allDone?`${C.green}18`:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
-            <FitnessIcon icon={data.icon || '💪'} size={22} color={allDone ? C.green : C.purple} />
+            <ExerciseIcon name={ex.name} fallback={data.icon || '💪'} size={20} />
           </div>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{ex.name}</div>
@@ -1046,7 +1018,7 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
       <div style={{ flex:1, overflowY:'auto', padding:'0 24px' }}>
         {/* Exercise name + icon */}
         <div style={{ textAlign:'center', marginBottom:24 }}>
-          <div style={{ fontSize:56, marginBottom:12 }}><FitnessIcon icon={data.icon || '💪'} size={56} color={C.purple} /></div>
+          <div style={{ fontSize:56, marginBottom:12 }}><ExerciseIcon name={exercise.name} fallback={data.icon||'💪'} size={56} /></div>
           <div style={{ fontSize:26, fontWeight:800, color:C.text, lineHeight:1.2, marginBottom:6 }}>{exercise.name}</div>
           <div style={{ fontSize:13, color:C.textMuted }}>{tMuscles(data.muscles)}</div>
           <div style={{ fontSize:13, color:C.purple, fontWeight:600, marginTop:4 }}>
@@ -1316,7 +1288,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
           const data = getExercise(ex.name, lang)
           return (
             <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 14px', background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, marginBottom:8 }}>
-              <FitnessIcon icon={data.icon || '💪'} size={20} />
+              <span style={{ fontSize:20 }}><ExerciseIcon name={ex.name} fallback={data.icon||'💪'} size={20} /></span>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
                 <div style={{ fontSize:11, color:C.textMuted }}>{ex.sets.length} {t('plan.sets').toLowerCase()} · {tMuscles(data.muscles)}</div>
