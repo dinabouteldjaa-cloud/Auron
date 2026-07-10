@@ -3,8 +3,8 @@
 // ─────────────────────────────────────────────────────────────
 
 export const EXERCISES = {
-  'Bench Press':         { icon:'icon:dumbbell', muscles:'Chest, Triceps, Shoulders', category:'Chest', howTo:['Lie flat, feet on floor','Grip bar slightly wider than shoulders','Lower to mid-chest with control','Press up explosively'], tips:"Never bounce the bar off your chest." },
-  'Incline Bench Press': { icon:'icon:dumbbell', muscles:'Upper Chest, Shoulders',    category:'Chest', howTo:['Set bench to 30-45 degrees','Lower bar to upper chest','Press up and slightly back'], tips:'Over 45 degrees shifts load to shoulders.' },
+  'Bench Press':         { icon:'🏋️', muscles:'Chest, Triceps, Shoulders', category:'Chest', howTo:['Lie flat, feet on floor','Grip bar slightly wider than shoulders','Lower to mid-chest with control','Press up explosively'], tips:"Never bounce the bar off your chest." },
+  'Incline Bench Press': { icon:'🏋️', muscles:'Upper Chest, Shoulders',    category:'Chest', howTo:['Set bench to 30-45 degrees','Lower bar to upper chest','Press up and slightly back'], tips:'Over 45 degrees shifts load to shoulders.' },
   'Push Ups':            { icon:'💪', muscles:'Chest, Triceps, Core',       category:'Chest', howTo:['Start in plank, hands wider than shoulders','Keep body straight','Lower chest to floor','Push back up'], tips:"Don't let hips sag." },
   'Chest Fly':           { icon:'🦋', muscles:'Chest',                       category:'Chest', howTo:['Lie on bench with dumbbells above chest','Lower arms wide in arc','Squeeze chest to bring back'], tips:'Focus on the stretch at the bottom.' },
   'Dips':                { icon:'💪', muscles:'Chest, Triceps',              category:'Chest', howTo:['Grip parallel bars','Lean forward for chest focus','Lower until arms parallel','Push back up'], tips:'Lean forward = chest, upright = triceps.' },
@@ -12,12 +12,12 @@ export const EXERCISES = {
   'Pull Ups':            { icon:'💪', muscles:'Lats, Biceps',                category:'Back',  howTo:['Hang with overhand grip','Pull shoulder blades down first','Chin above bar','Lower fully'], tips:'Full range of motion is key.' },
   'Deadlift':            { icon:'🏋️', muscles:'Full Back, Hamstrings, Glutes',category:'Back', howTo:['Bar over mid-foot','Hinge at hips, grip outside legs','Chest up, brace core','Drive through floor','Lock out hips at top'], tips:"Never round the lower back." },
   'Bent Over Row':       { icon:'🏋️', muscles:'Back, Biceps',                category:'Back',  howTo:['Hinge forward, back flat','Pull bar to lower chest','Squeeze shoulder blades'], tips:'Keep back flat throughout.' },
-  'Lat Pulldown':        { icon:'icon:dumbbell', muscles:'Lats, Biceps',                category:'Back',  howTo:['Grip bar wide, sit upright','Pull to upper chest','Slow return'], tips:'Imagine pulling elbows to back pockets.' },
-  'Seated Cable Row':    { icon:'icon:row', muscles:'Mid Back',                    category:'Back',  howTo:['Sit upright, feet on platform','Pull to abdomen','Squeeze blades at peak'], tips:"Don't use momentum." },
-  'Face Pull':           { icon:'icon:dumbbell', muscles:'Rear Delts, Upper Back',      category:'Back',  howTo:['Cable at face height','Pull rope to face','Elbows high and wide','External rotate at end'], tips:'Great for shoulder health.' },
+  'Lat Pulldown':        { icon:'💪', muscles:'Lats, Biceps',                category:'Back',  howTo:['Grip bar wide, sit upright','Pull to upper chest','Slow return'], tips:'Imagine pulling elbows to back pockets.' },
+  'Seated Cable Row':    { icon:'🚣', muscles:'Mid Back',                    category:'Back',  howTo:['Sit upright, feet on platform','Pull to abdomen','Squeeze blades at peak'], tips:"Don't use momentum." },
+  'Face Pull':           { icon:'💪', muscles:'Rear Delts, Upper Back',      category:'Back',  howTo:['Cable at face height','Pull rope to face','Elbows high and wide','External rotate at end'], tips:'Great for shoulder health.' },
   'Squat':               { icon:'🏋️', muscles:'Quads, Glutes, Hamstrings',  category:'Legs',  howTo:['Bar on traps, feet shoulder-width','Brace core','Push knees out, sit back','Thighs parallel or below','Drive through floor'], tips:'Knees track over toes.' },
-  'Romanian Deadlift':   { icon:'icon:dumbbell', muscles:'Hamstrings, Glutes',          category:'Legs',  howTo:['Hold bar, push hips back','Lower bar along legs','Feel hamstring stretch','Drive hips forward'], tips:'Hip hinge, not a squat.' },
-  'Leg Press':           { icon:'icon:lower', muscles:'Quads, Glutes',               category:'Legs',  howTo:['Feet shoulder-width on platform','Lower until 90 degrees','Press without locking knees'], tips:'Higher feet = more glutes.' },
+  'Romanian Deadlift':   { icon:'🏋️', muscles:'Hamstrings, Glutes',          category:'Legs',  howTo:['Hold bar, push hips back','Lower bar along legs','Feel hamstring stretch','Drive hips forward'], tips:'Hip hinge, not a squat.' },
+  'Leg Press':           { icon:'🦵', muscles:'Quads, Glutes',               category:'Legs',  howTo:['Feet shoulder-width on platform','Lower until 90 degrees','Press without locking knees'], tips:'Higher feet = more glutes.' },
   'Lunges':              { icon:'🦵', muscles:'Quads, Glutes',               category:'Legs',  howTo:['Step forward','Lower back knee to floor','Front knee over ankle','Push back up'], tips:'Long stride = glutes, short = quads.' },
   'Hip Thrust':          { icon:'🦵', muscles:'Glutes, Hamstrings',          category:'Legs',  howTo:['Upper back on bench, bar on hips','Drive hips up','Squeeze glutes at top'], tips:'Best glute exercise there is.' },
   'Calf Raises':         { icon:'🦵', muscles:'Calves',                      category:'Legs',  howTo:['Rise onto balls of feet','Hold peak 1 second','Lower below step'], tips:'Use full range, high reps.' },
@@ -25,10 +25,10 @@ export const EXERCISES = {
   'Lateral Raise':       { icon:'💪', muscles:'Side Delts',                  category:'Shoulders', howTo:['Raise arms to sides','Parallel to floor','Pinky slightly higher'], tips:'Go lighter than you think.' },
   'Arnold Press':        { icon:'🏋️', muscles:'All Deltoid Heads',           category:'Shoulders', howTo:['Palms facing you at shoulder height','Press up, rotate palms out','Reverse on the way down'], tips:'Hits all three delt heads.' },
   'Bicep Curl':          { icon:'💪', muscles:'Biceps',                      category:'Arms',  howTo:['Arms fully extended','Curl to shoulders','Squeeze at top','Lower fully'], tips:"Don't swing." },
-  'Hammer Curl':         { icon:'icon:dumbbell', muscles:'Biceps, Forearms',            category:'Arms',  howTo:['Neutral grip (thumbs up)','Curl without rotating wrist'], tips:'Builds arm thickness.' },
+  'Hammer Curl':         { icon:'💪', muscles:'Biceps, Forearms',            category:'Arms',  howTo:['Neutral grip (thumbs up)','Curl without rotating wrist'], tips:'Builds arm thickness.' },
   'Tricep Pushdown':     { icon:'💪', muscles:'Triceps',                     category:'Arms',  howTo:['Elbows fixed at sides','Push down to full extension','Squeeze triceps'], tips:"Don't let elbows flare." },
   'Skull Crushers':      { icon:'🏋️', muscles:'Triceps',                     category:'Arms',  howTo:['Lie on bench, bar above chest','Lower to forehead','Extend back up'], tips:'Only forearms move.' },
-  'Plank':               { icon:'icon:core', muscles:'Core, Shoulders', timed:true, category:'Core',  howTo:['Forearms on floor','Straight line head to heels','Squeeze core and glutes'], tips:'Quality over duration.' },
+  'Plank':               { icon:'🧘', muscles:'Core, Shoulders', timed:true, category:'Core',  howTo:['Forearms on floor','Straight line head to heels','Squeeze core and glutes'], tips:'Quality over duration.' },
   'Crunches':            { icon:'💪', muscles:'Abs',                         category:'Core',  howTo:['Knees bent, hands behind head','Curl shoulders off floor','Slow lower'], tips:'Short range is intentional.' },
   'Leg Raises':          { icon:'🦵', muscles:'Lower Abs',                   category:'Core',  howTo:['Lie flat','Raise legs to 90 degrees','Lower slowly without touching floor'], tips:'Slower = harder.' },
   'Russian Twist':       { icon:'🔄', muscles:'Obliques',                    category:'Core',  howTo:['Feet off floor, lean back','Rotate side to side'], tips:'Control the movement.' },
@@ -54,7 +54,7 @@ export const EXERCISES = {
   'Jab-Cross':           { icon:'🥊', muscles:'Shoulders, Core', timed:true, category:'Boxing', howTo:['Boxing stance','Jab: quick lead hand','Cross: powerful rear hand with hip rotation','Return to guard'], tips:'Power comes from rotation.' },
   'Shadow Boxing':       { icon:'🥊', muscles:'Full Body, Cardio', timed:true, category:'Boxing', howTo:['Move constantly on balls of feet','Mix jabs, crosses, hooks, uppercuts','Add footwork and head movement'], tips:'3-min rounds, 1-min rest.' },
   'Heavy Bag':           { icon:'🥊', muscles:'Full Body, Power', timed:true, category:'Boxing', howTo:['Wrap hands first','Use proper stance','Throw combinations','Keep guard up between punches'], tips:'Focus on technique, not just power.' },
-  'Hamstring Stretch':   { icon:'icon:stretch', muscles:'Hamstrings', timed:true,      category:'Stretching', howTo:['Sit or lie down','Bring one leg up','Keep knee straight','Hold 30-60 sec each side'], tips:'Never force the stretch.' },
+  'Hamstring Stretch':   { icon:'🤸', muscles:'Hamstrings', timed:true,      category:'Stretching', howTo:['Sit or lie down','Bring one leg up','Keep knee straight','Hold 30-60 sec each side'], tips:'Never force the stretch.' },
   'Hip Flexor Stretch':  { icon:'🤸', muscles:'Hip Flexors', timed:true,    category:'Stretching', howTo:['Kneel one knee on floor','Shift hips forward','Keep torso upright'], tips:'Great after sitting or leg day.' },
   'Pigeon Pose':         { icon:'🕊️', muscles:'Hips, IT Band', timed:true,   category:'Stretching', howTo:['From downward dog','Knee forward behind wrist','Extend other leg back','Hold 1-2 min each side'], tips:'One of the best hip openers.' },
   'Chest Opener':        { icon:'🤸', muscles:'Chest, Posture', timed:true,  category:'Stretching', howTo:['Clasp hands behind back','Squeeze shoulder blades','Lift arms slightly'], tips:'Do after any pushing workout.' },
@@ -69,7 +69,7 @@ export const EXERCISES = {
   'Kata Practice':       { icon:'🥋', muscles:'Full Body', timed:true,      category:'Martial Arts', howTo:['Ready stance','Perform sequence deliberately','Each movement intentional','Finish in start position'], tips:'Focus on precision over speed.' },
   'Kettlebell Clean':    { icon:'🔔', muscles:'Full Body, Power',            category:'Kettlebell', howTo:['Hike bell between legs','Drive hips, pull bell up','Catch in rack position','Elbow close to body'], tips:'The clean is the foundation of most KB moves.' },
   'Turkish Get Up':      { icon:'🔔', muscles:'Full Body, Stability',        category:'Kettlebell', howTo:['Lie down, bell locked overhead','Slowly rise to standing in stages','Reverse the movement back down'], tips:'Go slow. This is a strength skill.' },
-  'Goblet Squat':        { icon:'icon:dumbbell', muscles:'Quads, Glutes, Core',         category:'Kettlebell', howTo:['Hold bell at chest','Feet slightly wide','Squat deep, elbows inside knees','Drive back up'], tips:'Great for squat depth and posture.' },
+  'Goblet Squat':        { icon:'🔔', muscles:'Quads, Glutes, Core',         category:'Kettlebell', howTo:['Hold bell at chest','Feet slightly wide','Squat deep, elbows inside knees','Drive back up'], tips:'Great for squat depth and posture.' },
   "Farmer's Carry":      { icon:'🏋️', muscles:'Grip, Traps, Core', timed:true, category:'Functional', howTo:['Hold heavy weights at sides','Walk with tall posture','Controlled steps','Keep shoulders back'], tips:'One of the most functional exercises.' },
   'Battle Ropes':        { icon:'🔗', muscles:'Arms, Core, Cardio', timed:true, category:'Functional', howTo:['Hold one end each','Alternate arm waves','Keep core braced','Vary patterns'], tips:'Brutal conditioning tool.' },
   'Medicine Ball Slam':  { icon:'⚽', muscles:'Full Body, Core, Power',      category:'Functional', howTo:['Hold ball overhead','Squat slightly','Slam ball to floor hard','Catch or pick up, repeat'], tips:'Great for power.' },
@@ -83,70 +83,70 @@ export const EXERCISES = {
   'Cartwheel':           { icon:'🤸', muscles:'Full Body, Coordination',     category:'Gymnastics', howTo:['Lead foot forward','Plant lead hand, then trail hand','Kick legs up and over','Land feet apart'], tips:'Keep arms straight throughout.' },
 
   // ── Weight Training — warm-up cardio options ─────────────────
-  'Brisk Walk or Easy Bike': { icon:'icon:cardio', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Pick either — a brisk walk or an easy bike spin','Keep effort light, just enough to raise your heart rate'], tips:'This is preparation, not the workout — keep it easy.' },
-  'Easy Rowing or Bike':     { icon:'icon:cardio', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Pick either — easy rowing or an easy bike spin','Light, steady effort to raise body temperature'], tips:'Save your energy for the working sets.' },
-  'Easy Rowing Machine':     { icon:'icon:row', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Light, steady rowing pace','Focus on smooth technique, not effort'], tips:'Just enough to break a light sweat.' },
-  'Easy Bike':               { icon:'icon:bike', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Easy, steady pedalling pace','Raise your heart rate gently before loading the legs'], tips:'Keep resistance light.' },
-  'Easy Bike or Row':        { icon:'icon:cardio', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Pick either — easy bike or easy row','Light steady effort only'], tips:'This is preparation, not the workout.' },
-  'Easy Walk':               { icon:'icon:walk', muscles:'Full Body, Cool-down', timed:true, category:'Cool-down', howTo:['Slow, relaxed walking pace','Let your heart rate settle gradually'], tips:'A great way to start bringing your body back down.' },
-  'Slow Walk':               { icon:'icon:walk', muscles:'Full Body, Cool-down', timed:true, category:'Cool-down', howTo:['Very easy walking pace','Breathe normally, let the body cool down'], tips:'No effort required — this is pure recovery.' },
+  'Brisk Walk or Easy Bike': { icon:'🚶', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Pick either — a brisk walk or an easy bike spin','Keep effort light, just enough to raise your heart rate'], tips:'This is preparation, not the workout — keep it easy.' },
+  'Easy Rowing or Bike':     { icon:'🚴', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Pick either — easy rowing or an easy bike spin','Light, steady effort to raise body temperature'], tips:'Save your energy for the working sets.' },
+  'Easy Rowing Machine':     { icon:'🚣', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Light, steady rowing pace','Focus on smooth technique, not effort'], tips:'Just enough to break a light sweat.' },
+  'Easy Bike':               { icon:'🚴', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Easy, steady pedalling pace','Raise your heart rate gently before loading the legs'], tips:'Keep resistance light.' },
+  'Easy Bike or Row':        { icon:'🚴', muscles:'Full Body, Cardio', timed:true, category:'Warm-up', howTo:['Pick either — easy bike or easy row','Light steady effort only'], tips:'This is preparation, not the workout.' },
+  'Easy Walk':               { icon:'🚶', muscles:'Full Body, Cool-down', timed:true, category:'Cool-down', howTo:['Slow, relaxed walking pace','Let your heart rate settle gradually'], tips:'A great way to start bringing your body back down.' },
+  'Slow Walk':               { icon:'🚶', muscles:'Full Body, Cool-down', timed:true, category:'Cool-down', howTo:['Very easy walking pace','Breathe normally, let the body cool down'], tips:'No effort required — this is pure recovery.' },
 
   // ── Weight Training — warm-up / activation drills ────────────
-  'Bodyweight Squat':    { icon:'icon:bodyweight', muscles:'Quads, Glutes', category:'Warm-up', howTo:['Feet shoulder-width apart','Sit back and down, chest up','Knees track over toes','Stand back up with control'], tips:'No weight needed — this is about waking up the pattern.' },
-  'Arm Circles':         { icon:'icon:mobility', muscles:'Shoulders', category:'Warm-up', howTo:['Extend arms out to sides','Make small circles, then gradually larger','Reverse direction halfway through'], tips:'Great simple shoulder warm-up.' },
-  'Hip Hinge Drill':     { icon:'icon:mobility', muscles:'Hamstrings, Glutes', category:'Warm-up', howTo:['Stand tall, soft knees','Push hips back while keeping back flat','Feel a stretch in the hamstrings','Drive hips forward to stand back up'], tips:'This is the movement pattern behind every deadlift variation.' },
-  'Wall Push-Up':        { icon:'icon:bodyweight', muscles:'Chest, Shoulders, Triceps', category:'Warm-up', howTo:['Stand facing a wall, hands at chest height','Lower chest toward the wall','Push back to start'], tips:'A gentle way to activate the pushing muscles before bench work.' },
-  'Band Pull-Aparts':    { icon:'icon:mobility', muscles:'Rear Delts, Upper Back', category:'Warm-up', howTo:['Hold a light band at chest height, arms extended','Pull the band apart until it touches your chest','Control the return'], tips:'Excellent shoulder health and posture activation.' },
-  'Scapular Push-Ups':   { icon:'icon:bodyweight', muscles:'Shoulders, Upper Back', category:'Warm-up', howTo:['Start in a plank or push-up position, arms straight','Let shoulder blades pinch together, then push them apart','Elbows stay straight throughout'], tips:'Small movement — this activates the shoulder blades, not the arms.' },
-  'Band Straight-Arm Pulldown': { icon:'icon:mobility', muscles:'Lats, Back', category:'Warm-up', howTo:['Hold band overhead, arms straight','Pull the band down to the thighs, arms staying straight','Control the return'], tips:'Great lat activation before pulling work.' },
-  'Scapular Pull-Up or Scapular Pulldown': { icon:'icon:mobility', muscles:'Lats, Upper Back', category:'Warm-up', howTo:['Hang from the bar (or hold a pulldown bar)','Without bending the elbows, pull shoulder blades down and together','Release with control'], tips:'This primes the lats before real pulling work.' },
-  'Light Cable Row':     { icon:'icon:row', muscles:'Back, Biceps', category:'Warm-up', howTo:['Very light weight on the cable row','Focus purely on technique and full range of motion'], tips:'This is a warm-up set, not a working set.' },
-  'Glute Bridge':        { icon:'icon:lower', muscles:'Glutes, Hamstrings', category:'Warm-up', howTo:['Lie on back, knees bent, feet flat','Drive hips up, squeezing glutes at the top','Lower with control'], tips:'Wakes up the glutes before squats and deadlifts.' },
-  'Reverse Lunge':       { icon:'icon:lower', muscles:'Quads, Glutes', category:'Warm-up', howTo:['Step backward into a lunge','Front knee stays over the ankle','Push through the front foot to return to standing'], tips:'Gentler on the knees than a forward lunge — good for warming up.' },
-  'Cat-Cow':             { icon:'icon:mobility', muscles:'Spine, Core', category:'Warm-up', howTo:['On hands and knees','Arch the back, dropping belly, looking up (cow)','Round the back, tucking chin (cat)','Move slowly between the two'], tips:'Gently mobilises the whole spine.' },
-  'Pelvic Tilt':         { icon:'icon:core', muscles:'Core, Lower Back', category:'Warm-up', howTo:['Lie on back, knees bent','Flatten the lower back into the floor by tilting the pelvis','Release and repeat'], tips:'A subtle but effective core activation drill.' },
-  'Bird Dog Practice':   { icon:'icon:core', muscles:'Core, Balance', category:'Warm-up', howTo:['On hands and knees','Extend one arm and the opposite leg','Keep hips level, hold briefly','Return and switch sides'], tips:'Practice slowly here — this primes the movement for the main set.' },
+  'Bodyweight Squat':    { icon:'🦵', muscles:'Quads, Glutes', category:'Warm-up', howTo:['Feet shoulder-width apart','Sit back and down, chest up','Knees track over toes','Stand back up with control'], tips:'No weight needed — this is about waking up the pattern.' },
+  'Arm Circles':         { icon:'💪', muscles:'Shoulders', category:'Warm-up', howTo:['Extend arms out to sides','Make small circles, then gradually larger','Reverse direction halfway through'], tips:'Great simple shoulder warm-up.' },
+  'Hip Hinge Drill':     { icon:'🏋️', muscles:'Hamstrings, Glutes', category:'Warm-up', howTo:['Stand tall, soft knees','Push hips back while keeping back flat','Feel a stretch in the hamstrings','Drive hips forward to stand back up'], tips:'This is the movement pattern behind every deadlift variation.' },
+  'Wall Push-Up':        { icon:'💪', muscles:'Chest, Shoulders, Triceps', category:'Warm-up', howTo:['Stand facing a wall, hands at chest height','Lower chest toward the wall','Push back to start'], tips:'A gentle way to activate the pushing muscles before bench work.' },
+  'Band Pull-Aparts':    { icon:'💪', muscles:'Rear Delts, Upper Back', category:'Warm-up', howTo:['Hold a light band at chest height, arms extended','Pull the band apart until it touches your chest','Control the return'], tips:'Excellent shoulder health and posture activation.' },
+  'Scapular Push-Ups':   { icon:'💪', muscles:'Shoulders, Upper Back', category:'Warm-up', howTo:['Start in a plank or push-up position, arms straight','Let shoulder blades pinch together, then push them apart','Elbows stay straight throughout'], tips:'Small movement — this activates the shoulder blades, not the arms.' },
+  'Band Straight-Arm Pulldown': { icon:'💪', muscles:'Lats, Back', category:'Warm-up', howTo:['Hold band overhead, arms straight','Pull the band down to the thighs, arms staying straight','Control the return'], tips:'Great lat activation before pulling work.' },
+  'Scapular Pull-Up or Scapular Pulldown': { icon:'💪', muscles:'Lats, Upper Back', category:'Warm-up', howTo:['Hang from the bar (or hold a pulldown bar)','Without bending the elbows, pull shoulder blades down and together','Release with control'], tips:'This primes the lats before real pulling work.' },
+  'Light Cable Row':     { icon:'🚣', muscles:'Back, Biceps', category:'Warm-up', howTo:['Very light weight on the cable row','Focus purely on technique and full range of motion'], tips:'This is a warm-up set, not a working set.' },
+  'Glute Bridge':        { icon:'🦵', muscles:'Glutes, Hamstrings', category:'Warm-up', howTo:['Lie on back, knees bent, feet flat','Drive hips up, squeezing glutes at the top','Lower with control'], tips:'Wakes up the glutes before squats and deadlifts.' },
+  'Reverse Lunge':       { icon:'🦵', muscles:'Quads, Glutes', category:'Warm-up', howTo:['Step backward into a lunge','Front knee stays over the ankle','Push through the front foot to return to standing'], tips:'Gentler on the knees than a forward lunge — good for warming up.' },
+  'Cat-Cow':             { icon:'🧘', muscles:'Spine, Core', category:'Warm-up', howTo:['On hands and knees','Arch the back, dropping belly, looking up (cow)','Round the back, tucking chin (cat)','Move slowly between the two'], tips:'Gently mobilises the whole spine.' },
+  'Pelvic Tilt':         { icon:'🧘', muscles:'Core, Lower Back', category:'Warm-up', howTo:['Lie on back, knees bent','Flatten the lower back into the floor by tilting the pelvis','Release and repeat'], tips:'A subtle but effective core activation drill.' },
+  'Bird Dog Practice':   { icon:'🧘', muscles:'Core, Balance', category:'Warm-up', howTo:['On hands and knees','Extend one arm and the opposite leg','Keep hips level, hold briefly','Return and switch sides'], tips:'Practice slowly here — this primes the movement for the main set.' },
 
   // ── Weight Training — main lifts ─────────────────────────────
-  'Barbell Bench Press': { icon:'icon:dumbbell', muscles:'Chest, Triceps, Shoulders', category:'Chest', howTo:['Lie flat, feet on floor','Grip bar slightly wider than shoulders','Lower to mid-chest with control','Press up explosively'], tips:'Never bounce the bar off your chest.' },
-  'Dumbbell Bench Press':{ icon:'icon:dumbbell', muscles:'Chest, Triceps, Shoulders', category:'Chest', howTo:['Lie on a bench holding dumbbells at chest level','Press up until arms are extended','Lower with control back to chest level'], tips:'Dumbbells allow a slightly deeper stretch than a barbell.' },
-  'Incline Dumbbell Press': { icon:'icon:dumbbell', muscles:'Upper Chest, Shoulders', category:'Chest', howTo:['Set bench to 30-45 degrees','Press dumbbells up above the upper chest','Lower with control'], tips:'Targets the upper chest more than a flat press.' },
-  'Cable Chest Fly':     { icon:'icon:dumbbell', muscles:'Chest', category:'Chest', howTo:['Set cables to chest height, step forward','Bring handles together in front of the chest, slight elbow bend','Control the return to a full stretch'], tips:'Squeeze the chest at the point where your hands meet.' },
-  'Seated Dumbbell Shoulder Press': { icon:'icon:dumbbell', muscles:'Shoulders, Triceps', category:'Shoulders', howTo:['Sit with back supported, dumbbells at shoulder height','Press overhead until arms are extended','Lower with control back to shoulders'], tips:'Keep core braced to protect the lower back.' },
-  'Dumbbell Lateral Raise': { icon:'icon:dumbbell', muscles:'Side Delts', category:'Shoulders', howTo:['Hold dumbbells at your sides','Raise arms out to the sides to shoulder height','Lower with control'], tips:'Lighter weight with strict form beats heavier weight with momentum.' },
-  'Triceps Rope Pushdown': { icon:'icon:dumbbell', muscles:'Triceps', category:'Arms', howTo:['Stand at the cable with a rope attachment','Elbows fixed at your sides','Push down until arms are fully extended, spreading the rope at the bottom'], tips:'Keep elbows pinned — only the forearms should move.' },
-  'Lat Pulldown or Assisted Pull-Up': { icon:'icon:dumbbell', muscles:'Lats, Biceps', category:'Back', howTo:['Use the lat pulldown machine, or an assisted pull-up machine','Pull the bar to your upper chest (or pull your body up)','Control the return to a full stretch'], tips:'Choose whichever option lets you complete all reps with good form.' },
-  'Chest-Supported Dumbbell Row': { icon:'icon:row', muscles:'Back, Biceps', category:'Back', howTo:['Lie chest-down on an incline bench holding dumbbells','Row the dumbbells up toward your hips','Squeeze the shoulder blades, then lower with control'], tips:'Chest support removes momentum, isolating the back muscles.' },
-  'Dumbbell Curl':       { icon:'icon:dumbbell', muscles:'Biceps', category:'Arms', howTo:['Stand holding dumbbells, arms extended','Curl the weights up toward the shoulders','Lower with control'], tips:"Don't swing the body to help the weight up." },
-  'Back Squat':          { icon:'icon:dumbbell', muscles:'Quads, Glutes, Hamstrings', category:'Legs', howTo:['Bar on the upper back, feet shoulder-width apart','Brace the core, sit back and down','Descend until thighs are at least parallel','Drive through the floor to stand'], tips:'Knees should track in line with the toes throughout.' },
-  'Dumbbell Romanian Deadlift': { icon:'icon:dumbbell', muscles:'Hamstrings, Glutes', category:'Legs', howTo:['Hold dumbbells in front of thighs','Push hips back, lowering the weights along the legs','Feel the hamstring stretch, then drive hips forward to stand'], tips:'This is a hip hinge, not a squat — keep the weights close to the legs.' },
-  'Walking Lunge':       { icon:'icon:lower', muscles:'Quads, Glutes', category:'Legs', howTo:['Step forward into a lunge','Push through the front foot to bring the back leg through into the next lunge','Continue alternating legs while moving forward'], tips:'Keep the torso upright throughout.' },
-  'Seated or Lying Leg Curl': { icon:'icon:lower', muscles:'Hamstrings', category:'Legs', howTo:['Use either the seated or lying leg curl machine','Curl the pad toward your glutes','Control the return to full extension'], tips:'Avoid using momentum — control both the lift and the lowering.' },
-  'Standing Calf Raise': { icon:'icon:lower', muscles:'Calves', category:'Legs', howTo:['Stand on the edge of a step or platform','Rise onto the balls of the feet as high as possible','Lower the heels below the step for a full stretch'], tips:'Full range of motion matters more than the weight used.' },
+  'Barbell Bench Press': { icon:'🏋️', muscles:'Chest, Triceps, Shoulders', category:'Chest', howTo:['Lie flat, feet on floor','Grip bar slightly wider than shoulders','Lower to mid-chest with control','Press up explosively'], tips:'Never bounce the bar off your chest.' },
+  'Dumbbell Bench Press':{ icon:'🏋️', muscles:'Chest, Triceps, Shoulders', category:'Chest', howTo:['Lie on a bench holding dumbbells at chest level','Press up until arms are extended','Lower with control back to chest level'], tips:'Dumbbells allow a slightly deeper stretch than a barbell.' },
+  'Incline Dumbbell Press': { icon:'🏋️', muscles:'Upper Chest, Shoulders', category:'Chest', howTo:['Set bench to 30-45 degrees','Press dumbbells up above the upper chest','Lower with control'], tips:'Targets the upper chest more than a flat press.' },
+  'Cable Chest Fly':     { icon:'🦋', muscles:'Chest', category:'Chest', howTo:['Set cables to chest height, step forward','Bring handles together in front of the chest, slight elbow bend','Control the return to a full stretch'], tips:'Squeeze the chest at the point where your hands meet.' },
+  'Seated Dumbbell Shoulder Press': { icon:'🏋️', muscles:'Shoulders, Triceps', category:'Shoulders', howTo:['Sit with back supported, dumbbells at shoulder height','Press overhead until arms are extended','Lower with control back to shoulders'], tips:'Keep core braced to protect the lower back.' },
+  'Dumbbell Lateral Raise': { icon:'💪', muscles:'Side Delts', category:'Shoulders', howTo:['Hold dumbbells at your sides','Raise arms out to the sides to shoulder height','Lower with control'], tips:'Lighter weight with strict form beats heavier weight with momentum.' },
+  'Triceps Rope Pushdown': { icon:'💪', muscles:'Triceps', category:'Arms', howTo:['Stand at the cable with a rope attachment','Elbows fixed at your sides','Push down until arms are fully extended, spreading the rope at the bottom'], tips:'Keep elbows pinned — only the forearms should move.' },
+  'Lat Pulldown or Assisted Pull-Up': { icon:'💪', muscles:'Lats, Biceps', category:'Back', howTo:['Use the lat pulldown machine, or an assisted pull-up machine','Pull the bar to your upper chest (or pull your body up)','Control the return to a full stretch'], tips:'Choose whichever option lets you complete all reps with good form.' },
+  'Chest-Supported Dumbbell Row': { icon:'🏋️', muscles:'Back, Biceps', category:'Back', howTo:['Lie chest-down on an incline bench holding dumbbells','Row the dumbbells up toward your hips','Squeeze the shoulder blades, then lower with control'], tips:'Chest support removes momentum, isolating the back muscles.' },
+  'Dumbbell Curl':       { icon:'💪', muscles:'Biceps', category:'Arms', howTo:['Stand holding dumbbells, arms extended','Curl the weights up toward the shoulders','Lower with control'], tips:"Don't swing the body to help the weight up." },
+  'Back Squat':          { icon:'🏋️', muscles:'Quads, Glutes, Hamstrings', category:'Legs', howTo:['Bar on the upper back, feet shoulder-width apart','Brace the core, sit back and down','Descend until thighs are at least parallel','Drive through the floor to stand'], tips:'Knees should track in line with the toes throughout.' },
+  'Dumbbell Romanian Deadlift': { icon:'🏋️', muscles:'Hamstrings, Glutes', category:'Legs', howTo:['Hold dumbbells in front of thighs','Push hips back, lowering the weights along the legs','Feel the hamstring stretch, then drive hips forward to stand'], tips:'This is a hip hinge, not a squat — keep the weights close to the legs.' },
+  'Walking Lunge':       { icon:'🦵', muscles:'Quads, Glutes', category:'Legs', howTo:['Step forward into a lunge','Push through the front foot to bring the back leg through into the next lunge','Continue alternating legs while moving forward'], tips:'Keep the torso upright throughout.' },
+  'Seated or Lying Leg Curl': { icon:'🦵', muscles:'Hamstrings', category:'Legs', howTo:['Use either the seated or lying leg curl machine','Curl the pad toward your glutes','Control the return to full extension'], tips:'Avoid using momentum — control both the lift and the lowering.' },
+  'Standing Calf Raise': { icon:'🦵', muscles:'Calves', category:'Legs', howTo:['Stand on the edge of a step or platform','Rise onto the balls of the feet as high as possible','Lower the heels below the step for a full stretch'], tips:'Full range of motion matters more than the weight used.' },
 
   // ── Weight Training — core stability ──────────────────────────
-  'Front Plank':         { icon:'icon:core', muscles:'Core, Shoulders', timed:true, category:'Core', howTo:['Forearms on the floor, elbows under shoulders','Body in a straight line from head to heels','Squeeze the core and glutes throughout'], tips:'Stop the set once good alignment can no longer be held.' },
-  'Side Plank from Knees or Feet': { icon:'icon:core', muscles:'Obliques, Core', timed:true, category:'Core', howTo:['Lie on your side, prop up on one forearm','Lift hips so the body forms a straight line','Support on the knees for an easier version, or feet for harder'], tips:'Choose the variation that lets you hold with good form.' },
-  'Pallof Press':        { icon:'icon:core', muscles:'Core, Obliques', category:'Core', howTo:['Hold a band or cable at chest height, anchored to your side','Press the handle straight out in front of you','Resist the pull rotating your torso, then return'], tips:'The goal is to resist rotation — the torso should stay square.' },
-  'Suitcase Carry':      { icon:'icon:dumbbell', muscles:'Core, Grip, Obliques', timed:true, category:'Core', howTo:['Hold a weight in one hand at your side, like a suitcase','Walk tall, resisting the pull to one side','Keep shoulders level throughout'], tips:'Resisting the side-bend is the whole point of this exercise.' },
-  'Bird Dog':            { icon:'icon:core', muscles:'Core, Balance', category:'Core', howTo:['On hands and knees','Extend one arm and the opposite leg fully','Keep hips level, hold briefly','Return with control and switch sides'], tips:"Move slowly — this is about control, not speed." },
+  'Front Plank':         { icon:'🧘', muscles:'Core, Shoulders', timed:true, category:'Core', howTo:['Forearms on the floor, elbows under shoulders','Body in a straight line from head to heels','Squeeze the core and glutes throughout'], tips:'Stop the set once good alignment can no longer be held.' },
+  'Side Plank from Knees or Feet': { icon:'🧘', muscles:'Obliques, Core', timed:true, category:'Core', howTo:['Lie on your side, prop up on one forearm','Lift hips so the body forms a straight line','Support on the knees for an easier version, or feet for harder'], tips:'Choose the variation that lets you hold with good form.' },
+  'Pallof Press':        { icon:'🧘', muscles:'Core, Obliques', category:'Core', howTo:['Hold a band or cable at chest height, anchored to your side','Press the handle straight out in front of you','Resist the pull rotating your torso, then return'], tips:'The goal is to resist rotation — the torso should stay square.' },
+  'Suitcase Carry':      { icon:'🏋️', muscles:'Core, Grip, Obliques', timed:true, category:'Core', howTo:['Hold a weight in one hand at your side, like a suitcase','Walk tall, resisting the pull to one side','Keep shoulders level throughout'], tips:'Resisting the side-bend is the whole point of this exercise.' },
+  'Bird Dog':            { icon:'🧘', muscles:'Core, Balance', category:'Core', howTo:['On hands and knees','Extend one arm and the opposite leg fully','Keep hips level, hold briefly','Return with control and switch sides'], tips:"Move slowly — this is about control, not speed." },
 
   // ── Weight Training — cool-down stretches & breathing ────────
-  'Standing Quadriceps Stretch': { icon:'icon:stretch', muscles:'Quads', timed:true, category:'Stretching', howTo:['Stand on one leg, hold onto something for balance if needed','Pull the opposite heel toward the glutes','Keep knees close together'], tips:'Hold steady, avoid pulling the foot too high.' },
-  'Doorway Chest Stretch': { icon:'icon:stretch', muscles:'Chest, Shoulders', timed:true, category:'Stretching', howTo:['Place forearm on a door frame, elbow bent to 90 degrees','Gently lean forward through the doorway','Feel the stretch across the chest'], tips:'A great release after any pressing work.' },
-  'Seated Hamstring Stretch': { icon:'icon:stretch', muscles:'Hamstrings', timed:true, category:'Stretching', howTo:['Sit with one leg extended, the other bent','Hinge forward from the hips over the extended leg','Keep the back as flat as possible'], tips:'Never force the stretch — ease in gradually.' },
-  'Slow Diaphragmatic Breathing': { icon:'icon:breath', muscles:'Recovery, Breathing', timed:true, category:'Cool-down', howTo:['Lie or sit comfortably','Breathe in slowly through the nose, expanding the belly','Exhale slowly through the mouth'], tips:'This helps shift the body out of training mode and into recovery.' },
-  'Diaphragmatic Breathing': { icon:'icon:breath', muscles:'Recovery, Breathing', timed:true, category:'Cool-down', howTo:['Lie comfortably on your back','Breathe in slowly through the nose, belly rising','Exhale slowly and fully through the mouth'], tips:'Slow breathing signals the nervous system to relax.' },
-  'Slow Breathing':      { icon:'icon:breath', muscles:'Recovery, Breathing', timed:true, category:'Cool-down', howTo:['Sit or stand comfortably','Inhale slowly through the nose','Exhale slowly through the mouth'], tips:'A simple way to close out the session calmly.' },
-  'Cross-Body Shoulder Stretch': { icon:'icon:stretch', muscles:'Shoulders', timed:true, category:'Stretching', howTo:['Bring one arm across the chest','Use the other arm to gently pull it closer','Keep the shoulder relaxed, away from the ear'], tips:'Great release after pressing movements.' },
-  'Cross-Body Rear Shoulder Stretch': { icon:'icon:stretch', muscles:'Rear Delts, Shoulders', timed:true, category:'Stretching', howTo:['Bring one arm across the chest at shoulder height','Use the other arm to press it gently closer','Focus on the back of the shoulder'], tips:'Targets the rear delts worked during pulling exercises.' },
-  'Overhead Triceps Stretch': { icon:'icon:stretch', muscles:'Triceps', timed:true, category:'Stretching', howTo:['Raise one arm overhead, bend the elbow to drop the hand behind the head','Use the other hand to gently press the elbow back','Keep the torso upright'], tips:'Move gently — the triceps can be tight after pushing work.' },
-  'Lat Stretch':         { icon:'icon:stretch', muscles:'Lats, Back', timed:true, category:'Stretching', howTo:['Hold onto a bar or door frame','Sink hips back and down, letting the lats stretch','Keep arms extended'], tips:'A good release after pulling work.' },
-  'Forearm Flexor Stretch': { icon:'icon:stretch', muscles:'Forearms', timed:true, category:'Stretching', howTo:['Extend one arm in front, palm facing up','Use the other hand to gently pull the fingers back','Feel the stretch through the forearm'], tips:'Helps after curls and grip-heavy pulling work.' },
-  'Half-Kneeling Hip Flexor Stretch': { icon:'icon:stretch', muscles:'Hip Flexors', timed:true, category:'Stretching', howTo:['Kneel on one knee, other foot forward, flat on floor','Shift weight forward until a stretch is felt at the front of the hip','Keep the torso upright'], tips:'Great after squats and lunges.' },
-  'Calf Stretch':        { icon:'icon:stretch', muscles:'Calves', timed:true, category:'Stretching', howTo:['Stand facing a wall, one foot back with heel flat on the floor','Lean forward gently until a stretch is felt in the calf','Keep the back leg straight'], tips:'Hold steady, avoid bouncing.' },
-  'Supine Knee-to-Chest Stretch': { icon:'icon:stretch', muscles:'Lower Back, Glutes', timed:true, category:'Stretching', howTo:['Lie on your back','Pull one knee gently toward the chest','Keep the other leg relaxed on the floor'], tips:'A gentle release for the lower back.' },
-  'Gentle Supine Trunk Rotation': { icon:'icon:stretch', muscles:'Spine, Obliques', timed:true, category:'Stretching', howTo:['Lie on your back, knees bent','Let both knees fall gently to one side','Keep shoulders flat on the floor'], tips:'Move slowly — this is a gentle spinal release, not a deep twist.' },
+  'Standing Quadriceps Stretch': { icon:'🤸', muscles:'Quads', timed:true, category:'Stretching', howTo:['Stand on one leg, hold onto something for balance if needed','Pull the opposite heel toward the glutes','Keep knees close together'], tips:'Hold steady, avoid pulling the foot too high.' },
+  'Doorway Chest Stretch': { icon:'🤸', muscles:'Chest, Shoulders', timed:true, category:'Stretching', howTo:['Place forearm on a door frame, elbow bent to 90 degrees','Gently lean forward through the doorway','Feel the stretch across the chest'], tips:'A great release after any pressing work.' },
+  'Seated Hamstring Stretch': { icon:'🤸', muscles:'Hamstrings', timed:true, category:'Stretching', howTo:['Sit with one leg extended, the other bent','Hinge forward from the hips over the extended leg','Keep the back as flat as possible'], tips:'Never force the stretch — ease in gradually.' },
+  'Slow Diaphragmatic Breathing': { icon:'🧘', muscles:'Recovery, Breathing', timed:true, category:'Cool-down', howTo:['Lie or sit comfortably','Breathe in slowly through the nose, expanding the belly','Exhale slowly through the mouth'], tips:'This helps shift the body out of training mode and into recovery.' },
+  'Diaphragmatic Breathing': { icon:'🧘', muscles:'Recovery, Breathing', timed:true, category:'Cool-down', howTo:['Lie comfortably on your back','Breathe in slowly through the nose, belly rising','Exhale slowly and fully through the mouth'], tips:'Slow breathing signals the nervous system to relax.' },
+  'Slow Breathing':      { icon:'🧘', muscles:'Recovery, Breathing', timed:true, category:'Cool-down', howTo:['Sit or stand comfortably','Inhale slowly through the nose','Exhale slowly through the mouth'], tips:'A simple way to close out the session calmly.' },
+  'Cross-Body Shoulder Stretch': { icon:'🤸', muscles:'Shoulders', timed:true, category:'Stretching', howTo:['Bring one arm across the chest','Use the other arm to gently pull it closer','Keep the shoulder relaxed, away from the ear'], tips:'Great release after pressing movements.' },
+  'Cross-Body Rear Shoulder Stretch': { icon:'🤸', muscles:'Rear Delts, Shoulders', timed:true, category:'Stretching', howTo:['Bring one arm across the chest at shoulder height','Use the other arm to press it gently closer','Focus on the back of the shoulder'], tips:'Targets the rear delts worked during pulling exercises.' },
+  'Overhead Triceps Stretch': { icon:'🤸', muscles:'Triceps', timed:true, category:'Stretching', howTo:['Raise one arm overhead, bend the elbow to drop the hand behind the head','Use the other hand to gently press the elbow back','Keep the torso upright'], tips:'Move gently — the triceps can be tight after pushing work.' },
+  'Lat Stretch':         { icon:'🤸', muscles:'Lats, Back', timed:true, category:'Stretching', howTo:['Hold onto a bar or door frame','Sink hips back and down, letting the lats stretch','Keep arms extended'], tips:'A good release after pulling work.' },
+  'Forearm Flexor Stretch': { icon:'🤸', muscles:'Forearms', timed:true, category:'Stretching', howTo:['Extend one arm in front, palm facing up','Use the other hand to gently pull the fingers back','Feel the stretch through the forearm'], tips:'Helps after curls and grip-heavy pulling work.' },
+  'Half-Kneeling Hip Flexor Stretch': { icon:'🤸', muscles:'Hip Flexors', timed:true, category:'Stretching', howTo:['Kneel on one knee, other foot forward, flat on floor','Shift weight forward until a stretch is felt at the front of the hip','Keep the torso upright'], tips:'Great after squats and lunges.' },
+  'Calf Stretch':        { icon:'🤸', muscles:'Calves', timed:true, category:'Stretching', howTo:['Stand facing a wall, one foot back with heel flat on the floor','Lean forward gently until a stretch is felt in the calf','Keep the back leg straight'], tips:'Hold steady, avoid bouncing.' },
+  'Supine Knee-to-Chest Stretch': { icon:'🤸', muscles:'Lower Back, Glutes', timed:true, category:'Stretching', howTo:['Lie on your back','Pull one knee gently toward the chest','Keep the other leg relaxed on the floor'], tips:'A gentle release for the lower back.' },
+  'Gentle Supine Trunk Rotation': { icon:'🤸', muscles:'Spine, Obliques', timed:true, category:'Stretching', howTo:['Lie on your back, knees bent','Let both knees fall gently to one side','Keep shoulders flat on the floor'], tips:'Move slowly — this is a gentle spinal release, not a deep twist.' },
 }
 
 // ─────────────────────────────────────────────
@@ -1226,4 +1226,142 @@ export function getExercise(name, lang) {
     return { name, ...base, ...EXERCISES_FR[name] }
   }
   return { name, ...base }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Weight Training custom icon system
+// Maps specific Weight Training exercise names to a small set of
+// reusable icon keys. Each key points at a placeholder SVG under
+// /public/exercise-icons/ — swap those files for real artwork later
+// without touching any workout logic or this mapping.
+// Only exercises used in Weight Training (gym) workouts are mapped;
+// every other sport keeps using its plain emoji icon unchanged.
+// ─────────────────────────────────────────────────────────────
+export const WEIGHT_TRAINING_ICON_KEYS = {
+  // bench-press
+  'Barbell Bench Press': 'bench-press',
+  'Dumbbell Bench Press': 'bench-press',
+  'Incline Dumbbell Press': 'bench-press',
+  'Bench Press': 'bench-press',
+  'Incline Bench Press': 'bench-press',
+  'Cable Chest Fly': 'bench-press',
+  'Chest Fly': 'bench-press',
+  'Cable Crossover': 'bench-press',
+  'Dips': 'bench-press',
+
+  // squat
+  'Back Squat': 'squat',
+  'Bodyweight Squat': 'squat',
+  'Goblet Squat': 'squat',
+  'Squat': 'squat',
+  'Leg Press': 'squat',
+  'Walking Lunge': 'squat',
+  'Lunges': 'squat',
+  'Reverse Lunge': 'squat',
+  'Standing Calf Raise': 'squat',
+  'Calf Raises': 'squat',
+  'Hip Thrust': 'squat',
+  'Glute Bridge': 'squat',
+
+  // deadlift
+  'Deadlift': 'deadlift',
+  'Dumbbell Romanian Deadlift': 'deadlift',
+  'Romanian Deadlift': 'deadlift',
+  'Hip Hinge Drill': 'deadlift',
+
+  // row
+  'Seated Cable Row': 'row',
+  'Chest-Supported Dumbbell Row': 'row',
+  'Bent Over Row': 'row',
+  'Light Cable Row': 'row',
+  'Face Pull': 'row',
+  'Band Pull-Aparts': 'row',
+
+  // lat-pulldown
+  'Lat Pulldown or Assisted Pull-Up': 'lat-pulldown',
+  'Lat Pulldown': 'lat-pulldown',
+  'Pull Ups': 'lat-pulldown',
+  'Band Straight-Arm Pulldown': 'lat-pulldown',
+  'Scapular Pull-Up or Scapular Pulldown': 'lat-pulldown',
+
+  // shoulder-press
+  'Seated Dumbbell Shoulder Press': 'shoulder-press',
+  'Overhead Press': 'shoulder-press',
+  'Arnold Press': 'shoulder-press',
+  'Dumbbell Lateral Raise': 'shoulder-press',
+  'Lateral Raise': 'shoulder-press',
+  'Wall Push-Up': 'shoulder-press',
+  'Push Ups': 'shoulder-press',
+  'Scapular Push-Ups': 'shoulder-press',
+  'Arm Circles': 'shoulder-press',
+
+  // curl
+  'Dumbbell Curl': 'curl',
+  'Bicep Curl': 'curl',
+  'Hammer Curl': 'curl',
+  'Triceps Rope Pushdown': 'curl',
+  'Tricep Pushdown': 'curl',
+  'Skull Crushers': 'curl',
+
+  // plank
+  'Front Plank': 'plank',
+  'Plank': 'plank',
+  'Side Plank from Knees or Feet': 'plank',
+  'Dead Bug': 'plank',
+  'Bird Dog': 'plank',
+  'Bird Dog Practice': 'plank',
+  'Pallof Press': 'plank',
+  'Suitcase Carry': 'plank',
+  'Cat-Cow': 'plank',
+  'Pelvic Tilt': 'plank',
+
+  // stretch
+  'Standing Quadriceps Stretch': 'stretch',
+  'Doorway Chest Stretch': 'stretch',
+  'Seated Hamstring Stretch': 'stretch',
+  'Hamstring Stretch': 'stretch',
+  'Cross-Body Shoulder Stretch': 'stretch',
+  'Cross-Body Rear Shoulder Stretch': 'stretch',
+  'Overhead Triceps Stretch': 'stretch',
+  'Lat Stretch': 'stretch',
+  'Forearm Flexor Stretch': 'stretch',
+  'Half-Kneeling Hip Flexor Stretch': 'stretch',
+  'Hip Flexor Stretch': 'stretch',
+  'Calf Stretch': 'stretch',
+  'Supine Knee-to-Chest Stretch': 'stretch',
+  'Gentle Supine Trunk Rotation': 'stretch',
+  'Slow Diaphragmatic Breathing': 'stretch',
+  'Diaphragmatic Breathing': 'stretch',
+  'Slow Breathing': 'stretch',
+  "Child's Pose": 'stretch',
+
+  // warmup-cardio
+  'Brisk Walk or Easy Bike': 'warmup-cardio',
+  'Easy Rowing or Bike': 'warmup-cardio',
+  'Easy Rowing Machine': 'warmup-cardio',
+  'Easy Bike': 'warmup-cardio',
+  'Easy Bike or Row': 'warmup-cardio',
+  'Easy Walk': 'warmup-cardio',
+  'Slow Walk': 'warmup-cardio',
+}
+
+const EXERCISE_ICON_SVG = {
+  'bench-press':    '/exercise-icons/bench-press.svg',
+  'squat':          '/exercise-icons/squat.svg',
+  'deadlift':       '/exercise-icons/deadlift.svg',
+  'row':            '/exercise-icons/row.svg',
+  'lat-pulldown':   '/exercise-icons/lat-pulldown.svg',
+  'shoulder-press': '/exercise-icons/shoulder-press.svg',
+  'curl':           '/exercise-icons/curl.svg',
+  'plank':          '/exercise-icons/plank.svg',
+  'stretch':        '/exercise-icons/stretch.svg',
+  'warmup-cardio':  '/exercise-icons/warmup-cardio.svg',
+}
+
+// Returns an SVG path for a Weight Training exercise name, or null if
+// this exercise isn't mapped (every other sport, or anything not yet
+// covered) — callers should fall back to the plain emoji icon in that case.
+export function getExerciseIconSrc(name) {
+  const key = WEIGHT_TRAINING_ICON_KEYS[name]
+  return key ? EXERCISE_ICON_SVG[key] : null
 }
