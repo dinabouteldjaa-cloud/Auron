@@ -112,6 +112,7 @@ function WorkoutIcon({ active }) {
 
 export default function App() {
   const [tab,     setTab]     = useState('today')
+  const [nutritionRequest, setNutritionRequest] = useState(null)
   const [session, setSession] = useState(undefined)
   const { t, lang, setLang }  = useTranslation()
 
@@ -197,7 +198,7 @@ export default function App() {
         onOpenMeds={() => setTab('medication')}
         onDateChange={setViewDate}
         onOpenWorkout={() => setTab('workout')}
-        onOpenNutrition={() => setTab('calories')}
+        onOpenNutrition={(slot) => { setTab('calories'); if (slot) setNutritionRequest({ slot, ts: Date.now() }) }}
         onOpenProgress={() => setTab('workouts')}
       />
     ),
@@ -208,7 +209,7 @@ export default function App() {
       <WorkoutTab userId={uid} profile={profile} />
     ),
     calories: (
-      <CaloriesTab userId={uid} profile={profile} preferences={preferences} lang={lang} />
+      <CaloriesTab userId={uid} profile={profile} preferences={preferences} lang={lang} nutritionRequest={nutritionRequest} />
     ),
     medication: (
       <MedicationTab userId={uid} />
