@@ -979,7 +979,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
 // ─────────────────────────────────────────────
 // Main CaloriesTab
 // ─────────────────────────────────────────────
-export default function CaloriesTab({ userId, profile, preferences, lang = 'en' }) {
+export default function CaloriesTab({ userId, profile, preferences, lang = 'en', nutritionRequest = null }) {
   const { t } = useTranslation()
   const MEAL_SLOTS = getMealSlotsNutrition(t)
   const [logs,         setLogs]         = useState([])
@@ -989,6 +989,15 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en' 
   const [subView,      setSubView]      = useState('log') // 'log' | 'describe'
   const [recentMeals,  setRecentMeals]  = useState([])
   const [savedMeals,   setSavedMeals]   = useState([])
+
+  // Deep-link from Today tab — "Log breakfast" etc. opens straight to that meal slot
+  useEffect(() => {
+    if (nutritionRequest?.slot) {
+      setSelectedMeal(nutritionRequest.slot)
+      setSubView('log')
+      setModal(true)
+    }
+  }, [nutritionRequest?.ts])
 
   const today = toUserDateStr(profile?.timezone)
   const calorieGoal   = profile?.calorie_goal || 2200

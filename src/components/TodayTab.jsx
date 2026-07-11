@@ -190,8 +190,27 @@ function HeroCard({ consumed, goal, proteinG, proteinGoal, carbsG, fatG, onOpenN
 // ─────────────────────────────────────────────────────────────
 // MedicationCard — purple-tinted placeholder, Phase 3 ready
 // ─────────────────────────────────────────────────────────────
-function MedicationCard({ nextMed, takenCount, missedCount, onMarkTaken, onOpenTracker, isToday }) {
+function MedicationCard({ nextMed, takenCount, missedCount, onMarkTaken, onOpenTracker, isToday, hasMeds, overdue, allComplete }) {
   const { t } = useTranslation()
+
+  // Nothing scheduled at all — compact row instead of a big empty card
+  if (!hasMeds) {
+    return (
+      <div
+        onClick={onOpenTracker}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
+          padding: '12px 16px', borderRadius: 16, background: T.surface,
+          border: `1px solid ${T.border}`, cursor: 'pointer',
+        }}
+      >
+        <span style={{ fontSize: 16 }}>💊</span>
+        <div style={{ flex: 1, fontSize: 13, color: T.textMuted }}>{t('meds.noMedsScheduled') || 'No medication scheduled'}</div>
+        <span style={{ fontSize: 13, color: T.purple, fontWeight: 500 }}>{t('meds.seeAll')}</span>
+      </div>
+    )
+  }
+
   return (
     <div style={{
       borderRadius: 20, marginBottom: 16,
@@ -205,6 +224,20 @@ function MedicationCard({ nextMed, takenCount, missedCount, onMarkTaken, onOpenT
         </div>
         <button onClick={onOpenTracker} style={{ background: 'none', border: 'none', fontSize: 13, color: T.purple, fontWeight: 500, cursor: 'pointer' }}>{t('meds.seeAll')}</button>
       </div>
+
+      {/* Small specialist Auron reaction — only one of these ever shows */}
+      {isToday && overdue && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, padding: '9px 12px', background: 'rgba(255,255,255,0.7)', borderRadius: 12 }}>
+          <AuronCharacter mood="concerned" size="compact" />
+          <div style={{ fontSize: 12.5, color: T.text }}>{t('meds.overdueNote') || 'A dose is overdue — take it when you can.'}</div>
+        </div>
+      )}
+      {isToday && !overdue && allComplete && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, padding: '9px 12px', background: 'rgba(255,255,255,0.7)', borderRadius: 12 }}>
+          <AuronCharacter mood="happy" size="compact" />
+          <div style={{ fontSize: 12.5, color: T.text }}>{t('meds.allDoneNote') || "All of today's medication is done. Nice work!"}</div>
+        </div>
+      )}
 
       {isToday ? (
         /* ── Today: full interactive view ── */
@@ -392,92 +425,69 @@ function StatCard({ icon, label, value, onChange, unit, color, placeholder, isTo
 // ─────────────────────────────────────────────────────────────
 // Meals section
 // ─────────────────────────────────────────────────────────────
-function MealsSection({ foodLogs, isToday, onOpenNutrition }) {
-  const [expanded, setExpanded] = useState(null)
+function MealsSection({ foodLogs, isToday, onOpenNutrition, hour }) {
   const { t } = useTranslation()
   const MEAL_SLOTS = getMealSlots(t)
+
+  // One small contextual nudge when an important meal looks missing for
+  // the time of day — not shown at all once that meal is logged.
+  const missingMealNote = (() => {
+    if (!isToday) return null
+    const logged = id => foodLogs.some(f => f.meal_slot === id)
+    if (hour >= 9  && hour < 12 && !logged('breakfast')) return { icon: '🌅', text: t('today.missingBreakfast') || "Breakfast isn't logged yet." }
+    if (hour >= 13 && hour < 16 && !logged('lunch'))     return { icon: '☀️', text: t('today.missingLunch')     || "Lunch isn't logged yet." }
+    if (hour >= 20 && hour < 23 && !logged('dinner'))    return { icon: '🌙', text: t('today.missingDinner')    || "Dinner isn't logged yet." }
+    return null
+  })()
 
   return (
     <div style={{ marginBottom: 20 }}>
       <Label>{t('today.meals')}</Label>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {MEAL_SLOTS.map(slot => {
+      <Card style={{ padding: 0, overflow: 'hidden' }}>
+        {MEAL_SLOTS.map((slot, i) => {
           const items    = foodLogs.filter(f => f.meal_slot === slot.id)
-          const slotCal  = items.reduce((s, f) => s + (f.calories || 0), 0)
-          const slotP    = items.reduce((s, f) => s + (f.protein  || 0), 0)
           const hasItems = items.length > 0
-          const isExp    = expanded === slot.id
+          const slotCal  = items.reduce((s, f) => s + (f.calories || 0), 0)
 
           return (
             <div
               key={slot.id}
+              onClick={() => isToday && onOpenNutrition?.(slot.id)}
               style={{
-                background: C.surface,
-                border: `1px solid ${hasItems ? C.borderStrong : C.border}`,
-                borderRadius: 14, overflow: 'hidden',
-                transition: 'border-color 0.2s',
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '13px 16px', cursor: isToday ? 'pointer' : 'default',
+                borderBottom: i < MEAL_SLOTS.length - 1 ? `1px solid ${C.divider}` : 'none',
               }}
             >
-              <div
-                onClick={() => hasItems ? setExpanded(isExp ? null : slot.id) : (isToday && onOpenNutrition?.())}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '13px 16px', cursor: (hasItems || isToday) ? 'pointer' : 'default',
-                }}
-              >
-                <div style={{
-                  width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                  background: hasItems ? C.goldLight : C.surfaceLight,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 17, transition: 'background 0.2s',
-                }}>
-                  {slot.icon}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{slot.label}</div>
-                  <div style={{ fontSize: 11, color: C.textMuted, marginTop: 1 }}>
-                    {hasItems
-                      ? `${items.length} ${items.length > 1 ? t('meals.items') : t('meals.item')} · ${Math.round(slotP)}g ${t('today.protein').toLowerCase()}`
-                      : <span style={{ color: C.textDim }}>{t('meals.nothingLogged')}</span>}
-                  </div>
-                </div>
-                {hasItems && (
-                  <>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: C.gold }}>{slotCal}</div>
-                      <div style={{ fontSize: 10, color: C.textMuted }}>kcal</div>
-                    </div>
-                    <div style={{ fontSize: 13, color: C.textMuted, marginLeft: 4 }}>{isExp ? '▴' : '▾'}</div>
-                  </>
-                )}
+              <div style={{
+                width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                background: hasItems ? C.goldLight : C.surfaceLight,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+              }}>
+                {slot.icon}
               </div>
-
-              {isExp && items.map((f, i) => (
-                <div
-                  key={i}
-                  style={{
-                    borderTop: `1px solid ${C.border}`,
-                    padding: '8px 16px',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 13, color: C.text }}>{f.food_name}</div>
-                    <div style={{ fontSize: 11, color: C.textMuted }}>P {f.protein}g · C {f.carbs}g · F {f.fat}g</div>
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.gold }}>{f.calories} kcal</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{slot.label}</div>
+              </div>
+              {hasItems ? (
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: C.green }}>{t('today.logged') || 'Logged'}</div>
+                  <div style={{ fontSize: 10, color: C.textMuted }}>{slotCal} kcal</div>
                 </div>
-              ))}
+              ) : (
+                <div style={{ fontSize: 11, color: C.textDim }}>{t('today.notLogged') || 'Not logged'}</div>
+              )}
+              <span style={{ fontSize: 14, color: C.textDim }}>›</span>
             </div>
           )
         })}
-      </div>
+      </Card>
 
-      {foodLogs.length === 0 && isToday && (
-        <button onClick={onOpenNutrition}
-          style={{ width: '100%', marginTop: 10, padding: 16, background: C.surfaceLight, borderRadius: 12, textAlign: 'center', border: `1px dashed ${C.border}`, cursor: 'pointer' }}>
-          <div style={{ fontSize: 13, color: C.gold, fontWeight: 600 }}>{t('cal.nothingLogged')}</div>
-        </button>
+      {missingMealNote && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, padding: '10px 14px', background: C.goldLight, borderRadius: 14 }}>
+          <AuronCharacter mood="nutrition" size="compact" />
+          <div style={{ fontSize: 12.5, color: C.text, lineHeight: 1.4 }}>{missingMealNote.text}</div>
+        </div>
       )}
     </div>
   )
@@ -501,71 +511,67 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday, onOpen
 
   const totalCalBurned = workoutLogs.reduce((s, w) => s + (w.calories_burned  || 0), 0)
   const totalMinutes   = workoutLogs.reduce((s, w) => s + (w.duration_minutes || 0), 0)
+  const done = workoutLogs.length > 0
 
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Label style={{ marginBottom: 0 }}>{t('today.workout')}</Label>
-        {workoutLogs.length > 0 && (
-          <div style={{ fontSize: 11, color: C.textMuted }}>
-            {totalMinutes}min · {totalCalBurned} kcal
-          </div>
-        )}
-      </div>
+      <Label>{t('today.workout')}</Label>
 
-      {/* Scheduled plans for today */}
-      {scheduledToday.map((plan, i) => (
-        <div key={i} style={{ borderRadius: 16, marginBottom: 10, overflow: 'hidden', border: `1px solid ${C.purple}44`, background: `linear-gradient(135deg, ${C.purple}12 0%, ${C.surface} 100%)` }}>
-          <div style={{ padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, background: C.purple + '28', border: `1px solid ${C.purple}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
-              💪
+      {done ? (
+        /* ── Completed — compact summary, one happy/workout Auron ── */
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: C.surface, border: `1px solid ${C.green}33`, borderRadius: 16, padding: '13px 16px' }}>
+          <AuronCharacter mood="workout" size="compact" />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>
+              {workoutLogs.length === 1 ? workoutLogs[0].workout_name : `${workoutLogs.length} ${t('today.workoutsPlural') || 'workouts'}`}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 10, color: C.purple, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>
-                Scheduled today{plan.schedule?.time ? ` · ${plan.schedule.time}` : ''}
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{plan.name}</div>
-              <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>{plan.exercises?.length || 0} exercises</div>
-            </div>
-            {isToday && (
-              <button onClick={onOpenWorkout}
-                style={{ padding: '8px 14px', borderRadius: 12, background: C.purple, border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
-                Start
-              </button>
-            )}
+            <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{totalMinutes}min · {totalCalBurned} kcal</div>
           </div>
+          <Pill color={C.green} bg={C.greenLight}>{t('today.completed') || 'Completed'} ✓</Pill>
         </div>
-      ))}
-
-      {/* Logged workouts */}
-      {workoutLogs.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {workoutLogs.map(w => (
-            <div key={w.id} style={{ background: C.surface, border: `1px solid ${C.green}33`, borderRadius: 14, padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 42, height: 42, borderRadius: 12, background: C.greenLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>💪</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{w.workout_name}</div>
-                <div style={{ fontSize: 12, color: C.textMuted, marginTop: 3 }}>
-                  {[w.duration_minutes && `${w.duration_minutes}min`, w.calories_burned && `${w.calories_burned} kcal`, w.workout_type].filter(Boolean).join(' · ')}
+      ) : scheduledToday.length > 0 ? (
+        /* ── Scheduled but not started yet ── */
+        <div style={{ borderRadius: 16, overflow: 'hidden', border: `1px solid ${C.purple}44`, background: `linear-gradient(135deg, ${C.purple}12 0%, ${C.surface} 100%)` }}>
+          {scheduledToday.map((plan, i) => (
+            <div key={i} style={{ padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: i < scheduledToday.length - 1 ? `1px solid ${C.divider}` : 'none' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: C.purple + '28', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>💪</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: C.purple, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  {t('today.scheduledToday') || 'Scheduled today'}{plan.schedule?.time ? ` · ${plan.schedule.time}` : ''}
                 </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{plan.name}</div>
               </div>
-              <Pill color={C.green} bg={C.greenLight}>Done ✓</Pill>
+              {isToday && (
+                <button onClick={onOpenWorkout} style={{ padding: '8px 14px', borderRadius: 12, background: C.purple, border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                  {t('today.start') || 'Start'}
+                </button>
+              )}
             </div>
           ))}
         </div>
-      ) : scheduledToday.length === 0 ? (
-        <div style={{ background: C.surfaceLight, borderRadius: 14, padding: '22px 16px', textAlign: 'center', border: `1px dashed ${C.border}` }}>
-          <div style={{ fontSize: 24, marginBottom: 8 }}>🏃</div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: C.textMuted, marginBottom: isToday ? 14 : 4 }}>
-            {isToday ? t('today.noWorkout') : t('today.noWorkoutDay')}
+      ) : (
+        /* ── Nothing logged or scheduled — compact motivating prompt ── */
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: C.surfaceLight, border: `1px dashed ${C.border}`, borderRadius: 16, padding: '14px 16px' }}>
+          {isToday && <AuronCharacter mood="motivating" size="compact" />}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: C.textMuted, marginBottom: isToday ? 10 : 0 }}>
+              {isToday ? (t('today.noWorkout') || 'No workout logged today') : t('today.noWorkoutDay')}
+            </div>
+            {isToday && (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={onOpenWorkout}
+                  style={{ flex: 1, padding: '9px 10px', borderRadius: 14, background: T.purple, border: 'none', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+                  🏋️ {t('today.logWorkout') || 'Log Workout'}
+                </button>
+                <button onClick={onOpenWorkout}
+                  style={{ flex: 1, padding: '9px 10px', borderRadius: 14, background: '#fff', border: `1px solid ${C.border}`, color: C.purple, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+                  ✨ {t('today.buildWithAuron') || 'Build with Coach Auron'}
+                </button>
+              </div>
+            )}
           </div>
-          {isToday && (
-            <button onClick={onOpenWorkout} style={{ padding: '10px 24px', borderRadius: 20, background: T.purple, border: 'none', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              🏋️ Log workout
-            </button>
-          )}
         </div>
-      ) : null}
+      )}
     </div>
   )
 }
@@ -694,21 +700,25 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
   )
 }
 
-function WaterTracker({ userId, profile, updateProfile, selectedDate, userTz }) {
+function WaterTracker({ userId, profile, updateProfile, selectedDate, userTz, hour, quickAddSignal }) {
   const { t } = useTranslation()
   const [amount,       setAmount]       = useState(0)
   const [showSettings, setShowSettings] = useState(false)
   const [loading,      setLoading]      = useState(true)
+  const lastDeltaRef = useRef(0) // last logged change, for Undo
+  const quickAddSeen = useRef(quickAddSignal)
 
   const isToday  = selectedDate === toUserDateStr(userTz)
   const unit     = profile?.water_unit    || 'cups'
   const goal     = unit === 'ml' ? (profile?.water_goal_ml || 2000) : (profile?.water_goal || 8)
   const cupSize  = profile?.cup_size_ml  || 250
+  const glassSize = unit === 'cups' ? 1 : 250 // "+1 glass" step for each unit
   const pct      = Math.min((amount / goal) * 100, 100)
 
   useEffect(() => {
     if (!userId || !selectedDate) return
     setLoading(true)
+    lastDeltaRef.current = 0
     supabase
       .from('water_logs')
       .select('cups, amount_ml')
@@ -721,9 +731,10 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate, userTz }) 
       .finally(() => setLoading(false))
   }, [userId, selectedDate])
 
-  const save = async (newAmount) => {
+  const save = async (newAmount, delta = 0) => {
     if (!isToday) return // never write to past days
     const clamped   = Math.max(0, newAmount)
+    lastDeltaRef.current = delta
     setAmount(clamped)
     const cups      = unit === 'cups' ? clamped : Math.round(clamped / cupSize)
     const amount_ml = unit === 'ml'   ? clamped : clamped * cupSize
@@ -733,76 +744,66 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate, userTz }) 
     )
   }
 
+  const addGlass = () => save(amount + glassSize, glassSize)
+  const undo     = () => { if (lastDeltaRef.current) save(amount - lastDeltaRef.current, 0) }
+
+  // External trigger — "Drink water" quick action from Coach Auron's focus list
+  useEffect(() => {
+    if (quickAddSignal && quickAddSignal !== quickAddSeen.current && !loading) {
+      quickAddSeen.current = quickAddSignal
+      addGlass()
+    }
+  }, [quickAddSignal, loading])
+
   const displayLabel = unit === 'ml'
     ? `${amount} / ${goal} ml`
     : `${amount} / ${goal} cups`
-  const mlTotal = unit === 'ml' ? amount : amount * cupSize
+
+  // One small contextual Auron nudge if hydration is meaningfully behind
+  // for this point in the day — expects roughly linear pace across a
+  // 6am–10pm waking window.
+  const wakingProgress = Math.min(1, Math.max(0, (hour - 6) / 16))
+  const isBehind = isToday && hour >= 12 && pct < wakingProgress * 100 - 25
 
   return (
     <Card style={{ marginBottom: 0, height: '100%', boxSizing: 'border-box' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>💧 {t('today.water')}</div>
-          <div style={{ fontSize: 12, color: C.blue }}>
-            {loading ? '...' : displayLabel}
-            {unit === 'cups' && amount > 0 ? ` · ${mlTotal}ml` : ''}
-          </div>
+          <div style={{ fontSize: 12, color: C.blue }}>{loading ? '...' : displayLabel}</div>
         </div>
         <button
           onClick={() => setShowSettings(true)}
           style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 10, padding: '5px 10px', color: C.textMuted, fontSize: 11, cursor: 'pointer' }}
         >
-          ⚙ {t('today.settings').replace('⚙ ', '')}
+          ⚙
         </button>
       </div>
 
-      <div style={{ height: 7, background: C.surfaceLight, borderRadius: 4, marginBottom: 16, overflow: 'hidden' }}>
+      <div style={{ height: 7, background: C.surfaceLight, borderRadius: 4, marginBottom: 14, overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: pct >= 100 ? C.green : C.blue, borderRadius: 4, transition: 'width 0.4s ease, background 0.3s' }} />
       </div>
 
-      {unit === 'cups' ? (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {Array.from({ length: Math.min(goal, 12) }, (_, i) => (
-            <div
-              key={i}
-              onClick={() => isToday && save(i < amount ? i : i + 1)}
-              style={{
-                width: 38, height: 38, borderRadius: 11, cursor: isToday ? 'pointer' : 'default',
-                background: i < amount ? C.blueLight : C.surfaceLight,
-                border: `1px solid ${i < amount ? C.blue : C.border}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 17, transition: 'all 0.15s',
-                transform: i < amount ? 'scale(1.05)' : 'scale(1)',
-              }}
-            >
-              💧
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-            {[250, 330, 500, 750, 1000].map(ml => (
-              <button
-                key={ml}
-                onClick={() => isToday && save(amount + ml)}
-                disabled={!isToday}
-                style={{ flex: 1, padding: '8px 4px', borderRadius: 10, border: `1px solid ${C.border}`, background: C.surfaceLight, color: isToday ? C.text : C.textMuted, fontSize: 12, cursor: isToday ? 'pointer' : 'default', minWidth: 50 }}
-              >
-                +{ml}ml
-              </button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button onClick={() => isToday && save(amount - 250)} disabled={!isToday || amount === 0} style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${C.border}`, background: 'transparent', color: C.textMuted, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
-            <div style={{ flex: 1, textAlign: 'center', fontSize: 24, fontWeight: 700, color: C.blue }}>{amount}ml</div>
-            <button onClick={() => isToday && save(amount + 250)} disabled={!isToday} style={{ width: 34, height: 34, borderRadius: '50%', border: `1px solid ${C.gold}`, background: C.goldLight, color: C.gold, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
-          </div>
-        </div>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={addGlass} disabled={!isToday}
+          style={{ flex: 2, padding: '10px 0', borderRadius: 14, background: isToday ? C.blueLight : C.surfaceLight, border: `1px solid ${isToday ? C.blue : C.border}`, color: isToday ? C.blue : C.textMuted, fontSize: 13, fontWeight: 600, cursor: isToday ? 'pointer' : 'default' }}>
+          💧 +1 {unit === 'cups' ? (t('water.cups_label') || 'cup') : (t('water.ml_label') || '250ml')}
+        </button>
+        <button onClick={undo} disabled={!isToday || !lastDeltaRef.current}
+          style={{ flex: 1, padding: '10px 0', borderRadius: 14, background: 'transparent', border: `1px solid ${C.border}`, color: C.textMuted, fontSize: 12.5, cursor: (isToday && lastDeltaRef.current) ? 'pointer' : 'default' }}>
+          {t('water.undo') || 'Undo'}
+        </button>
+      </div>
 
       {!isToday && <div style={{ fontSize: 11, color: C.textDim, marginTop: 12, textAlign: 'center' }}>{t('water.viewOnly')}</div>}
       {pct >= 100 && isToday && <div style={{ fontSize: 12, color: C.green, marginTop: 10, textAlign: 'center', fontWeight: 500 }}>🎉 {t('water.goal')}</div>}
+
+      {isBehind && pct < 100 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, padding: '9px 12px', background: C.blueLight || C.surfaceLight, borderRadius: 12 }}>
+          <AuronCharacter mood="thinking" size="compact" />
+          <div style={{ fontSize: 12, color: C.text, lineHeight: 1.4 }}>{t('water.behindNote') || "You're a bit behind on water for this time of day."}</div>
+        </div>
+      )}
 
       {showSettings && (
         <WaterSettingsModal
@@ -941,6 +942,7 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
   const [loading,       setLoading]       = useState(true)
   const statsTimer = useRef(null)
   const lastMoodRef = useRef(null)
+  const [waterQuickAdd, setWaterQuickAdd] = useState(0) // incrementing signal for "Drink water" focus action
 
   // Welcome screen — shown once per user, dismissed to localStorage
   const welcomeKey = userId ? `auron_welcomed_${userId}` : null
@@ -1142,6 +1144,25 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
     loading ? null : coachCtx, lang,
   )
 
+  // ── Today's Focus — up to 2 small, high-priority quick actions ──
+  const focusActions = (() => {
+    if (!isToday || loading) return []
+    const candidates = []
+    if (medsDueSoon.length > 0) {
+      candidates.push({ priority: 0, icon: '💊', label: t('today.focusMeds') || 'Take medication', onClick: () => onOpenMeds?.() })
+    }
+    if (hour >= 6 && hour < 11 && !foodLogs.some(f => f.meal_slot === 'breakfast')) {
+      candidates.push({ priority: 1, icon: '🌅', label: t('today.focusBreakfast') || 'Log breakfast', onClick: () => onOpenNutrition?.('breakfast') })
+    }
+    if (waterPct < 50) {
+      candidates.push({ priority: 2, icon: '💧', label: t('today.focusWater') || 'Drink water', onClick: () => setWaterQuickAdd(n => n + 1) })
+    }
+    if (!workoutDone && hour >= 15) {
+      candidates.push({ priority: 3, icon: '🏋️', label: t('today.focusWorkout') || 'Log a workout', onClick: () => onOpenWorkout?.() })
+    }
+    return candidates.sort((a, b) => a.priority - b.priority).slice(0, 2)
+  })()
+
   return (
     <div style={{ paddingBottom: 8 }}>
 
@@ -1167,11 +1188,12 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
         setWeekOffset={setWeekOffset}
       />
 
-      {/* Coach Auron */}
+      {/* Coach Auron — overall daily insight + up to 2 quick focus actions */}
       <CoachHero
         mood={coachMood}
         message={coachMessage}
         loading={coachLoading}
+        focusActions={focusActions}
       />
 
       {/* 1 ── Calorie ring + macros */}
@@ -1190,19 +1212,24 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
         onMarkTaken={markTaken}
         onOpenTracker={onOpenMeds}
         isToday={isToday}
+        hasMeds={medications.length > 0}
+        overdue={nextDueMedOverdue}
+        allComplete={medications.length > 0 && missedCount === 0 && pendingMedsList.length === 0}
       />
 
-      {/* 3 ── Water tracker — full width now insight is removed */}
+      {/* 3 ── Water tracker — compact */}
       <WaterTracker
         userId={userId}
         profile={profile}
         updateProfile={updateProfile}
         selectedDate={selectedDate}
         userTz={userTz}
+        hour={hour}
+        quickAddSignal={waterQuickAdd}
       />
 
       {/* 4 ── Meals */}
-      <MealsSection foodLogs={foodLogs} isToday={isToday} onOpenNutrition={onOpenNutrition} />
+      <MealsSection foodLogs={foodLogs} isToday={isToday} onOpenNutrition={onOpenNutrition} hour={hour} />
 
 
       {/* 5 ── Workout */}

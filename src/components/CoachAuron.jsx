@@ -164,7 +164,7 @@ export function AuronWelcomeScreen({ onDismiss }) {
 // ─────────────────────────────────────────────────────────────
 // CoachHero — main coach card shown on Today tab
 // ─────────────────────────────────────────────────────────────
-export function CoachHero({ mood = 'neutral', message = '', loading = false, actionLabel = '', onAction = null }) {
+export function CoachHero({ mood = 'neutral', message = '', loading = false, actionLabel = '', onAction = null, focusActions = [] }) {
   const { t } = useTranslation()
   return (
     <div style={{ background: T.purpleLight, border: `1px solid ${T.borderStrong}`, borderRadius: 20, marginBottom: 16, overflow: 'hidden' }}>
@@ -192,6 +192,22 @@ export function CoachHero({ mood = 'neutral', message = '', loading = false, act
           ) : null}
         </div>
       </div>
+
+      {!loading && focusActions.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, padding: '0 16px 14px' }}>
+          {focusActions.slice(0, 2).map((a, i) => (
+            <button key={i} onClick={a.onClick}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                padding: '9px 10px', borderRadius: 14, background: '#fff', border: `1px solid ${T.border}`,
+                color: T.purple, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+              }}>
+              {a.icon && <span style={{ fontSize: 14 }}>{a.icon}</span>}
+              {a.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
