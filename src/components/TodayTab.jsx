@@ -573,23 +573,56 @@ function WorkoutSection({ workoutLogs, savedPlans, selectedDate, isToday, onOpen
 // ─────────────────────────────────────────────────────────────
 // Water tracker
 // ─────────────────────────────────────────────────────────────
+const CUP_GOAL_OPTIONS = [4, 6, 8, 10, 12]
+const CUP_SIZE_OPTIONS = [150, 200, 250, 350, 500]
+
 function WaterSettingsModal({ profile, onSave, onClose }) {
   const { t } = useTranslation()
   const [unit,    setUnit]    = useState(profile?.water_unit || 'cups')
-  const [goal,    setGoal]    = useState(
+  // No fallback pre-fill here — if the profile has no saved value for the
+  // active unit, the field starts genuinely empty so nothing looks selected
+  // when it wasn't.
+  const [goal,    setGoal]    = useState(() =>
     profile?.water_unit === 'ml'
-      ? String(profile?.water_goal_ml || 2000)
-      : String(profile?.water_goal    || 8)
+      ? (profile?.water_goal_ml ? String(profile.water_goal_ml) : '')
+      : (profile?.water_goal    ? String(profile.water_goal)    : '')
   )
-  const [cupSize, setCupSize] = useState(String(profile?.cup_size_ml || 250))
+  const [cupSize, setCupSize] = useState(() => profile?.cup_size_ml ? String(profile.cup_size_ml) : '')
+
+  const parsedGoal    = Number(goal)
+  const parsedCupSize = Number(cupSize)
+  const hasValidCupSettings =
+    Number.isFinite(parsedGoal) &&
+    parsedGoal > 0 &&
+    Number.isFinite(parsedCupSize) &&
+    parsedCupSize > 0
+
+  // Stricter validity for enabling Save — must match an actual offered option
+  // (cups) or fall in a sane ml range, not just "any positive number".
+  const isValid = unit === 'cups'
+    ? CUP_GOAL_OPTIONS.includes(parsedGoal) && CUP_SIZE_OPTIONS.includes(parsedCupSize)
+    : Number.isFinite(parsedGoal) && parsedGoal >= 500 && parsedGoal <= 6000
+
+  const switchUnit = (val) => {
+    setUnit(val)
+    if (val === 'cups') {
+      // Restore saved cup settings if present; only default to 8/250 when
+      // the profile genuinely has none saved yet.
+      setGoal(profile?.water_goal ? String(profile.water_goal) : '8')
+      setCupSize(profile?.cup_size_ml ? String(profile.cup_size_ml) : '250')
+    } else {
+      setGoal(profile?.water_goal_ml ? String(profile.water_goal_ml) : '2000')
+    }
+  }
 
   const save = () => {
+    if (!isValid) return
     const updates = { water_unit: unit }
     if (unit === 'cups') {
-      updates.water_goal    = parseInt(goal)    || 8
-      updates.cup_size_ml   = parseInt(cupSize) || 250
+      updates.water_goal  = parsedGoal
+      updates.cup_size_ml = parsedCupSize
     } else {
-      updates.water_goal_ml = parseInt(goal)    || 2000
+      updates.water_goal_ml = parsedGoal
     }
     onSave(updates)
     onClose()
@@ -607,7 +640,7 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
           <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>{t('water.trackBy')}</div>
           <div style={{ display: 'flex', gap: 8 }}>
             {[['cups', t('water.cups_label')], ['ml', t('water.ml_label')]].map(([val, label]) => (
-              <button key={val} onClick={() => setUnit(val)} style={{ flex: 1, padding: 10, borderRadius: 12, border: `1px solid ${unit === val ? C.gold : C.border}`, background: unit === val ? C.goldLight : 'transparent', color: unit === val ? C.gold : C.textMuted, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' }}>{label}</button>
+              <button key={val} onClick={() => switchUnit(val)} style={{ flex: 1, padding: 10, borderRadius: 12, border: `1px solid ${unit === val ? C.gold : C.border}`, background: unit === val ? C.goldLight : 'transparent', color: unit === val ? C.gold : C.textMuted, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' }}>{label}</button>
             ))}
           </div>
         </div>
@@ -630,7 +663,9 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
                 ))}
               </div>
               <div style={{ fontSize: 11, color: C.textMuted, marginTop: 8 }}>
-                {t('water.total')} <strong style={{ color: C.gold }}>{parseInt(goal || 8) * parseInt(cupSize || 250)} ml</strong> {t('water.perDay')}
+                {hasValidCupSettings
+                  ? <>{t('water.total')} <strong style={{ color: C.gold }}>{parsedGoal * parsedCupSize} ml</strong> {t('water.perDay')}</>
+                  : t('water.selectGoalAndSize')}
               </div>
             </div>
           </>
@@ -644,10 +679,16 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
             </div>
             <input type="number" value={goal} onChange={e => setGoal(e.target.value)} placeholder="2000"
               style={{ width: '100%', padding: '10px 12px', borderRadius: 10, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 14, outline: 'none' }} />
+            {!isValid && goal !== '' && (
+              <div style={{ fontSize: 11, color: C.red, marginTop: 6 }}>{t('water.mlRangeHint')}</div>
+            )}
           </div>
         )}
 
-        <button onClick={save} style={{ width: '100%', padding: 13, borderRadius: 24, background: C.gold, color: C.dark, border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t('water.save')}</button>
+        <button onClick={save} disabled={!isValid}
+          style={{ width: '100%', padding: 13, borderRadius: 24, background: isValid ? C.gold : C.surfaceLight, color: isValid ? C.dark : C.textMuted, border: 'none', fontSize: 14, fontWeight: 600, cursor: isValid ? 'pointer' : 'default' }}>
+          {t('water.save')}
+        </button>
       </div>
     </div>
   )
