@@ -353,33 +353,64 @@ function workoutMessage(p, ctx, lang) {
 
 // ---- Progress -------------------------------------------------
 function progressPriority(ctx) {
-  const { daysLogged, streakDays, avgWater, waterGoal } = ctx
+  const { daysLogged, streakDays, avgWater, waterGoal, scoreTrendPct, workoutDaysThisWeek } = ctx
+  // Score trend — the strongest, most explanatory signal when available
+  if (scoreTrendPct != null) {
+    if (scoreTrendPct >= 8)  return { type: 'score_improving', trend: scoreTrendPct }
+    if (scoreTrendPct <= -8) return { type: 'score_declining', trend: scoreTrendPct }
+  }
+  // Hydration — clearly strong or clearly weak
+  if (avgWater != null && waterGoal) {
+    if (avgWater < waterGoal * 0.5)  return { type: 'weak_hydration' }
+    if (avgWater >= waterGoal * 0.9) return { type: 'strong_hydration' }
+  }
+  // Nutrition consistency
+  if (daysLogged <= 2) return { type: 'inconsistent_nutrition' }
+  if (daysLogged >= 6) return { type: 'consistent_nutrition' }
+  // Workout consistency
+  if (workoutDaysThisWeek != null && workoutDaysThisWeek >= 3) return { type: 'workout_consistency' }
+  // Streak framing
   if (streakDays >= 7) return { type: 'strong_streak' }
-  if (daysLogged <= 2) return { type: 'low_logging' }
-  if (avgWater != null && waterGoal && avgWater < waterGoal * 0.5) return { type: 'water_gap' }
-  if (daysLogged >= 5) return { type: 'consistent' }
+  if (streakDays >= 3) return { type: 'streak_progress' }
   return { type: 'default' }
 }
 function progressMood(p) {
-  return { strong_streak:'celebrating', low_logging:'concerned', water_gap:'thinking', consistent:'happy', default:'motivating' }[p.type] || 'mindset'
+  return {
+    score_improving: 'celebrating', score_declining: 'concerned',
+    weak_hydration: 'thinking', strong_hydration: 'happy',
+    inconsistent_nutrition: 'concerned', consistent_nutrition: 'happy',
+    workout_consistency: 'workout', strong_streak: 'celebrating',
+    streak_progress: 'motivating', default: 'motivating',
+  }[p.type] || 'mindset'
 }
 function progressMessage(p, ctx, lang) {
   const fr = lang === 'fr'
+  const trendAbs = p.trend != null ? Math.abs(Math.round(p.trend)) : null
   if (fr) {
     switch (p.type) {
-      case 'strong_streak':return [`${ctx.streakDays} jours de régularité ! Votre progression est solide.`, "Belle série en cours — la constance paie."]
-      case 'low_logging':  return ["Peu de jours enregistrés cette semaine. Essayez de noter au moins un repas par jour.", "Enregistrer chaque jour, même brièvement, aide à voir votre vraie progression."]
-      case 'water_gap':    return ["Votre hydratation moyenne est en dessous de l'objectif cette semaine.", "Pensez à boire un peu plus d'eau les prochains jours."]
-      case 'consistent':   return ["Bonne semaine de régularité — continuez comme ça.", "Vous suivez bien votre semaine. Beau travail."]
-      default:               return ["Continuez à enregistrer vos journées pour voir votre progression se dessiner.", "Chaque jour enregistré rend votre suivi plus utile."]
+      case 'score_improving':      return [`Votre score moyen est en hausse de ${trendAbs}% par rapport à la semaine dernière.`, `Belle progression — votre score a gagné ${trendAbs}% cette semaine.`]
+      case 'score_declining':      return [`Votre score moyen a baissé de ${trendAbs}% par rapport à la semaine dernière.`, `Votre score est en baisse de ${trendAbs}% — un petit ajustement peut relancer la tendance.`]
+      case 'weak_hydration':       return ["L'hydratation a été votre point faible cette semaine.", "Boire plus d'eau pourrait faire une vraie différence sur votre score."]
+      case 'strong_hydration':     return ["Votre hydratation est excellente cette semaine — beau travail.", "L'eau est un point fort chez vous en ce moment."]
+      case 'inconsistent_nutrition': return ["Le suivi nutritionnel a été irrégulier cette semaine.", "Enregistrer ne serait-ce qu'un repas par jour aiderait à voir une vraie tendance."]
+      case 'consistent_nutrition':  return ["Vous êtes de plus en plus régulier·ère sur la nutrition.", "Beau suivi nutritionnel cette semaine — continuez ainsi."]
+      case 'workout_consistency':  return ["Votre régularité à l'entraînement est un vrai point fort en ce moment.", "Plusieurs séances cette semaine — la régularité paie."]
+      case 'strong_streak':        return [`${ctx.streakDays} jours de suite ! Votre régularité globale est solide.`, "Belle série en cours — la constance paie."]
+      case 'streak_progress':      return ["Vous devenez plus régulier·ère — gardez la série vivante.", `${ctx.streakDays} jours de suite. Encore un peu pour une vraie habitude.`]
+      default:                       return ["Continuez à enregistrer vos journées pour voir votre progression se dessiner.", "Chaque jour enregistré rend votre suivi plus utile."]
     }
   }
   switch (p.type) {
-    case 'strong_streak':return [`${ctx.streakDays} days of consistency! Your progress is solid.`, "Great streak going — consistency is paying off."]
-    case 'low_logging':  return ["Not many days logged this week. Try logging at least one meal daily.", "Logging daily, even briefly, helps you see real progress."]
-    case 'water_gap':    return ["Your average hydration is below goal this week.", "Try drinking a bit more water over the next few days."]
-    case 'consistent':   return ["Solid consistency this week — keep it up.", "You're tracking your week well. Nice work."]
-    default:               return ["Keep logging your days to see your progress take shape.", "Every day you log makes your tracking more useful."]
+    case 'score_improving':      return [`Your average score is up ${trendAbs}% compared with last week.`, `Nice progress — your score climbed ${trendAbs}% this week.`]
+    case 'score_declining':      return [`Your average score is down ${trendAbs}% compared with last week.`, `Your score dipped ${trendAbs}% — a small adjustment could turn that around.`]
+    case 'weak_hydration':       return ["Hydration has been your weakest area this week.", "More water could make a real difference to your score."]
+    case 'strong_hydration':     return ["Your hydration has been excellent this week — great work.", "Water has been a real strength for you lately."]
+    case 'inconsistent_nutrition': return ["Nutrition tracking has been inconsistent this week.", "Logging even one meal a day would help reveal a real trend."]
+    case 'consistent_nutrition':  return ["You're becoming more consistent with nutrition.", "Solid nutrition tracking this week — keep it up."]
+    case 'workout_consistency':  return ["Workout consistency has been a real strength lately.", "Several sessions logged this week — consistency is paying off."]
+    case 'strong_streak':        return [`${ctx.streakDays} days in a row! Your overall consistency is solid.`, "Great streak going — consistency is paying off."]
+    case 'streak_progress':      return ["You're becoming more consistent. Keep the streak alive.", `${ctx.streakDays}-day streak so far — a little more to make it a real habit.`]
+    default:                       return ["Keep logging your days to see your progress take shape.", "Every day you log makes your tracking more useful."]
   }
 }
 
