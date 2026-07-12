@@ -1218,25 +1218,31 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
   // meal is actually logged, so a single early meal can't max it out.
   const MEAL_EXPECTED_HOUR = { breakfast: 9, lunch: 13, snack: 16, dinner: 20 }
   const mealSlotIds = Object.keys(MEAL_EXPECTED_HOUR)
-  const expectedMealSlots = isToday
-    ? mealSlotIds.filter(id => hour >= MEAL_EXPECTED_HOUR[id])
-    : mealSlotIds // past days — every meal's time has already passed
+  const expectedMealCount = isToday
+    ? mealSlotIds.filter(id => hour >= MEAL_EXPECTED_HOUR[id]).length
+    : mealSlotIds.length // past days — every meal's time has already passed
   const loggedMealSlots = mealSlotIds.filter(id => foodLogs.some(f => f.meal_slot === id))
-  const loggedExpectedCount = expectedMealSlots.filter(id => loggedMealSlots.includes(id)).length
-  const expectedCount = Math.max(expectedMealSlots.length, 1)
-  let nutritionScore = (loggedExpectedCount / expectedCount) * 100
+  // Denominator floors at 1 (avoids divide-by-zero very early in the day);
+  // numerator counts meals actually logged so far, capped at the denominator
+  // so logging several meals well ahead of time doesn't overshoot the ratio.
+  const nutritionDenominator = Math.max(expectedMealCount, 1)
+  const loggedExpectedCount  = Math.min(loggedMealSlots.length, nutritionDenominator)
+  let nutritionScore = (loggedExpectedCount / nutritionDenominator) * 100
   if (loggedMealSlots.length < mealSlotIds.length) nutritionScore = Math.min(nutritionScore, 90)
   // Small optional adjustment from macro progress
   if (proteinGoal > 0 && totalP >= proteinGoal * 0.5) nutritionScore = Math.min(100, nutritionScore + 5)
   nutritionScore = Math.round(Math.max(0, Math.min(100, nutritionScore)))
 
   // Water (20%) — today uses a fair time-based expectation so early risers
-  // aren't penalised; past days compare against the full daily goal.
+  // aren't penalised, but a small early log can't alone spike the score to
+  // 100%: the "not yet elapsed" part of the day only grants a capped grace
+  // bonus on top of the real percentage of the goal reached.
   let waterScore
   if (isToday) {
-    const wakingProgress = Math.max(0.05, Math.min(1, (hour - 6) / 16))
-    const expectedWater = waterGoal * wakingProgress
-    waterScore = expectedWater > 0 ? Math.min(100, (waterAmount / expectedWater) * 100) : 100
+    const wakingProgress = Math.max(0, Math.min(1, (hour - 6) / 16))
+    const rawPct    = waterGoal > 0 ? Math.min(100, (waterAmount / waterGoal) * 100) : 0
+    const graceBonus = (1 - wakingProgress) * 40 // tapers from ~40 pts at 6am to 0 by 10pm
+    waterScore = Math.min(100, rawPct + graceBonus)
   } else {
     waterScore = waterGoal > 0 ? Math.min(100, (waterAmount / waterGoal) * 100) : 0
   }

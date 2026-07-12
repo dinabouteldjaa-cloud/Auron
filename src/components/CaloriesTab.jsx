@@ -979,7 +979,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
 // ─────────────────────────────────────────────
 // Main CaloriesTab
 // ─────────────────────────────────────────────
-export default function CaloriesTab({ userId, profile, preferences, lang = 'en', nutritionRequest = null }) {
+export default function CaloriesTab({ userId, profile, preferences, lang = 'en', nutritionRequest = null, onNutritionRequestHandled }) {
   const { t } = useTranslation()
   const MEAL_SLOTS = getMealSlotsNutrition(t)
   const [logs,         setLogs]         = useState([])
@@ -996,6 +996,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
       setSelectedMeal(nutritionRequest.slot)
       setSubView('log')
       setModal(true)
+      onNutritionRequestHandled?.() // clear it so a future remount doesn't reopen it
     }
   }, [nutritionRequest?.ts])
 

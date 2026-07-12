@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useMedications } from '../hooks/useMedications'
 import { useTranslation } from '../lib/i18n.jsx'
 import { TabAuronCard } from './CoachAuron'
 
@@ -306,12 +305,7 @@ function MedCard({ med, status, onMarkTaken, onEdit, onDelete }) {
 // ─────────────────────────────────────────────
 // Main MedicationTab
 // ─────────────────────────────────────────────
-export default function MedicationTab({ userId }) {
-  const {
-    medications, loading,
-    addMedication, updateMedication, deleteMedication, markTaken,
-    getStatusForMed, takenCount, missedCount, nextMed,
-  } = useMedications(userId)
+export default function MedicationTab({ userId, medications, loading, addMedication, updateMedication, deleteMedication, markTaken, getStatusForMed, takenCount, missedCount, nextMed }) {
   const { t, lang } = useTranslation()
   const [modal,   setModal]   = useState(false)
   const [section, setSection] = useState('today')
