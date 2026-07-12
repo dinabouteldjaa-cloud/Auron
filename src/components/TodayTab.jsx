@@ -757,7 +757,7 @@ function WaterSettingsModal({ profile, onSave, onClose }) {
   )
 }
 
-function WaterTracker({ userId, profile, updateProfile, selectedDate, userTz }) {
+function WaterTracker({ userId, profile, updateProfile, selectedDate, userTz, onAmountChange }) {
   const { t } = useTranslation()
   const [amount,       setAmount]       = useState(0)
   const [showSettings, setShowSettings] = useState(false)
@@ -779,7 +779,9 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate, userTz }) 
       .eq('log_date', selectedDate)
       .maybeSingle()
       .then(({ data }) => {
-        setAmount(data ? (unit === 'ml' ? (data.amount_ml || 0) : (data.cups || 0)) : 0)
+        const val = data ? (unit === 'ml' ? (data.amount_ml || 0) : (data.cups || 0)) : 0
+        setAmount(val)
+        onAmountChange?.(val)
       })
       .finally(() => setLoading(false))
   }, [userId, selectedDate])
@@ -788,6 +790,7 @@ function WaterTracker({ userId, profile, updateProfile, selectedDate, userTz }) 
     if (!isToday) return // never write to past days
     const clamped   = Math.max(0, newAmount)
     setAmount(clamped)
+    onAmountChange?.(clamped) // keep the parent's score calculation in sync immediately
     const cups      = unit === 'cups' ? clamped : Math.round(clamped / cupSize)
     const amount_ml = unit === 'ml'   ? clamped : clamped * cupSize
     await supabase.from('water_logs').upsert(
@@ -1313,6 +1316,7 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
         updateProfile={updateProfile}
         selectedDate={selectedDate}
         userTz={userTz}
+        onAmountChange={setWaterAmount}
       />
 
       {/* 4 ── Workout */}
