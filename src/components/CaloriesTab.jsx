@@ -108,11 +108,14 @@ const MEAL_EXAMPLES = [
 // new component type on every keystroke, force-remounting Auron (causing
 // the flashing) and the textarea (causing the cursor to jump to the start
 // on every character, which reversed typed text).
-function MealFlowShell({ mood, children, onBackClick }) {
+function MealFlowShell({ mood, children, onBackClick, onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: C.pageBg || '#F7F6FB', zIndex: 300, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto', overflowY: 'auto' }}>
-      <div style={{ padding: '18px 20px 0' }}>
+      <div style={{ padding: '18px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button onClick={onBackClick} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }}>‹</button>
+        {onClose && (
+          <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
+        )}
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 24px 32px' }}>
         <div style={{ marginBottom: 18 }}>
@@ -152,6 +155,17 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
     return JSON.parse(clean)
   }
 
+  // Guards against a malformed/empty AI response rendering a blank estimate
+  // card (e.g. a meal name and no numbers) — purely a display safeguard,
+  // doesn't touch the estimation call or clarification logic itself.
+  const isValidEstimate = (parsed) =>
+    parsed && typeof parsed.meal === 'string' && parsed.meal.trim().length > 0 &&
+    Number.isFinite(parsed.calories) && parsed.calories > 0
+
+  const estimateErrorMsg = fr
+    ? "Je n'ai pas pu obtenir une estimation claire. Réessayez avec un peu plus de détails."
+    : "I couldn't get a clear estimate. Try again with a bit more detail."
+
   const analyze = async () => {
     if (!desc.trim()) return
     setScreen('flow')
@@ -162,8 +176,10 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
       if (parsed.needsClarification && parsed.questions?.length > 0) {
         setQuestions(parsed.questions)
         setAnswerDrafts(Object.fromEntries(parsed.questions.map(q => [q, ''])))
-      } else {
+      } else if (isValidEstimate(parsed)) {
         setResult(parsed)
+      } else {
+        setResult({ error: estimateErrorMsg })
       }
     } catch {
       setResult({ error: fr ? "Impossible d'estimer. Essayez de décrire avec plus de détails — précisez les quantités." : 'Could not estimate. Try describing in more detail — include portion sizes.' })
@@ -176,7 +192,7 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
     try {
       const raw    = await estimateMealFromDescription(preferences, desc, lang, { answers: answerDrafts })
       const parsed = parseResponse(raw)
-      setResult(parsed)
+      setResult(isValidEstimate(parsed) ? parsed : { error: estimateErrorMsg })
       setQuestions(null)
     } catch {
       setResult({ error: fr ? "Impossible d'estimer. Essayez de décrire avec plus de détails — précisez les quantités." : 'Could not estimate. Try describing in more detail — include portion sizes.' })
@@ -216,7 +232,7 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
   // ── Step 1 — Welcome & meal selection ───────────────────────────
   if (screen === 'welcome') {
     return (
-      <MealFlowShell mood="greeting" onBackClick={onBack}>
+      <MealFlowShell mood="greeting" onBackClick={onBack} onClose={onBack}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div style={{ fontSize: 21, fontWeight: 800, color: C.text, marginBottom: 6 }}>{welcomeHeadline}</div>
           <div style={{ fontSize: 14, color: C.textMuted }}>{welcomeSub}</div>
@@ -245,7 +261,7 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
   // ── Step 2 — Meal description ───────────────────────────────────
   if (screen === 'describe') {
     return (
-      <MealFlowShell mood="nutrition" onBackClick={() => setScreen('welcome')}>
+      <MealFlowShell mood="nutrition" onBackClick={() => setScreen('welcome')} onClose={onBack}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <div style={{ fontSize: 19, fontWeight: 800, color: C.text, marginBottom: 6 }}>{pick(describeCaptions)}</div>
           <div style={{ fontSize: 14, color: C.textMuted }}>{fr ? 'Dis-moi ce que tu as mangé.' : 'Tell me what you ate.'}</div>
@@ -299,7 +315,7 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
 
   // ── Step 3/4/5 — Estimating / Clarify / Result (existing logic) ─
   return (
-    <MealFlowShell mood={loading ? 'thinking' : (result && !result.error) ? 'happy' : questions ? 'thinking' : 'nutrition'} onBackClick={editMeal}>
+    <MealFlowShell mood={loading ? 'thinking' : (result && !result.error) ? 'happy' : questions ? 'thinking' : 'nutrition'} onBackClick={editMeal} onClose={onBack}>
       {loading && (
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 17, fontWeight: 700, color: C.text, marginBottom: 8 }}>{pick(estimatingCaptions)}</div>
