@@ -503,6 +503,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   const [saved,        setSaved]        = useState(false)
   const [logged,       setLogged]       = useState(false)
   const [selectedSlot, setSelectedSlot] = useState(mealSlot || 'breakfast')
+  const [showMoreOptions, setShowMoreOptions] = useState(false)
 
   const parseResponse = (raw) => {
     const clean = raw.replace(/```json|```/g, '').trim()
@@ -545,7 +546,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
     setSuggestion(null); setFetched(false); setLoading(false)
     setCustomInput(''); setShowCustom(false)
     setShowModify(false); setModifyInput('')
-    setSaved(false); setLogged(false)
+    setSaved(false); setLogged(false); setShowMoreOptions(false)
   }
 
   // Show active restrictions so user knows they're being respected
@@ -557,11 +558,8 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   return (
     <Card style={{ borderColor: C.borderStrong, marginBottom: 24 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: fetched || loading ? 12 : 10 }}>
-        <div style={{
-          width: 30, height: 30, borderRadius: 9, flexShrink: 0, marginTop: 1,
-          background: `${C.gold}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
-        }}>
-          ✨
+        <div style={{ flexShrink: 0 }}>
+          <AuronCharacter mood="nutrition" size="compact" />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13.5, fontWeight: 700, color: C.text }}>{t('cal.aiSuggest')}</div>
@@ -667,7 +665,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
         </div>
       )}
 
-      {/* Log / Save actions for this suggestion */}
+      {/* Log / Save actions for this suggestion — one obvious primary action */}
       {suggestion && !loading && (
         <div style={{ marginBottom: 12 }}>
           {!logged && (
@@ -691,45 +689,57 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
               </div>
             </div>
           )}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={() => {
-                onLog?.({ name: suggestion.meal, cal: suggestion.calories, p: suggestion.protein, c: suggestion.carbs, f: suggestion.fat }, selectedSlot)
-                setLogged(true)
-              }}
-              disabled={logged}
-              style={{
-                flex: 2, padding: 11, borderRadius: 14, border: 'none',
-                background: logged ? C.greenLight : C.gold, color: logged ? C.green : C.dark,
-                fontSize: 12.5, fontWeight: 600, cursor: logged ? 'default' : 'pointer',
-              }}
-            >
-              {logged ? '✓ Logged' : t('cal.logMeal')}
-            </button>
-            <button
-              onClick={() => {
-                onSave?.({
-                  name: suggestion.meal, calories: suggestion.calories, protein: suggestion.protein,
-                  carbs: suggestion.carbs, fat: suggestion.fat,
-                  ingredients: suggestion.ingredients || null,
-                  source: 'suggestion',
-                })
-                setSaved(true)
-              }}
-              disabled={saved}
-              style={{
-                flex: 1, padding: 11, borderRadius: 14, border: `1px solid ${saved ? C.green : C.border}`,
-                background: saved ? C.greenLight : 'transparent', color: saved ? C.green : C.textMuted,
-                fontSize: 11.5, fontWeight: 600, cursor: saved ? 'default' : 'pointer',
-              }}
-            >
-              {saved ? t('cal.savedMeal') : t('cal.saveMeal')}
-            </button>
-          </div>
-          {logged && (
+
+          {/* Primary action — unmistakably the main CTA */}
+          <button
+            onClick={() => {
+              onLog?.({ name: suggestion.meal, cal: suggestion.calories, p: suggestion.protein, c: suggestion.carbs, f: suggestion.fat }, selectedSlot)
+              setLogged(true)
+            }}
+            disabled={logged}
+            style={{
+              width: '100%', padding: 13, borderRadius: 16, border: 'none',
+              background: logged ? C.greenLight : C.gold, color: logged ? C.green : C.dark,
+              fontSize: 14, fontWeight: 700, cursor: logged ? 'default' : 'pointer',
+              marginBottom: 8, boxShadow: logged ? 'none' : `0 3px 10px ${C.gold}44`,
+            }}
+          >
+            {logged ? `✓ ${t('cal.logged') || 'Logged'}` : t('cal.logMeal')}
+          </button>
+
+          {!logged ? (
+            /* Secondary — Save is one tap; everything else tucked behind "More options" */
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => {
+                  onSave?.({
+                    name: suggestion.meal, calories: suggestion.calories, protein: suggestion.protein,
+                    carbs: suggestion.carbs, fat: suggestion.fat,
+                    ingredients: suggestion.ingredients || null,
+                    source: 'suggestion',
+                  })
+                  setSaved(true)
+                }}
+                disabled={saved}
+                style={{
+                  flex: 1, padding: '9px 0', borderRadius: 12, border: `1px solid ${saved ? C.green : C.border}`,
+                  background: saved ? C.greenLight : 'transparent', color: saved ? C.green : C.textMuted,
+                  fontSize: 12, fontWeight: 600, cursor: saved ? 'default' : 'pointer',
+                }}
+              >
+                {saved ? t('cal.savedMeal') : t('cal.saveMeal')}
+              </button>
+              <button
+                onClick={() => setShowMoreOptions(v => !v)}
+                style={{ flex: 1, padding: '9px 0', borderRadius: 12, border: `1px solid ${C.border}`, background: 'transparent', color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >
+                {showMoreOptions ? (t('cal.hideOptions') || 'Hide options') : (t('cal.moreOptions') || 'More options')}
+              </button>
+            </div>
+          ) : (
             <button
               onClick={resetCard}
-              style={{ width: '100%', marginTop: 10, padding: 0, background: 'none', border: 'none', color: C.textMuted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ width: '100%', padding: 0, background: 'none', border: 'none', color: C.textMuted, fontSize: 11.5, cursor: 'pointer', textDecoration: 'underline' }}
             >
               {lang === 'fr' ? 'Fermer' : 'Close'}
             </button>
@@ -737,8 +747,8 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
         </div>
       )}
 
-      {/* Two distinct actions: different meal vs. modify this one */}
-      {fetched && suggestion && !logged && (
+      {/* Everything else — tucked away until explicitly requested */}
+      {fetched && suggestion && !logged && showMoreOptions && (
         <div>
           <div style={{ display: 'flex', gap: 8, marginBottom: showModify ? 12 : 0 }}>
             <button
@@ -889,8 +899,15 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
 
         {/* Header */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <div style={{ fontSize:18, fontWeight:700, color:T.text }}>
-            {selected ? selected.name.slice(0, 28) + (selected.name.length > 28 ? '…' : '') : t('cal.addFood').replace('+ ','')}
+          <div>
+            <div style={{ fontSize:18, fontWeight:700, color:T.text }}>
+              {selected ? selected.name.slice(0, 28) + (selected.name.length > 28 ? '…' : '') : t('cal.addFood').replace('+ ','')}
+            </div>
+            {!selected && (
+              <div style={{ fontSize:12, color:T.purple, fontWeight:500, marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
+                {MEAL_SLOTS.find(s => s.id === selectedMeal)?.icon} {MEAL_SLOTS.find(s => s.id === selectedMeal)?.label}
+              </div>
+            )}
           </div>
           <button onClick={selected ? () => setSelected(null) : onClose} style={{ background:'none', border:'none', color:T.textMuted, fontSize:22, cursor:'pointer' }}>
             {selected ? '‹' : '×'}
@@ -981,9 +998,70 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
         ) : (
           /* ── Search view ── */
           <>
-            {/* Recent & Saved meals — quick reuse, only shown when not actively searching */}
+            {/* Search box — first, since most users search immediately */}
+            <div style={{ position:'relative', marginBottom:12 }}>
+              <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t('food.searchPlaceholder')||t('cal.searchFood')} autoFocus
+                style={{ width:'100%', padding:'10px 14px 10px 38px', borderRadius:12, background:T.surfaceMid, border:`1px solid ${T.border}`, color:T.text, fontSize:14, outline:'none' }} />
+              <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16 }}>🔍</span>
+              {loading && <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:11, color:T.purple }}>{t('cal.loading')||'Searching…'}</span>}
+            </div>
+
+            {/* Source badge */}
+            {query.length > 1 && !loading && (
+              <div style={{ fontSize:11, color:T.textDim, marginBottom:8 }}>
+                {results.length} {t('cal.resultsSource')||`${results.length} results · USDA`}
+              </div>
+            )}
+
+            {/* Results */}
+            <div style={{ overflowY:'auto', flex:1 }}>
+              {results.map((f) => (
+                <button key={f.id} onClick={() => selectFood(f)}
+                  style={{ width:'100%', padding:'12px 0', display:'flex', justifyContent:'space-between', alignItems:'center', background:'none', border:'none', borderBottom:`1px solid ${T.divider}`, cursor:'pointer', textAlign:'left' }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:13, fontWeight:500, color:T.text, marginBottom:2 }}>{f.name}</div>
+                    <div style={{ fontSize:11, color:T.textMuted }}>
+                      {f.brand && <span>{f.brand} · </span>}
+                      <span style={{ color:T.purple, fontWeight:600 }}>{f.cal} kcal</span>
+                      <span> · P {f.p}g · C {f.c}g · F {f.f}g</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:11, color:T.textDim, marginLeft:8, flexShrink:0 }}>{f.serving}</div>
+                </button>
+              ))}
+
+              {/* Empty state — Coach Auron steps in as the fallback */}
+              {results.length === 0 && !loading && (
+                <div style={{ padding:'24px 0', textAlign:'center' }}>
+                  <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
+                    <AuronCharacter mood="thinking" size="compact" />
+                  </div>
+                  <div style={{ fontSize:13.5, fontWeight:600, color:T.text, marginBottom:4 }}>
+                    {t('food.noMatchTitle') || "Couldn't find what you're looking for?"}
+                  </div>
+                  <div style={{ fontSize:12.5, color:T.textMuted, marginBottom:16 }}>
+                    {t('food.noMatchSub') || 'Let me estimate it for you 👋'}
+                  </div>
+                  <button onClick={() => { onClose(); setTimeout(() => onDescribe?.(), 100) }}
+                    style={{ padding:'11px 22px', borderRadius:20, background:T.purple, border:'none', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                    {t('food.askAuronBtn') || '✨ Ask Auron'}
+                  </button>
+                </div>
+              )}
+              {results.length > 0 && query.length > 1 && !loading && (
+                <div style={{ padding:'16px 0', textAlign:'center', borderTop:`1px solid ${T.divider}`, marginTop:8 }}>
+                  <div style={{ fontSize:12, color:T.textDim, marginBottom:10 }}>{t('food.cantFind')||"Can't find it?"}</div>
+                  <button onClick={() => { onClose(); setTimeout(() => onDescribe?.(), 100) }}
+                    style={{ padding:'9px 18px', borderRadius:20, background:T.purpleLight, border:`1px solid ${T.border}`, color:T.purple, fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    {t('food.describePrompt')||'✨ Describe it — AI will estimate'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Saved & Recent meals — quick reuse, shown below search/results, only when not actively searching */}
             {!query.trim() && (savedMeals.length > 0 || recentMeals.length > 0) && (
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginTop: 16 }}>
                 {savedMeals.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
@@ -1025,67 +1103,6 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
                 )}
               </div>
             )}
-            {/* Meal slot tabs */}
-            <div style={{ display:'flex', gap:6, marginBottom:12 }}>
-              {MEAL_SLOTS.map(s => (
-                <button key={s.id} onClick={() => setSelectedMeal(s.id)} style={{ flex:1, padding:'8px 4px', borderRadius:10, cursor:'pointer', border:`1px solid ${selectedMeal===s.id ? T.purple : T.border}`, background:selectedMeal===s.id ? T.purpleLight : 'transparent', color:selectedMeal===s.id ? T.purple : T.textMuted, fontSize:11, display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
-                  <span style={{ fontSize:15 }}>{s.icon}</span>{s.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Search box */}
-            <div style={{ position:'relative', marginBottom:12 }}>
-              <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t('food.searchPlaceholder')||t('cal.searchFood')} autoFocus
-                style={{ width:'100%', padding:'10px 14px 10px 38px', borderRadius:12, background:T.surfaceMid, border:`1px solid ${T.border}`, color:T.text, fontSize:14, outline:'none' }} />
-              <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16 }}>🔍</span>
-              {loading && <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:11, color:T.purple }}>{t('cal.loading')||'Searching…'}</span>}
-            </div>
-
-            {/* Source badge */}
-            {query.length > 1 && !loading && (
-              <div style={{ fontSize:11, color:T.textDim, marginBottom:8 }}>
-                {results.length} {t('cal.resultsSource')||`${results.length} results · USDA`}
-              </div>
-            )}
-
-            {/* Results */}
-            <div style={{ overflowY:'auto', flex:1 }}>
-              {results.map((f) => (
-                <button key={f.id} onClick={() => selectFood(f)}
-                  style={{ width:'100%', padding:'12px 0', borderBottom:`1px solid ${T.divider}`, display:'flex', justifyContent:'space-between', alignItems:'center', background:'none', border:'none', borderBottom:`1px solid ${T.divider}`, cursor:'pointer', textAlign:'left' }}>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:500, color:T.text, marginBottom:2 }}>{f.name}</div>
-                    <div style={{ fontSize:11, color:T.textMuted }}>
-                      {f.brand && <span>{f.brand} · </span>}
-                      <span style={{ color:T.purple, fontWeight:600 }}>{f.cal} kcal</span>
-                      <span> · P {f.p}g · C {f.c}g · F {f.f}g</span>
-                    </div>
-                  </div>
-                  <div style={{ fontSize:11, color:T.textDim, marginLeft:8, flexShrink:0 }}>{f.serving}</div>
-                </button>
-              ))}
-              {results.length === 0 && !loading && (
-                <div style={{ padding:'20px 0', textAlign:'center' }}>
-                  <div style={{ fontSize:13, color:T.textMuted, marginBottom:16 }}>
-                    {t('cal.noResults')} "{query}"
-                  </div>
-                  <button onClick={() => { onClose(); setTimeout(() => onDescribe?.(), 100) }}
-                    style={{ padding:'11px 20px', borderRadius:20, background:T.purpleLight, border:`1px solid ${T.border}`, color:T.purple, fontSize:13, fontWeight:600, cursor:'pointer' }}>
-                    ✨ Describe meal — AI estimates calories
-                  </button>
-                </div>
-              )}
-              {results.length > 0 && query.length > 1 && !loading && (
-                <div style={{ padding:'16px 0', textAlign:'center', borderTop:`1px solid ${T.divider}`, marginTop:8 }}>
-                  <div style={{ fontSize:12, color:T.textDim, marginBottom:10 }}>{t('food.cantFind')||"Can't find it?"}</div>
-                  <button onClick={() => { onClose(); setTimeout(() => onDescribe?.(), 100) }}
-                    style={{ padding:'9px 18px', borderRadius:20, background:T.purpleLight, border:`1px solid ${T.border}`, color:T.purple, fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                    {t('food.describePrompt')||'✨ Describe it — AI will estimate'}
-                  </button>
-                </div>
-              )}
-            </div>
           </>
         )}
       </div>
@@ -1264,38 +1281,36 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
     <div>
       <TabAuronCard tab="nutrition" ctx={nutritionCtx} lang={lang} />
 
-      {/* Meal estimator entry — compact, clearly interactive */}
+      {/* Primary Nutrition CTA — feels like Auron personally asking, not a generic estimator card */}
       <button
         onClick={() => setSubView('describe')}
         style={{
-          width: '100%', marginBottom: 18, padding: '12px 14px', borderRadius: 14,
-          border: `1px solid ${C.gold}33`, background: C.goldLight,
+          width: '100%', marginBottom: 18, padding: '14px 16px', borderRadius: 18,
+          border: 'none', background: `linear-gradient(135deg, ${C.purple}, ${C.purpleDark || C.purple})`,
           display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left',
+          boxShadow: `0 4px 16px ${C.purple}44`,
         }}
       >
-        <div style={{
-          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-          background: `${C.gold}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17,
-        }}>
-          ✨
+        <div style={{ flexShrink: 0 }}>
+          <AuronCharacter mood="nutrition" size="compact" />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: C.text, lineHeight: 1.3 }}>{t('cal.describeBtn')}</div>
-          <div style={{ fontSize: 11.5, color: C.textMuted, marginTop: 2, lineHeight: 1.35 }}>{t('cal.describeBtnSub')}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{t('cal.askAuronCta') || 'Ask Auron'}</div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2, lineHeight: 1.35 }}>{t('cal.askAuronCtaSub') || 'What did you eat today?'}</div>
         </div>
-        <span style={{ fontSize: 18, color: C.gold, flexShrink: 0 }}>›</span>
+        <span style={{ fontSize: 20, color: '#fff', flexShrink: 0 }}>›</span>
       </button>
 
       {/* ── Stats cluster: Calories/Remaining + Macros grouped together ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
-        <div style={{ background: C.surfaceLight, borderRadius: 12, padding: '11px 13px', border: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 10.5, color: C.textMuted, marginBottom: 2 }}>{t('cal.caloriesLabel')}</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: C.gold, lineHeight: 1.15 }}>{totalCal.toLocaleString()}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+        <div style={{ background: C.surfaceLight, borderRadius: 12, padding: '10px 13px', border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 10.5, color: C.textMuted, marginBottom: 1 }}>{t('cal.caloriesLabel')}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: C.gold, lineHeight: 1.1 }}>{totalCal.toLocaleString()}</div>
           <div style={{ fontSize: 10.5, color: C.textMuted }}>{t('cal.ofGoal').replace('{n}', calorieGoal.toLocaleString())}</div>
         </div>
-        <div style={{ background: C.surfaceLight, borderRadius: 12, padding: '11px 13px', border: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 10.5, color: C.textMuted, marginBottom: 2 }}>{t('cal.remaining')}</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: totalCal > calorieGoal ? C.red : C.green, lineHeight: 1.15 }}>
+        <div style={{ background: C.surfaceLight, borderRadius: 12, padding: '10px 13px', border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 10.5, color: C.textMuted, marginBottom: 1 }}>{t('cal.remaining')}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: totalCal > calorieGoal ? C.red : C.green, lineHeight: 1.1 }}>
             {Math.abs(calorieGoal - totalCal).toLocaleString()}
           </div>
           <div style={{ fontSize: 10.5, color: C.textMuted }}>{totalCal > calorieGoal ? t('cal.kcalOver') : t('cal.kcalLeft')}</div>
@@ -1303,7 +1318,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
       </div>
 
       {/* Macros */}
-      <Card style={{ marginBottom: 24 }}>
+      <Card style={{ marginBottom: 20, padding: '14px 16px' }}>
         <Label>{t('cal.macrosToday')}</Label>
         <MacroBar label={t('cal.protein')} current={totalP} goal={proteinGoal} color={C.blue}  />
         <MacroBar label={t('cal.carbs')}   current={totalC} goal={carbsGoal}   color={C.amber} />
@@ -1324,15 +1339,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
 
       {/* Food log by meal slot */}
       <div style={{ marginBottom: 8 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Label style={{ marginBottom: 0 }}>{t('cal.foodLog')}</Label>
-          <button
-            onClick={() => setModal(true)}
-            style={{ padding: '6px 14px', borderRadius: 20, background: C.gold, color: C.dark, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-          >
-            {t('cal.addFood')}
-          </button>
-        </div>
+        <Label>{t('cal.foodLog')}</Label>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: 32, color: C.textMuted }}>Loading...</div>
