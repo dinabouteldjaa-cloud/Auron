@@ -102,6 +102,28 @@ const MEAL_EXAMPLES = [
   'Steak with mashed potatoes',
 ]
 
+// Full-screen shell shared by every step of the meal estimator flow.
+// Defined at module level (not inside DescribeMeal) so its identity stays
+// stable across re-renders — otherwise React would treat it as a brand
+// new component type on every keystroke, force-remounting Auron (causing
+// the flashing) and the textarea (causing the cursor to jump to the start
+// on every character, which reversed typed text).
+function MealFlowShell({ mood, children, onBackClick }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: C.pageBg || '#F7F6FB', zIndex: 300, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto', overflowY: 'auto' }}>
+      <div style={{ padding: '18px 20px 0' }}>
+        <button onClick={onBackClick} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }}>‹</button>
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 24px 32px' }}>
+        <div style={{ marginBottom: 18 }}>
+          <AuronCharacter mood={mood} size="onboarding" />
+        </div>
+        <div style={{ width: '100%' }}>{children}</div>
+      </div>
+    </div>
+  )
+}
+
 function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en' }) {
   const { t } = useTranslation()
   const MEAL_SLOTS = getMealSlotsNutrition(t)
@@ -191,25 +213,10 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
     ? ["Auron estime ton repas...", "Laisse-moi réfléchir...", "Analyse en cours..."]
     : ['Auron is estimating your meal...', 'Let me think about that...', 'Analyzing your meal...']
 
-  // ── Full-screen shell shared by every step ─────────────────────
-  const Shell = ({ mood, children, onBackClick }) => (
-    <div style={{ position: 'fixed', inset: 0, background: C.pageBg || '#F7F6FB', zIndex: 300, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto', overflowY: 'auto' }}>
-      <div style={{ padding: '18px 20px 0' }}>
-        <button onClick={onBackClick} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }}>‹</button>
-      </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 24px 32px' }}>
-        <div style={{ marginBottom: 18 }}>
-          <AuronCharacter mood={mood} size="onboarding" />
-        </div>
-        <div style={{ width: '100%' }}>{children}</div>
-      </div>
-    </div>
-  )
-
   // ── Step 1 — Welcome & meal selection ───────────────────────────
   if (screen === 'welcome') {
     return (
-      <Shell mood="greeting" onBackClick={onBack}>
+      <MealFlowShell mood="greeting" onBackClick={onBack}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div style={{ fontSize: 21, fontWeight: 800, color: C.text, marginBottom: 6 }}>{welcomeHeadline}</div>
           <div style={{ fontSize: 14, color: C.textMuted }}>{welcomeSub}</div>
@@ -231,14 +238,14 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
             </button>
           ))}
         </div>
-      </Shell>
+      </MealFlowShell>
     )
   }
 
   // ── Step 2 — Meal description ───────────────────────────────────
   if (screen === 'describe') {
     return (
-      <Shell mood="nutrition" onBackClick={() => setScreen('welcome')}>
+      <MealFlowShell mood="nutrition" onBackClick={() => setScreen('welcome')}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <div style={{ fontSize: 19, fontWeight: 800, color: C.text, marginBottom: 6 }}>{pick(describeCaptions)}</div>
           <div style={{ fontSize: 14, color: C.textMuted }}>{fr ? 'Dis-moi ce que tu as mangé.' : 'Tell me what you ate.'}</div>
@@ -286,13 +293,13 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
         >
           {fr ? 'Continuer →' : 'Continue →'}
         </button>
-      </Shell>
+      </MealFlowShell>
     )
   }
 
   // ── Step 3/4/5 — Estimating / Clarify / Result (existing logic) ─
   return (
-    <Shell mood={loading ? 'thinking' : (result && !result.error) ? 'happy' : questions ? 'thinking' : 'nutrition'} onBackClick={editMeal}>
+    <MealFlowShell mood={loading ? 'thinking' : (result && !result.error) ? 'happy' : questions ? 'thinking' : 'nutrition'} onBackClick={editMeal}>
       {loading && (
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 17, fontWeight: 700, color: C.text, marginBottom: 8 }}>{pick(estimatingCaptions)}</div>
@@ -460,7 +467,7 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
           </div>
         )
       )}
-    </Shell>
+    </MealFlowShell>
   )
 }
 
