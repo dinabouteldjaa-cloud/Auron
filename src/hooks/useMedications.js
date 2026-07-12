@@ -89,14 +89,44 @@ export function useMedications(userId, timezone, viewDate) {
     }
   }
 
-  const logDate         = viewDate || toUserDateStr(timezone)
+  const today            = toUserDateStr(timezone)
+  const logDate          = viewDate || today
+  const isViewingToday   = logDate === today
+
   const getStatusForMed = (medicationId) => {
     const log = logs.find(l => l.medication_id === medicationId && l.log_date === logDate)
-    return log?.status || 'pending'
+    if (log?.status) return log.status
+
+    // No log yet for this day — decide whether it should now count as missed.
+    if (!isViewingToday) {
+      // Any past day with no log for a scheduled medication is missed.
+      // (A future logDate shouldn't normally occur, but stays pending just in case.)
+      return logDate < today ? 'missed' : 'pending'
+    }
+
+    // Today — only missed once its scheduled time has actually passed;
+    // times still ahead of now remain pending.
+    const med = medications.find(m => m.id === medicationId)
+    if (med) {
+      try {
+        const timeStr = med.reminder_time || (med.reminder_times ? JSON.parse(med.reminder_times)[0] : null)
+        if (timeStr) {
+          const [mh, mm] = timeStr.split(':').map(Number)
+          const medMinutes = mh * 60 + mm
+          const now = new Date()
+          const nowMinutes = now.getHours() * 60 + now.getMinutes()
+          if (medMinutes < nowMinutes) return 'missed'
+        }
+      } catch { /* no parsable time — leave as pending */ }
+    }
+    return 'pending'
   }
 
-  const takenCount  = logs.filter(l => l.status === 'taken').length
-  const missedCount = logs.filter(l => l.status === 'missed').length
+  // Derived from every active medication's actual computed status, not just
+  // rows that already have a log — otherwise medications with no log entry
+  // (past-due-and-never-marked) would never be counted as missed.
+  const takenCount  = medications.filter(m => getStatusForMed(m.id) === 'taken').length
+  const missedCount = medications.filter(m => getStatusForMed(m.id) === 'missed').length
 
   const nextMed = medications
     .filter(m => getStatusForMed(m.id) === 'pending')
