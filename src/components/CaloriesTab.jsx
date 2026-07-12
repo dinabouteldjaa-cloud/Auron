@@ -803,7 +803,10 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 // ─────────────────────────────────────────────
 function SavedMealsPage({ savedMeals, onSelect, onDelete, onBack }) {
   const { t } = useTranslation()
+  const MEAL_SLOTS = getMealSlotsNutrition(t)
   const [expandedId, setExpandedId] = useState(null)
+  const [loggingId,  setLoggingId]  = useState(null) // meal id currently choosing a slot for
+  const [pickedSlot, setPickedSlot] = useState('breakfast')
 
   return (
     <div style={{ position:'fixed', inset:0, background:T.pageBg || '#F7F6FB', zIndex:300, display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto', overflowY:'auto' }}>
@@ -817,6 +820,7 @@ function SavedMealsPage({ savedMeals, onSelect, onDelete, onBack }) {
           <div style={{ textAlign:'center', padding:'40px 0', color:T.textMuted, fontSize:13 }}>{t('cal.noSaved')}</div>
         ) : savedMeals.map(m => {
           const isOpen = expandedId === m.id
+          const isLogging = loggingId === m.id
           return (
             <div key={m.id} style={{ borderRadius:14, marginBottom:10, border:`1px solid ${T.border}`, overflow:'hidden', background:T.surface }}>
               <div
@@ -867,16 +871,48 @@ function SavedMealsPage({ savedMeals, onSelect, onDelete, onBack }) {
                     </div>
                   )}
 
-                  <div style={{ display:'flex', gap:8 }}>
-                    <button onClick={() => onSelect(m)}
-                      style={{ flex:2, padding:11, borderRadius:14, background:T.purple, color:'#fff', border:'none', fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
-                      {t('cal.logMeal')}
-                    </button>
-                    <button onClick={() => onDelete(m.id)}
-                      style={{ flex:1, padding:11, borderRadius:14, background:T.redLight, color:T.red, border:`1px solid ${T.red}44`, fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
-                      {t('cal.delete') || 'Delete'}
-                    </button>
-                  </div>
+                  {isLogging ? (
+                    <div>
+                      <div style={{ fontSize:10.5, color:T.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>
+                        {t('cal.logTo')}
+                      </div>
+                      <div style={{ display:'flex', gap:6, marginBottom:10 }}>
+                        {MEAL_SLOTS.map(s => (
+                          <button key={s.id} onClick={() => setPickedSlot(s.id)}
+                            style={{
+                              flex:1, padding:'7px 4px', borderRadius:10, cursor:'pointer',
+                              border:`1px solid ${pickedSlot===s.id ? T.purple : T.border}`,
+                              background: pickedSlot===s.id ? T.purpleLight : 'transparent',
+                              color: pickedSlot===s.id ? T.purple : T.textMuted,
+                              fontSize:10.5, display:'flex', flexDirection:'column', alignItems:'center', gap:2,
+                            }}>
+                            <span style={{ fontSize:14 }}>{s.icon}</span>{s.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ display:'flex', gap:8 }}>
+                        <button onClick={() => { onSelect(m, pickedSlot); setLoggingId(null) }}
+                          style={{ flex:2, padding:11, borderRadius:14, background:T.purple, color:'#fff', border:'none', fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
+                          {t('cal.logMeal')}
+                        </button>
+                        <button onClick={() => setLoggingId(null)}
+                          style={{ flex:1, padding:11, borderRadius:14, background:'transparent', color:T.textMuted, border:`1px solid ${T.border}`, fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
+                          {t('cal.cancel') || 'Cancel'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display:'flex', gap:8 }}>
+                      <button onClick={() => { setLoggingId(m.id); setPickedSlot('breakfast') }}
+                        style={{ flex:2, padding:11, borderRadius:14, background:T.purple, color:'#fff', border:'none', fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
+                        {t('cal.logMeal')}
+                      </button>
+                      <button onClick={() => onDelete(m.id)}
+                        style={{ flex:1, padding:11, borderRadius:14, background:T.redLight, color:T.red, border:`1px solid ${T.red}44`, fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
+                        {t('cal.delete') || 'Delete'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1352,8 +1388,8 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
     return (
       <SavedMealsPage
         savedMeals={savedMeals}
-        onSelect={(m) => {
-          addFood({ name: m.name, cal: m.calories, p: m.protein, c: m.carbs, f: m.fat }, defaultMealSlotByHour())
+        onSelect={(m, slot) => {
+          addFood({ name: m.name, cal: m.calories, p: m.protein, c: m.carbs, f: m.fat }, slot || defaultMealSlotByHour())
           setSubView('log')
         }}
         onDelete={deleteSavedMeal}
