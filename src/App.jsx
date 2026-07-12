@@ -140,7 +140,10 @@ export default function App() {
   // selectedDate shared between TodayTab and useMedications so med card reflects the right day
   const [viewDate, setViewDate] = useState(null) // null = today
 
-  const { medications, takenCount, missedCount, nextMed, markTaken, getStatusForMed } = useMedications(uid, profile?.timezone, viewDate)
+  const {
+    medications, takenCount, missedCount, nextMed, markTaken, getStatusForMed,
+    loading: medsLoading, addMedication, updateMedication, deleteMedication,
+  } = useMedications(uid, profile?.timezone, viewDate)
 
   const hour = new Date().getHours()
   const greeting = hour < 5 ? t('greeting.late') : hour < 12 ? t('greeting.morning') : hour < 17 ? t('greeting.afternoon') : t('greeting.evening')
@@ -209,10 +212,22 @@ export default function App() {
       <WorkoutTab userId={uid} profile={profile} />
     ),
     calories: (
-      <CaloriesTab userId={uid} profile={profile} preferences={preferences} lang={lang} nutritionRequest={nutritionRequest} />
+      <CaloriesTab userId={uid} profile={profile} preferences={preferences} lang={lang} nutritionRequest={nutritionRequest} onNutritionRequestHandled={() => setNutritionRequest(null)} />
     ),
     medication: (
-      <MedicationTab userId={uid} />
+      <MedicationTab
+        userId={uid}
+        medications={medications}
+        loading={medsLoading}
+        addMedication={addMedication}
+        updateMedication={updateMedication}
+        deleteMedication={deleteMedication}
+        markTaken={markTaken}
+        getStatusForMed={getStatusForMed}
+        takenCount={takenCount}
+        missedCount={missedCount}
+        nextMed={nextMed}
+      />
     ),
     profile: (
       <ProfileTab
