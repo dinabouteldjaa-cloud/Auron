@@ -942,11 +942,11 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
   const selectFood = (f) => { setSelected(f); setQty('1'); setJustSaved(false) }
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(26,26,46,0.55)', zIndex:100, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background:T.surface, borderRadius:'20px 20px 0 0', padding:24, width:'100%', maxWidth:480, maxHeight:'88vh', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:T.shadowStrong }}>
+    <div style={{ position:'fixed', inset:0, background:T.pageBg || '#F7F6FB', zIndex:300, display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto', overflowY:'auto' }}>
+      <div style={{ padding:'20px 20px 0', flex:1, display:'flex', flexDirection:'column', minHeight:0 }}>
 
         {/* Header */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, flexShrink:0 }}>
           <div>
             <div style={{ fontSize:18, fontWeight:700, color:T.text }}>
               {selected ? selected.name.slice(0, 28) + (selected.name.length > 28 ? '…' : '') : t('cal.addFood').replace('+ ','')}
@@ -964,7 +964,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
 
         {/* ── Food detail view ── */}
         {selected ? (
-          <div style={{ flex:1, overflowY:'auto' }}>
+          <div style={{ flex:1, overflowY:'auto', paddingBottom:24 }}>
             {/* Nutrition summary */}
             <div style={{ background:T.purpleLight, borderRadius:14, padding:'14px 16px', marginBottom:16 }}>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:12 }}>
