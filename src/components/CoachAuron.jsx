@@ -164,7 +164,7 @@ export function AuronWelcomeScreen({ onDismiss }) {
 // ─────────────────────────────────────────────────────────────
 // CoachHero — main coach card shown on Today tab
 // ─────────────────────────────────────────────────────────────
-export function CoachHero({ mood = 'neutral', message = '', loading = false, actionLabel = '', onAction = null }) {
+export function CoachHero({ mood = 'neutral', message = '', loading = false, actionLabel = '', onAction = null, rank = null }) {
   const { t } = useTranslation()
   return (
     <div style={{ background: T.purpleLight, border: `1px solid ${T.borderStrong}`, borderRadius: 20, marginBottom: 16, overflow: 'hidden' }}>
@@ -179,7 +179,7 @@ export function CoachHero({ mood = 'neutral', message = '', loading = false, act
         <div style={{ width: 120, flexShrink: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingLeft: 8 }}>
           <AuronCharacter mood={mood} size="hero" />
         </div>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '10px 16px 14px 8px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 16px 14px 8px' }}>
           {loading ? (
             <div style={{ width: '100%', textAlign: 'left' }}>
               <style>{`@keyframes pulseName{0%,100%{opacity:.35}50%{opacity:.9}}`}</style>
@@ -187,9 +187,18 @@ export function CoachHero({ mood = 'neutral', message = '', loading = false, act
                 {t('coach.name')}
               </span>
             </div>
-          ) : message ? (
-            <div style={{ fontSize: 14.5, color: T.text, lineHeight: 1.6, fontWeight: 500 }}>{message}</div>
-          ) : null}
+          ) : (
+            <>
+              {rank && (
+                <div style={{ fontSize: 11, fontWeight: 600, color: T.purple, opacity: 0.75, marginBottom: 4, letterSpacing: '0.02em' }}>
+                  {t(`score.rank.${rank.key}`) || rank.label} · {rank.score}%
+                </div>
+              )}
+              {message && (
+                <div style={{ fontSize: 14.5, color: T.text, lineHeight: 1.6, fontWeight: 500 }}>{message}</div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

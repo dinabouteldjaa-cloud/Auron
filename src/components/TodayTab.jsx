@@ -74,6 +74,45 @@ function Label({ children, style = {} }) {
   )
 }
 
+// ─────────────────────────────────────────────────────────────
+// Shared scoring logic — used for both today's live score and the
+// yesterday comparison, so there is exactly one scoring formula.
+// ─────────────────────────────────────────────────────────────
+function computeDayScores({ loggedMealSlotCount, totalMealSlots, proteinTotal, proteinGoal, waterAmount, waterGoal, workoutDone, hasScheduledWorkout, medsScheduledCount, medsTakenCount }) {
+  let nutritionScore = (loggedMealSlotCount / totalMealSlots) * 100
+  if (proteinGoal > 0 && proteinTotal >= proteinGoal * 0.5) nutritionScore = Math.min(100, nutritionScore + 5)
+  nutritionScore = Math.round(Math.max(0, Math.min(100, nutritionScore)))
+
+  const waterScore = Math.round(waterGoal > 0 ? Math.max(0, Math.min(100, (waterAmount / waterGoal) * 100)) : 0)
+
+  const workoutScore = workoutDone ? 100 : (hasScheduledWorkout ? 0 : null)
+
+  const medsNoneScheduled = medsScheduledCount === 0
+  const medicationScore = medsNoneScheduled ? null : Math.round((medsTakenCount / medsScheduledCount) * 100)
+
+  const categories = [
+    { key: 'nutrition',  weight: 35, value: nutritionScore, active: true },
+    { key: 'water',      weight: 20, value: waterScore,     active: true },
+    { key: 'workout',    weight: 25, value: workoutScore,   active: workoutScore != null },
+    { key: 'medication', weight: 20, value: medicationScore,active: medicationScore != null },
+  ]
+  const activeCategories   = categories.filter(c => c.active)
+  const totalActiveWeight  = activeCategories.reduce((s, c) => s + c.weight, 0) || 1
+  const overallScore = Math.round(
+    activeCategories.reduce((s, c) => s + (c.value * c.weight), 0) / totalActiveWeight
+  )
+
+  return { nutritionScore, waterScore, workoutScore, medicationScore, overallScore, categories }
+}
+
+function scoreRank(score) {
+  if (score >= 90) return { key: 'elite',     label: 'Elite' }
+  if (score >= 80) return { key: 'excellent', label: 'Excellent' }
+  if (score >= 70) return { key: 'good',      label: 'Good' }
+  if (score >= 60) return { key: 'fair',      label: 'Fair' }
+  return { key: 'attention', label: 'Needs Attention' }
+}
+
 function Pill({ children, color, bg }) {
   return (
     <span style={{
@@ -123,16 +162,30 @@ function ScoreChip({ label, value, excludedLabel }) {
   )
 }
 
-function TodaysScoreCard({ overallScore, categories, t }) {
+function TodaysScoreCard({ overallScore, categories, yesterdayScore, t }) {
   const scoreColor = overallScore >= 80 ? C.green : overallScore >= 50 ? C.gold : C.red
+
+  let diffNode = null
+  if (yesterdayScore != null) {
+    const diff = overallScore - yesterdayScore
+    const diffColor = diff > 0 ? C.green : diff < 0 ? C.red : C.textMuted
+    const diffText = diff > 0 ? `+${diff} ${t('score.vsYesterday') || 'vs yesterday'}`
+      : diff < 0 ? `${diff} ${t('score.vsYesterday') || 'vs yesterday'}`
+      : (t('score.sameAsYesterday') || 'Same as yesterday')
+    diffNode = <div style={{ fontSize: 11, color: diffColor, fontWeight: 500, marginTop: 2 }}>{diffText}</div>
+  }
+
   return (
     <div style={{
       background: C.surface, border: `1px solid ${C.borderStrong}`, borderRadius: 20,
       padding: '16px 18px', marginBottom: 16, boxShadow: C.shadowCard,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{t('score.title') || "Today's Score"}</div>
-        <div style={{ fontSize: 26, fontWeight: 800, color: scoreColor, lineHeight: 1 }}>{overallScore}%</div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginTop: 3 }}>{t('score.title') || "Today's Score"}</div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: scoreColor, lineHeight: 1 }}>{overallScore}%</div>
+          {diffNode}
+        </div>
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
         {categories.map(cat => (
@@ -1215,51 +1268,74 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
     plan.schedule?.days?.length && plan.schedule.days.includes(scoreDayKey)
   )
 
-  // Nutrition (35%) — meal completion is the primary driver. Only meals
-  // whose typical time has already passed count as "expected" so future
-  // meals are never treated as missed. Capped below 100% unless every
-  // meal is actually logged, so a single early meal can't max it out.
-  const MEAL_EXPECTED_HOUR = { breakfast: 9, lunch: 13, snack: 16, dinner: 20 }
-  const mealSlotIds = Object.keys(MEAL_EXPECTED_HOUR)
-  const loggedMealSlots = mealSlotIds.filter(id => foodLogs.some(f => f.meal_slot === id))
-  // Simple, direct ratio — each of the 4 meals is worth 25%. One meal
-  // logged = 25%, not 100%. Future meals just aren't counted yet; they're
-  // never treated as "missed" mid-day since the ratio only reflects what's
-  // actually been logged so far.
-  let nutritionScore = (loggedMealSlots.length / mealSlotIds.length) * 100
-  // Small optional adjustment from macro progress
-  if (proteinGoal > 0 && totalP >= proteinGoal * 0.5) nutritionScore = Math.min(100, nutritionScore + 5)
-  nutritionScore = Math.round(Math.max(0, Math.min(100, nutritionScore)))
+  const MEAL_SLOT_IDS = ['breakfast', 'lunch', 'snack', 'dinner']
+  const loggedMealSlotCount = MEAL_SLOT_IDS.filter(id => foodLogs.some(f => f.meal_slot === id)).length
 
-  // Water (20%) — a direct percentage of the goal reached, capped at 100%.
-  // Simple and predictable: goal 10 cups, 1 logged = 10%.
-  const waterScore = Math.round(waterGoal > 0 ? Math.max(0, Math.min(100, (waterAmount / waterGoal) * 100)) : 0)
+  const {
+    nutritionScore, waterScore, workoutScore, medicationScore, overallScore, categories: scoreCategoryValues,
+  } = computeDayScores({
+    loggedMealSlotCount, totalMealSlots: MEAL_SLOT_IDS.length,
+    proteinTotal: totalP, proteinGoal,
+    waterAmount, waterGoal,
+    workoutDone, hasScheduledWorkout: scheduledTodayForScore.length > 0,
+    medsScheduledCount: medications.length, medsTakenCount: takenCount,
+  })
 
-  // Workout (25%) — Rest Day (excluded) if nothing was planned and nothing
-  // was logged; otherwise 100 if done, 0 if a planned session wasn't done.
-  const workoutIsRestDay = scheduledTodayForScore.length === 0 && !workoutDone
-  const workoutScore = workoutDone ? 100 : (scheduledTodayForScore.length > 0 ? 0 : null)
+  const scoreCategories = scoreCategoryValues.map(c => ({
+    ...c,
+    label: t(`score.${c.key}`) || ({ nutrition:'Nutrition', water:'Water', workout:'Workout', medication:'Medication' })[c.key],
+  }))
 
-  // Medication (20%) — No Meds (excluded) if nothing is scheduled at all;
-  // otherwise taken / (taken + missed + pending) reflects real completion,
-  // with past-due pending already resolved to "missed" upstream.
-  const medsScheduledCount = medications.length
-  const medsNoneScheduled  = medsScheduledCount === 0
-  const medicationScore = medsNoneScheduled ? null : Math.round((takenCount / medsScheduledCount) * 100)
+  // ── Yesterday comparison — only meaningful when viewing today ──
+  const [yesterdayScore, setYesterdayScore] = useState(null)
+  useEffect(() => {
+    if (!isToday || !userId) { setYesterdayScore(null); return }
+    let cancelled = false
 
-  // Weighted overall — categories marked Rest Day / No Meds are excluded
-  // and their weight redistributed proportionally among the rest.
-  const scoreCategories = [
-    { key: 'nutrition', label: t('score.nutrition') || 'Nutrition', weight: 35, value: nutritionScore, active: true },
-    { key: 'water',     label: t('score.water')     || 'Water',     weight: 20, value: waterScore,     active: true },
-    { key: 'workout',   label: t('score.workout')   || 'Workout',   weight: 25, value: workoutScore,   active: workoutScore != null },
-    { key: 'medication',label: t('score.medication')|| 'Medication',weight: 20, value: medicationScore,active: medicationScore != null },
-  ]
-  const activeCategories = scoreCategories.filter(c => c.active)
-  const totalActiveWeight = activeCategories.reduce((s, c) => s + c.weight, 0) || 1
-  const overallScore = Math.round(
-    activeCategories.reduce((s, c) => s + (c.value * c.weight), 0) / totalActiveWeight
-  )
+    const yDate = new Date(selectedDate + 'T12:00:00')
+    yDate.setDate(yDate.getDate() - 1)
+    const pad = n => String(n).padStart(2, '0')
+    const yStr = `${yDate.getFullYear()}-${pad(yDate.getMonth() + 1)}-${pad(yDate.getDate())}`
+    const yDayKey = DAY_KEYS_SCORE[yDate.getDay()]
+
+    ;(async () => {
+      try {
+        const [{ data: yFood }, { data: yWater }, { data: yWorkouts }, { data: yMedLogs }] = await Promise.all([
+          supabase.from('food_logs').select('meal_slot, protein').eq('user_id', userId).eq('log_date', yStr),
+          supabase.from('water_logs').select('cups, amount_ml').eq('user_id', userId).eq('log_date', yStr).maybeSingle(),
+          supabase.from('workout_logs').select('id').eq('user_id', userId).eq('log_date', yStr),
+          supabase.from('medication_logs').select('medication_id, status').eq('user_id', userId).eq('log_date', yStr),
+        ])
+        if (cancelled) return
+
+        const yLoggedMealSlotCount = MEAL_SLOT_IDS.filter(id => (yFood || []).some(f => f.meal_slot === id)).length
+        const yProteinTotal = (yFood || []).reduce((s, f) => s + (f.protein || 0), 0)
+        const yUnit    = profile?.water_unit || 'cups'
+        const yGoal    = yUnit === 'ml' ? (profile?.water_goal_ml || 2000) : (profile?.water_goal || 8)
+        const yAmount  = yWater ? (yUnit === 'ml' ? (yWater.amount_ml || 0) : (yWater.cups || 0)) : 0
+        const yScheduled = savedPlans.some(plan => plan.schedule?.days?.includes(yDayKey))
+        const yWorkoutDone = (yWorkouts || []).length > 0
+
+        // Past day — no log at all for a scheduled medication counts as missed
+        const yMedsTaken = medications.filter(m => (yMedLogs || []).find(l => l.medication_id === m.id)?.status === 'taken').length
+
+        const { overallScore: yOverall } = computeDayScores({
+          loggedMealSlotCount: yLoggedMealSlotCount, totalMealSlots: MEAL_SLOT_IDS.length,
+          proteinTotal: yProteinTotal, proteinGoal,
+          waterAmount: yAmount, waterGoal: yGoal,
+          workoutDone: yWorkoutDone, hasScheduledWorkout: yScheduled,
+          medsScheduledCount: medications.length, medsTakenCount: yMedsTaken,
+        })
+        setYesterdayScore(yOverall)
+      } catch {
+        if (!cancelled) setYesterdayScore(null)
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [isToday, userId, selectedDate, medications.length])
+
+  const scoreRankInfo = loading ? null : { ...scoreRank(overallScore), score: overallScore }
 
   return (
     <div style={{ paddingBottom: 8 }}>
@@ -1291,11 +1367,12 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
         mood={coachMood}
         message={coachMessage}
         loading={coachLoading}
+        rank={scoreRankInfo}
       />
 
       {/* Today's Score — compact premium summary */}
       {!loading && (
-        <TodaysScoreCard overallScore={overallScore} categories={scoreCategories} t={t} />
+        <TodaysScoreCard overallScore={overallScore} categories={scoreCategories} yesterdayScore={yesterdayScore} t={t} />
       )}
 
       {/* 1 ── Calorie ring + macros */}
