@@ -94,17 +94,37 @@ function MacroBar({ label, current, goal, color }) {
 // ─────────────────────────────────────────────
 // AI Describe & Estimate meal
 // ─────────────────────────────────────────────
-function DescribeMeal({ preferences, onLog, onSave, onBack, lang = 'en' }) {
+const MEAL_EXAMPLES = [
+  'Chicken shawarma plate with fries',
+  'Tuna sandwich and juice',
+  'Homemade pasta with beef',
+  'Grilled chicken with rice',
+  'Steak with mashed potatoes',
+]
+
+function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en' }) {
   const { t } = useTranslation()
   const MEAL_SLOTS = getMealSlotsNutrition(t)
-  const [desc,        setDesc]        = useState('')
-  const [loading,      setLoading]    = useState(false)
-  const [result,       setResult]     = useState(null)
-  const [meal,         setMeal]       = useState('breakfast')
-  const [questions,    setQuestions]  = useState(null)   // array of clarifying questions, or null
-  const [answerDrafts, setAnswerDrafts] = useState({})    // question -> typed answer
-  const [saved,        setSaved]      = useState(false)
+  const firstName = profile?.full_name?.split(' ')[0] || ''
+  const fr = lang === 'fr'
 
+  const [screen,       setScreen]       = useState('welcome') // 'welcome' | 'describe' | 'flow'
+  const [meal,         setMeal]         = useState('breakfast')
+  const [desc,         setDesc]         = useState('')
+  const [loading,      setLoading]      = useState(false)
+  const [result,       setResult]       = useState(null)
+  const [questions,    setQuestions]    = useState(null)   // array of clarifying questions, or null
+  const [answerDrafts, setAnswerDrafts] = useState({})      // question -> typed answer
+  const [saved,        setSaved]        = useState(false)
+  const [showSaveModal,setShowSaveModal]= useState(false)
+  const [saveName,     setSaveName]     = useState('')
+
+  // Stable per-visit "seed" so Auron doesn't re-roll variety on every
+  // re-render, but still varies between separate visits to this flow.
+  const [seed] = useState(() => Math.floor(Math.random() * 1000))
+  const pick = (arr) => arr[seed % arr.length]
+
+  // ── Existing estimation logic — unchanged ──────────────────────
   const parseResponse = (raw) => {
     const clean = raw.replace(/```json|```/g, '').trim()
     return JSON.parse(clean)
@@ -112,6 +132,7 @@ function DescribeMeal({ preferences, onLog, onSave, onBack, lang = 'en' }) {
 
   const analyze = async () => {
     if (!desc.trim()) return
+    setScreen('flow')
     setLoading(true); setResult(null); setQuestions(null); setSaved(false)
     try {
       const raw    = await estimateMealFromDescription(preferences, desc, lang)
@@ -123,7 +144,7 @@ function DescribeMeal({ preferences, onLog, onSave, onBack, lang = 'en' }) {
         setResult(parsed)
       }
     } catch {
-      setResult({ error: 'Could not estimate. Try describing in more detail — include portion sizes.' })
+      setResult({ error: fr ? "Impossible d'estimer. Essayez de décrire avec plus de détails — précisez les quantités." : 'Could not estimate. Try describing in more detail — include portion sizes.' })
     }
     setLoading(false)
   }
@@ -136,121 +157,169 @@ function DescribeMeal({ preferences, onLog, onSave, onBack, lang = 'en' }) {
       setResult(parsed)
       setQuestions(null)
     } catch {
-      setResult({ error: 'Could not estimate. Try describing in more detail — include portion sizes.' })
+      setResult({ error: fr ? "Impossible d'estimer. Essayez de décrire avec plus de détails — précisez les quantités." : 'Could not estimate. Try describing in more detail — include portion sizes.' })
       setQuestions(null)
     }
     setLoading(false)
   }
+  // ── End unchanged estimation logic ─────────────────────────────
+
+  const editMeal = () => {
+    setResult(null); setQuestions(null); setSaved(false)
+    setScreen('describe')
+  }
 
   const confColor = { high: C.green, medium: C.amber, low: C.red }
 
-  // Friendly, rule-based Auron caption — no extra AI call needed
-  const auronCaption = questions
-    ? (lang === 'fr' ? "Encore quelques détails et j'aurai une estimation précise pour toi !" : "Just a couple more details and I'll get you an accurate estimate!")
-    : loading
-    ? (lang === 'fr' ? 'Je regarde ça de près...' : 'Taking a close look at this...')
-    : result && !result.error
-    ? (lang === 'fr' ? 'Voici ce que je vois — ajuste si besoin, puis enregistre.' : "Here's what I see — adjust if needed, then log it.")
-    : (lang === 'fr' ? 'Dis-moi ce que tu as mangé, je t\'aide à l\'estimer.' : "Tell me what you ate — I'll help you estimate it.")
+  // ── Personalized welcome — name shown here, not repeated later ──
+  const welcomeLines = firstName
+    ? [
+        [`${fr ? 'Salut' : 'Hi'} ${firstName} 👋`, fr ? 'Enregistrons ton repas.' : "Let's log your meal."],
+        [`${fr ? 'Bon retour,' : 'Welcome back,'} ${firstName}.`, fr ? 'Quel repas enregistrons-nous aujourd\'hui ?' : 'Which meal are we logging today?'],
+        [`${fr ? 'Bonjour' : 'Good morning'}, ${firstName}.`, fr ? 'Prêt à enregistrer un repas ?' : 'Ready to log a meal?'],
+      ]
+    : [
+        [fr ? 'Salut 👋' : 'Hi there 👋', fr ? 'Enregistrons ton repas.' : "Let's log your meal."],
+      ]
+  const [welcomeHeadline, welcomeSub] = pick(welcomeLines)
 
-  return (
-    <div>
-      <button onClick={onBack} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 13, marginBottom: 20, cursor: 'pointer' }}>
-        ← Back
-      </button>
-      <div style={{ fontSize: 19, fontWeight: 700, color: C.text, marginBottom: 4 }}>{t('cal.describeTitle')}</div>
-      <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12 }}>
-        {t('cal.describeSubtitle')}
+  const describeCaptions = fr
+    ? ['Parfait.', 'Super choix.', 'Allons-y.']
+    : ['Perfect.', 'Great choice.', "Let's go."]
+
+  const estimatingCaptions = fr
+    ? ["Auron estime ton repas...", "Laisse-moi réfléchir...", "Analyse en cours..."]
+    : ['Auron is estimating your meal...', 'Let me think about that...', 'Analyzing your meal...']
+
+  // ── Full-screen shell shared by every step ─────────────────────
+  const Shell = ({ mood, children, onBackClick }) => (
+    <div style={{ position: 'fixed', inset: 0, background: C.pageBg || '#F7F6FB', zIndex: 300, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto', overflowY: 'auto' }}>
+      <div style={{ padding: '18px 20px 0' }}>
+        <button onClick={onBackClick} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }}>‹</button>
       </div>
-
-      {/* Coach Auron — friendly nutrition guidance throughout the flow */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <div style={{ flexShrink: 0 }}>
-          <AuronCharacter mood="nutrition" size="compact" />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 24px 32px' }}>
+        <div style={{ marginBottom: 18 }}>
+          <AuronCharacter mood={mood} size="onboarding" />
         </div>
-        <div style={{
-          flex: 1, background: C.goldLight, borderRadius: 14, padding: '10px 14px',
-          fontSize: 13, color: C.text, lineHeight: 1.5,
-        }}>
-          {auronCaption}
-        </div>
+        <div style={{ width: '100%' }}>{children}</div>
       </div>
+    </div>
+  )
 
-      {/* Meal slot selector */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Log to:</div>
-        <div style={{ display: 'flex', gap: 6 }}>
+  // ── Step 1 — Welcome & meal selection ───────────────────────────
+  if (screen === 'welcome') {
+    return (
+      <Shell mood="greeting" onBackClick={onBack}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 21, fontWeight: 800, color: C.text, marginBottom: 6 }}>{welcomeHeadline}</div>
+          <div style={{ fontSize: 14, color: C.textMuted }}>{welcomeSub}</div>
+        </div>
+        <div style={{ fontSize: 12, color: C.textDim, textAlign: 'center', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+          {fr ? 'Quel repas est-ce ?' : 'Which meal was this?'}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {MEAL_SLOTS.map(s => (
-            <button key={s.id} onClick={() => setMeal(s.id)} style={{
-              flex: 1, padding: '8px 4px', borderRadius: 10, cursor: 'pointer',
-              border: `1px solid ${meal === s.id ? C.gold : C.border}`,
-              background: meal === s.id ? C.goldLight : 'transparent',
-              color: meal === s.id ? C.gold : C.textMuted,
-              fontSize: 11, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-            }}>
-              <span style={{ fontSize: 16 }}>{s.icon}</span>{s.label}
+            <button key={s.id} onClick={() => { setMeal(s.id); setScreen('describe') }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 18,
+                border: `2px solid ${C.divider}`, background: C.surface, cursor: 'pointer', textAlign: 'left',
+                boxShadow: C.shadowCard,
+              }}>
+              <span style={{ fontSize: 22 }}>{s.icon}</span>
+              <span style={{ fontSize: 15, fontWeight: 600, color: C.text }}>{s.label}</span>
+              <span style={{ marginLeft: 'auto', color: C.textDim, fontSize: 16 }}>›</span>
             </button>
           ))}
         </div>
-      </div>
+      </Shell>
+    )
+  }
 
-      <Card style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Describe your meal</div>
+  // ── Step 2 — Meal description ───────────────────────────────────
+  if (screen === 'describe') {
+    return (
+      <Shell mood="nutrition" onBackClick={() => setScreen('welcome')}>
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div style={{ fontSize: 19, fontWeight: 800, color: C.text, marginBottom: 6 }}>{pick(describeCaptions)}</div>
+          <div style={{ fontSize: 14, color: C.textMuted }}>{fr ? 'Dis-moi ce que tu as mangé.' : 'Tell me what you ate.'}</div>
+        </div>
+
         <textarea
+          autoFocus
           value={desc}
           onChange={e => setDesc(e.target.value)}
-          rows={3}
-          placeholder="e.g. A large plate of spaghetti bolognese with ground beef, tomato sauce and parmesan. About 300g of pasta total..."
+          rows={4}
+          placeholder={fr ? 'ex. Un grand plat de shawarma au poulet avec frites...' : 'e.g. A large chicken shawarma plate with fries...'}
           style={{
-            width: '100%', padding: '12px 14px', borderRadius: 10,
-            background: C.surfaceLight, border: `1px solid ${C.border}`,
-            color: C.text, fontSize: 13, resize: 'vertical', outline: 'none',
-            lineHeight: 1.6, marginBottom: 12, minHeight: 64,
+            width: '100%', padding: '14px 16px', borderRadius: 16,
+            background: C.surface, border: `1px solid ${C.border}`,
+            color: C.text, fontSize: 14, resize: 'vertical', outline: 'none',
+            lineHeight: 1.6, marginBottom: 14, minHeight: 100, boxSizing: 'border-box',
+            boxShadow: C.shadowCard,
           }}
         />
+
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 11, color: C.textDim, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+            {fr ? 'Exemples' : 'Examples'}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {MEAL_EXAMPLES.map((ex, i) => (
+              <button key={i} onClick={() => setDesc(ex)}
+                style={{ padding: '7px 12px', borderRadius: 20, background: C.goldLight, border: `1px solid ${C.gold}33`, color: C.gold, fontSize: 12, cursor: 'pointer' }}>
+                {ex}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <button
           onClick={analyze}
-          disabled={loading || !desc.trim()}
+          disabled={!desc.trim()}
           style={{
-            width: '100%', padding: 13, borderRadius: 24,
-            background: loading || !desc.trim() ? C.surfaceLight : C.gold,
-            color: loading || !desc.trim() ? C.textMuted : C.dark,
-            border: 'none', fontSize: 13, fontWeight: 500,
-            cursor: desc.trim() && !loading ? 'pointer' : 'default',
+            width: '100%', padding: 15, borderRadius: 24,
+            background: desc.trim() ? C.gold : C.surfaceLight,
+            color: desc.trim() ? C.dark : C.textMuted,
+            border: 'none', fontSize: 14, fontWeight: 600,
+            cursor: desc.trim() ? 'pointer' : 'default',
           }}
         >
-          {loading ? t('cal.estimating') : (result && !result.error) ? t('cal.updateEstimate') : t('cal.estimateBtn')}
+          {fr ? 'Continuer →' : 'Continue →'}
         </button>
-      </Card>
+      </Shell>
+    )
+  }
 
-      {/* Preferences active notice */}
-      {(preferences?.dietary_preferences?.length > 0 || preferences?.allergies?.length > 0 || preferences?.avoided_foods?.length > 0) && (
-        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 16, padding: '10px 14px', background: C.surfaceLight, borderRadius: 10, lineHeight: 1.5 }}>
-          Your dietary preferences and restrictions are applied to this estimate.
+  // ── Step 3/4/5 — Estimating / Clarify / Result (existing logic) ─
+  return (
+    <Shell mood={loading ? 'thinking' : (result && !result.error) ? 'happy' : questions ? 'thinking' : 'nutrition'} onBackClick={editMeal}>
+      {loading && (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 17, fontWeight: 700, color: C.text, marginBottom: 8 }}>{pick(estimatingCaptions)}</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}><Spinner /></div>
         </div>
       )}
 
-      {/* Clarifying questions — shown when the description was too vague */}
-      {questions && !loading && (
-        <Card style={{ borderColor: C.gold, marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <span style={{ fontSize: 15 }}>💬</span>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.gold }}>
-              {lang === 'fr' ? 'Juste quelques précisions' : 'Just a few quick details'}
+      {!loading && questions && (
+        <div>
+          <div style={{ textAlign: 'center', marginBottom: 18 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 6 }}>
+              {fr ? 'Juste quelques précisions' : 'Just a few quick details'}
             </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 18 }}>
             {questions.map((q, i) => (
               <div key={i}>
-                <div style={{ fontSize: 13, color: C.text, marginBottom: 6, lineHeight: 1.4 }}>{q}</div>
+                <div style={{ fontSize: 13.5, color: C.text, marginBottom: 6, lineHeight: 1.4 }}>{q}</div>
                 <input
                   value={answerDrafts[q] || ''}
                   onChange={e => setAnswerDrafts(prev => ({ ...prev, [q]: e.target.value }))}
-                  placeholder={lang === 'fr' ? 'Ta réponse...' : 'Your answer...'}
+                  placeholder={fr ? 'Ta réponse...' : 'Your answer...'}
                   style={{
-                    width: '100%', padding: '9px 12px', borderRadius: 10,
-                    background: C.surfaceLight, border: `1px solid ${C.border}`,
-                    color: C.text, fontSize: 13, outline: 'none', boxSizing: 'border-box',
+                    width: '100%', padding: '11px 14px', borderRadius: 14,
+                    background: C.surface, border: `1px solid ${C.border}`,
+                    color: C.text, fontSize: 13.5, outline: 'none', boxSizing: 'border-box',
+                    boxShadow: C.shadowCard,
                   }}
                 />
               </div>
@@ -258,103 +327,140 @@ function DescribeMeal({ preferences, onLog, onSave, onBack, lang = 'en' }) {
           </div>
           <button
             onClick={submitAnswers}
-            style={{ width: '100%', padding: 13, borderRadius: 24, background: C.gold, color: C.dark, border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 8 }}
+            style={{ width: '100%', padding: 14, borderRadius: 24, background: C.gold, color: C.dark, border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 10 }}
           >
-            {lang === 'fr' ? "Obtenir l'estimation" : 'Get my estimate'}
+            {fr ? "Obtenir l'estimation" : 'Get my estimate'}
           </button>
           <button
             onClick={submitAnswers}
-            style={{ width: '100%', padding: 0, background: 'none', border: 'none', color: C.textMuted, fontSize: 12, cursor: 'pointer' }}
+            style={{ width: '100%', padding: 0, background: 'none', border: 'none', color: C.textMuted, fontSize: 12.5, cursor: 'pointer' }}
           >
-            {lang === 'fr' ? 'Passer et estimer quand même' : 'Skip and estimate anyway'}
+            {fr ? 'Passer et estimer quand même' : 'Skip and estimate anyway'}
           </button>
-        </Card>
+        </div>
       )}
 
-      {loading && (
-        <Card style={{ textAlign: 'center', padding: 28 }}>
-          <Spinner />
-          <div style={{ fontSize: 13, color: C.textMuted, marginTop: 12 }}>Analyzing your meal...</div>
-        </Card>
-      )}
-
-      {result && !loading && (
-        result.error
-          ? <Card style={{ borderColor: C.red }}><div style={{ fontSize: 13, color: C.red }}>{result.error}</div></Card>
-          : <Card style={{ borderColor: C.borderStrong }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: C.text, flex: 1 }}>{result.meal}</div>
-                {result.confidence && (
-                  <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: `${confColor[result.confidence]}22`, color: confColor[result.confidence], fontWeight: 500, marginLeft: 8 }}>
-                    {result.confidence} confidence
-                  </span>
-                )}
+      {!loading && result && (
+        result.error ? (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 14, color: C.red, marginBottom: 16 }}>{result.error}</div>
+            <button onClick={editMeal}
+              style={{ padding: '11px 24px', borderRadius: 20, background: C.gold, color: C.dark, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              {fr ? 'Réessayer' : 'Try again'}
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: C.purple, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                {fr ? "Estimation d'Auron" : "Auron's Estimate"}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 6 }}>
-                {[['Calories', result.calories, 'kcal', C.gold], [t('cal.protein'), result.protein, 'g', C.blue], [t('cal.carbs'), result.carbs, 'g', C.amber], ['Fat', result.fat, 'g', C.green]].map(([l, v, u, col]) => (
-                  <div key={l} style={{ background: C.surfaceLight, borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 19, fontWeight: 700, color: col }}>{v}</div>
-                    <div style={{ fontSize: 10, color: C.textMuted }}>{u} {l}</div>
+              <div style={{ fontSize: 19, fontWeight: 800, color: C.text }}>{result.meal}</div>
+              {result.confidence && (
+                <span style={{ display: 'inline-block', marginTop: 8, fontSize: 11, padding: '3px 12px', borderRadius: 20, background: `${confColor[result.confidence]}22`, color: confColor[result.confidence], fontWeight: 600 }}>
+                  {fr ? 'Confiance' : 'Confidence'}: {result.confidence === 'high' ? (fr?'Élevée':'High') : result.confidence === 'medium' ? (fr?'Moyenne':'Medium') : (fr?'Faible':'Low')}
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 10 }}>
+              {[['Calories', result.calories, 'kcal', C.gold], [t('cal.protein'), result.protein, 'g', C.blue], [t('cal.carbs'), result.carbs, 'g', C.amber], ['Fat', result.fat, 'g', C.green]].map(([l, v, u, col]) => (
+                <div key={l} style={{ background: C.surface, borderRadius: 12, padding: '10px 8px', textAlign: 'center', boxShadow: C.shadowCard }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: col }}>{v}</div>
+                  <div style={{ fontSize: 9.5, color: C.textMuted }}>{u} {l}</div>
+                </div>
+              ))}
+            </div>
+
+            {result.calorieRangeLow != null && result.calorieRangeHigh != null && result.calorieRangeHigh > result.calorieRangeLow && (
+              <div style={{ fontSize: 11.5, color: C.textMuted, textAlign: 'center', marginBottom: 12 }}>
+                {fr ? 'Fourchette estimée' : 'Estimated range'}: {result.calorieRangeLow}–{result.calorieRangeHigh} kcal
+              </div>
+            )}
+            {result.assumptions && (
+              <div style={{ fontSize: 11.5, color: C.textDim, marginBottom: 14, lineHeight: 1.5, textAlign: 'center' }}>
+                📏 {result.assumptions}
+              </div>
+            )}
+            {result.items?.length > 0 && (
+              <div style={{ marginBottom: 18, background: C.surface, borderRadius: 14, padding: '4px 14px', boxShadow: C.shadowCard }}>
+                {result.items.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: i < result.items.length - 1 ? `1px solid ${C.border}` : 'none', fontSize: 13 }}>
+                    <span style={{ color: C.text }}>{item.name}</span>
+                    <span style={{ color: C.gold, fontWeight: 500 }}>{item.calories} kcal</span>
                   </div>
                 ))}
               </div>
-              {result.calorieRangeLow != null && result.calorieRangeHigh != null && result.calorieRangeHigh > result.calorieRangeLow && (
-                <div style={{ fontSize: 11, color: C.textMuted, textAlign: 'center', marginBottom: 14 }}>
-                  {lang === 'fr' ? 'Fourchette estimée' : 'Estimated range'}: {result.calorieRangeLow}–{result.calorieRangeHigh} kcal
-                </div>
-              )}
-              {result.calorieRangeLow == null && <div style={{ marginBottom: 8 }} />}
-              {result.assumptions && (
-                <div style={{ fontSize: 11.5, color: C.textDim, marginBottom: 10, lineHeight: 1.5 }}>
-                  📏 {result.assumptions}
-                </div>
-              )}
-              {result.items?.length > 0 && (
-                <div style={{ marginBottom: 14 }}>
-                  {result.items.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${C.border}`, fontSize: 13 }}>
-                      <span style={{ color: C.text }}>{item.name}</span>
-                      <span style={{ color: C.gold, fontWeight: 500 }}>{item.calories} kcal</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => onLog({ name: result.meal, cal: result.calories, p: result.protein, c: result.carbs, f: result.fat }, meal)}
-                  style={{ flex: 2, padding: 13, borderRadius: 24, background: C.gold, color: C.dark, border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
-                >
-                  + Log this meal
-                </button>
-                <button
-                  onClick={() => {
-                    onSave?.({
-                      name: result.meal, calories: result.calories, protein: result.protein,
-                      carbs: result.carbs, fat: result.fat,
-                      ingredients: result.items?.map(i => i.name) || null,
-                      source: 'estimator',
-                    })
-                    setSaved(true)
-                  }}
-                  disabled={saved}
-                  style={{
-                    flex: 1, padding: 13, borderRadius: 24, border: `1px solid ${saved ? C.green : C.border}`,
-                    background: saved ? C.greenLight : 'transparent', color: saved ? C.green : C.textMuted,
-                    fontSize: 12.5, fontWeight: 600, cursor: saved ? 'default' : 'pointer',
-                  }}
-                >
-                  {saved ? t('cal.savedMeal') : t('cal.saveMeal')}
-                </button>
-              </div>
-            </Card>
-      )}
+            )}
 
-      {/* Disclaimer */}
-      <div style={{ fontSize: 11, color: C.textDim, marginTop: 16, lineHeight: 1.6, textAlign: 'center' }}>
-        {t('disclaimer.line1')}<br />
-        {t('disclaimer.line2')}
-      </div>
-    </div>
+            {/* Primary action */}
+            <button
+              onClick={() => onLog({ name: result.meal, cal: result.calories, p: result.protein, c: result.carbs, f: result.fat }, meal)}
+              style={{ width: '100%', padding: 16, borderRadius: 24, background: C.gold, color: C.dark, border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginBottom: 10, boxShadow: `0 4px 14px ${C.gold}55` }}
+            >
+              {fr ? 'Enregistrer ce repas' : 'Log Meal'}
+            </button>
+
+            {/* Secondary actions */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => { setSaveName(result.meal || ''); setShowSaveModal(true) }}
+                disabled={saved}
+                style={{
+                  flex: 1, padding: 12, borderRadius: 18, border: `1px solid ${saved ? C.green : C.border}`,
+                  background: saved ? C.greenLight : 'transparent', color: saved ? C.green : C.textMuted,
+                  fontSize: 12.5, fontWeight: 600, cursor: saved ? 'default' : 'pointer',
+                }}
+              >
+                {saved ? (fr ? '✓ Enregistré' : '✓ Saved') : (fr ? 'Sauvegarder' : 'Save for Later')}
+              </button>
+              <button
+                onClick={editMeal}
+                style={{ flex: 1, padding: 12, borderRadius: 18, border: `1px solid ${C.border}`, background: 'transparent', color: C.textMuted, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+              >
+                {fr ? 'Modifier' : 'Edit Meal'}
+              </button>
+            </div>
+
+            {/* Save for Later — custom name prompt */}
+            {showSaveModal && (
+              <div onClick={() => setShowSaveModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.55)', zIndex: 400, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+                <div onClick={e => e.stopPropagation()} style={{ background: C.surface, borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, padding: '22px 22px 32px' }}>
+                  <div style={{ width: 40, height: 4, borderRadius: 2, background: C.divider, margin: '0 auto 16px' }} />
+                  <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 4 }}>{fr ? 'Nom du repas' : 'Name this meal'}</div>
+                  <div style={{ fontSize: 12.5, color: C.textMuted, marginBottom: 14 }}>
+                    {fr ? 'ex. Mon Shawarma, Pâtes maison, Petit-déj du vendredi' : 'e.g. My Chicken Shawarma, Homemade Pasta, Friday Breakfast'}
+                  </div>
+                  <input
+                    autoFocus
+                    value={saveName}
+                    onChange={e => setSaveName(e.target.value)}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: 14, background: C.surfaceLight, border: `1px solid ${C.border}`, color: C.text, fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 14 }}
+                  />
+                  <button
+                    onClick={() => {
+                      if (!saveName.trim()) return
+                      onSave?.({
+                        name: saveName.trim(), calories: result.calories, protein: result.protein,
+                        carbs: result.carbs, fat: result.fat,
+                        ingredients: result.items?.map(i => i.name) || null,
+                        source: 'estimator',
+                      })
+                      setSaved(true)
+                      setShowSaveModal(false)
+                    }}
+                    disabled={!saveName.trim()}
+                    style={{ width: '100%', padding: 14, borderRadius: 20, background: saveName.trim() ? C.gold : C.surfaceLight, color: saveName.trim() ? C.dark : C.textMuted, border: 'none', fontSize: 14, fontWeight: 600, cursor: saveName.trim() ? 'pointer' : 'default' }}
+                  >
+                    {fr ? 'Enregistrer' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      )}
+    </Shell>
   )
 }
 
@@ -1122,6 +1228,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
     return (
       <DescribeMeal
         preferences={preferences}
+        profile={profile}
         lang={lang}
         onLog={(food, meal) => { addFood(food, meal); setSubView('log') }}
         onSave={saveMeal}
