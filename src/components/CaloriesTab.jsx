@@ -1292,7 +1292,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
 
   // Save a meal (from estimator, suggestion, or manual) to Saved Meals
   const saveMeal = async (meal) => {
-    await supabase.from('saved_meals').insert({
+    const payload = {
       user_id:     userId,
       name:        meal.name,
       calories:    meal.calories ?? 0,
@@ -1302,7 +1302,18 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
       ingredients: meal.ingredients || null,
       steps:       meal.steps || null,
       source:      meal.source || 'manual',
-    })
+    }
+    let { error } = await supabase.from('saved_meals').insert(payload)
+    if (error) {
+      console.error('saveMeal failed:', error.message)
+      // If the `steps` column doesn't exist yet (migration not run), retry
+      // without it rather than silently losing the whole save.
+      if (error.message?.includes('steps')) {
+        const { steps, ...withoutSteps } = payload
+        const retry = await supabase.from('saved_meals').insert(withoutSteps)
+        if (retry.error) console.error('saveMeal retry failed:', retry.error.message)
+      }
+    }
     fetchSavedMeals()
   }
 
