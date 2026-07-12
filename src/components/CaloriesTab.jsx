@@ -851,7 +851,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
   const [selected, setSelected] = useState(null)  // food being customized
   const [qty,      setQty]      = useState('1')   // multiplier
   const [justSaved,setJustSaved]= useState(false)
-  const [showAllSaved, setShowAllSaved] = useState(false)
+  const [filterTab, setFilterTab] = useState('foods') // 'foods' | 'saved' | 'recent'
   const debounceRef = useRef(null)
 
   // Search with debounce
@@ -999,125 +999,130 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
           /* ── Search view ── */
           <>
             {/* Search box — first, since most users search immediately */}
-            <div style={{ position:'relative', marginBottom:12 }}>
+            <div style={{ position:'relative', marginBottom:10 }}>
               <input value={query} onChange={e => setQuery(e.target.value)} placeholder={t('food.searchPlaceholder')||t('cal.searchFood')} autoFocus
                 style={{ width:'100%', padding:'10px 14px 10px 38px', borderRadius:12, background:T.surfaceMid, border:`1px solid ${T.border}`, color:T.text, fontSize:14, outline:'none' }} />
               <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16 }}>🔍</span>
               {loading && <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:11, color:T.purple }}>{t('cal.loading')||'Searching…'}</span>}
             </div>
 
-            {/* Source badge */}
-            {query.length > 1 && !loading && (
-              <div style={{ fontSize:11, color:T.textDim, marginBottom:8 }}>
-                {results.length} {t('cal.resultsSource')||`${results.length} results · USDA`}
-              </div>
-            )}
-
-            {/* Results */}
-            <div style={{ overflowY:'auto', flex:1 }}>
-              {results.map((f) => (
-                <button key={f.id} onClick={() => selectFood(f)}
-                  style={{ width:'100%', padding:'12px 0', display:'flex', justifyContent:'space-between', alignItems:'center', background:'none', border:'none', borderBottom:`1px solid ${T.divider}`, cursor:'pointer', textAlign:'left' }}>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:500, color:T.text, marginBottom:2 }}>{f.name}</div>
-                    <div style={{ fontSize:11, color:T.textMuted }}>
-                      {f.brand && <span>{f.brand} · </span>}
-                      <span style={{ color:T.purple, fontWeight:600 }}>{f.cal} kcal</span>
-                      <span> · P {f.p}g · C {f.c}g · F {f.f}g</span>
-                    </div>
-                  </div>
-                  <div style={{ fontSize:11, color:T.textDim, marginLeft:8, flexShrink:0 }}>{f.serving}</div>
+            {/* Segmented filter — Foods / Saved / Recent, right under the search bar */}
+            <div style={{ display:'flex', gap:6, marginBottom:12, background:T.surfaceMid, borderRadius:12, padding:4 }}>
+              {[
+                ['foods',  t('food.filterFoods')  || 'Foods'],
+                ['saved',  `${t('food.filterSaved')  || 'Saved'}${savedMeals.length ? ` (${savedMeals.length})` : ''}`],
+                ['recent', t('food.filterRecent') || 'Recent'],
+              ].map(([id, label]) => (
+                <button key={id} onClick={() => setFilterTab(id)}
+                  style={{
+                    flex:1, padding:'8px 4px', borderRadius:9, border:'none', cursor:'pointer',
+                    background: filterTab===id ? T.surface : 'transparent',
+                    color: filterTab===id ? T.purple : T.textMuted,
+                    fontWeight: filterTab===id ? 700 : 500, fontSize:12.5,
+                    boxShadow: filterTab===id ? T.shadowCard : 'none',
+                  }}>
+                  {label}
                 </button>
               ))}
-
-              {/* Empty state — Coach Auron steps in as the fallback */}
-              {results.length === 0 && !loading && (
-                <div style={{ padding:'24px 0', textAlign:'center' }}>
-                  <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
-                    <AuronCharacter mood="thinking" size="compact" />
-                  </div>
-                  <div style={{ fontSize:13.5, fontWeight:600, color:T.text, marginBottom:4 }}>
-                    {t('food.noMatchTitle') || "Couldn't find what you're looking for?"}
-                  </div>
-                  <div style={{ fontSize:12.5, color:T.textMuted, marginBottom:16 }}>
-                    {t('food.noMatchSub') || 'Let me estimate it for you 👋'}
-                  </div>
-                  <button onClick={() => { onClose(); setTimeout(() => onDescribe?.(), 100) }}
-                    style={{ padding:'11px 22px', borderRadius:20, background:T.purple, border:'none', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
-                    {t('food.askAuronBtn') || '✨ Ask Auron'}
-                  </button>
-                </div>
-              )}
-              {results.length > 0 && query.length > 1 && !loading && (
-                <div style={{ padding:'16px 0', textAlign:'center', borderTop:`1px solid ${T.divider}`, marginTop:8 }}>
-                  <div style={{ fontSize:12, color:T.textDim, marginBottom:10 }}>{t('food.cantFind')||"Can't find it?"}</div>
-                  <button onClick={() => { onClose(); setTimeout(() => onDescribe?.(), 100) }}
-                    style={{ padding:'9px 18px', borderRadius:20, background:T.purpleLight, border:`1px solid ${T.border}`, color:T.purple, fontSize:12, fontWeight:600, cursor:'pointer' }}>
-                    {t('food.describePrompt')||'✨ Describe it — AI will estimate'}
-                  </button>
-                </div>
-              )}
             </div>
 
-            {/* Saved & Recent meals — quick reuse, shown below search/results, only when not actively searching */}
-            {!query.trim() && (savedMeals.length > 0 || recentMeals.length > 0) && (
-              <div style={{ marginTop: 16 }}>
-                {savedMeals.length > 0 && (
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-                      <div style={{ fontSize:11, color:T.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>
-                        {t('cal.savedMeals')}
+            <div style={{ overflowY:'auto', flex:1 }}>
+              {/* ── Foods tab: live search results ── */}
+              {filterTab === 'foods' && (
+                <>
+                  {query.length > 1 && !loading && (
+                    <div style={{ fontSize:11, color:T.textDim, marginBottom:8 }}>
+                      {results.length} {t('cal.resultsSource')||`${results.length} results · USDA`}
+                    </div>
+                  )}
+                  {results.map((f) => (
+                    <button key={f.id} onClick={() => selectFood(f)}
+                      style={{ width:'100%', padding:'12px 0', display:'flex', justifyContent:'space-between', alignItems:'center', background:'none', border:'none', borderBottom:`1px solid ${T.divider}`, cursor:'pointer', textAlign:'left' }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:500, color:T.text, marginBottom:2 }}>{f.name}</div>
+                        <div style={{ fontSize:11, color:T.textMuted }}>
+                          {f.brand && <span>{f.brand} · </span>}
+                          <span style={{ color:T.purple, fontWeight:600 }}>{f.cal} kcal</span>
+                          <span> · P {f.p}g · C {f.c}g · F {f.f}g</span>
+                        </div>
                       </div>
-                      <button onClick={() => setShowAllSaved(true)} style={{ background:'none', border:'none', color:T.purple, fontSize:11, fontWeight:600, cursor:'pointer', padding:0 }}>
-                        {t('cal.seeAll') || 'See all'} ›
+                      <div style={{ fontSize:11, color:T.textDim, marginLeft:8, flexShrink:0 }}>{f.serving}</div>
+                    </button>
+                  ))}
+
+                  {/* Empty state — Coach Auron steps in as the fallback */}
+                  {results.length === 0 && !loading && (
+                    <div style={{ padding:'24px 0', textAlign:'center' }}>
+                      <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
+                        <AuronCharacter mood="thinking" size="compact" />
+                      </div>
+                      <div style={{ fontSize:13.5, fontWeight:600, color:T.text, marginBottom:4 }}>
+                        {t('food.noMatchTitle') || "Couldn't find what you're looking for?"}
+                      </div>
+                      <div style={{ fontSize:12.5, color:T.textMuted, marginBottom:16 }}>
+                        {t('food.noMatchSub') || 'Let me estimate it for you 👋'}
+                      </div>
+                      <button onClick={() => { onClose(); setTimeout(() => onDescribe?.(), 100) }}
+                        style={{ padding:'11px 22px', borderRadius:20, background:T.purple, border:'none', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                        {t('food.askAuronBtn') || '✨ Ask Auron'}
                       </button>
                     </div>
-                    <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:4 }}>
-                      {savedMeals.slice(0, 8).map(m => (
-                        <button key={m.id}
-                          onClick={() => selectFood({ name:m.name, cal:m.calories, p:m.protein, c:m.carbs, f:m.fat, serving:'1 serving', source:'Saved', savedMealId:m.id })}
-                          style={{ flexShrink:0, minWidth:118, maxWidth:140, padding:'10px 12px', borderRadius:12, background:T.purpleLight, border:`1px solid ${T.border}`, textAlign:'left', cursor:'pointer' }}>
-                          <div style={{ fontSize:12, fontWeight:600, color:T.text, marginBottom:3, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{m.name}</div>
-                          <div style={{ fontSize:11, color:T.purple, fontWeight:600 }}>{m.calories} kcal</div>
-                        </button>
-                      ))}
+                  )}
+                  {results.length > 0 && query.length > 1 && !loading && (
+                    <div style={{ padding:'16px 0', textAlign:'center', borderTop:`1px solid ${T.divider}`, marginTop:8 }}>
+                      <div style={{ fontSize:12, color:T.textDim, marginBottom:10 }}>{t('food.cantFind')||"Can't find it?"}</div>
+                      <button onClick={() => { onClose(); setTimeout(() => onDescribe?.(), 100) }}
+                        style={{ padding:'9px 18px', borderRadius:20, background:T.purpleLight, border:`1px solid ${T.border}`, color:T.purple, fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                        {t('food.describePrompt')||'✨ Describe it — AI will estimate'}
+                      </button>
                     </div>
+                  )}
+                </>
+              )}
+
+              {/* ── Saved tab ── */}
+              {filterTab === 'saved' && (
+                savedMeals.length === 0 ? (
+                  <div style={{ padding:'28px 0', textAlign:'center', fontSize:13, color:T.textMuted }}>
+                    {t('cal.noSaved') || 'No saved meals yet'}
                   </div>
-                )}
-                {recentMeals.length > 0 && (
-                  <div>
-                    <div style={{ fontSize:11, color:T.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>
-                      {t('cal.recentMeals')}
-                    </div>
-                    <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:4 }}>
-                      {recentMeals.map(m => (
-                        <button key={m.id}
-                          onClick={() => selectFood({ name:m.food_name, cal:m.calories, p:m.protein, c:m.carbs, f:m.fat, serving:'1 serving', source:'Recent' })}
-                          style={{ flexShrink:0, minWidth:118, maxWidth:140, padding:'10px 12px', borderRadius:12, background:T.surfaceLight, border:`1px solid ${T.border}`, textAlign:'left', cursor:'pointer' }}>
-                          <div style={{ fontSize:12, fontWeight:600, color:T.text, marginBottom:3, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{m.food_name}</div>
-                          <div style={{ fontSize:11, color:T.purple, fontWeight:600 }}>{m.calories} kcal</div>
-                        </button>
-                      ))}
-                    </div>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    {savedMeals.map(m => (
+                      <button key={m.id}
+                        onClick={() => selectFood({ name:m.name, cal:m.calories, p:m.protein, c:m.carbs, f:m.fat, serving:'1 serving', source:'Saved', savedMealId:m.id })}
+                        style={{ width:'100%', padding:'12px 14px', borderRadius:12, background:T.purpleLight, border:`1px solid ${T.border}`, textAlign:'left', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <div style={{ fontSize:13, fontWeight:600, color:T.text }}>{m.name}</div>
+                        <div style={{ fontSize:12, color:T.purple, fontWeight:600, flexShrink:0, marginLeft:8 }}>{m.calories} kcal</div>
+                      </button>
+                    ))}
                   </div>
-                )}
-              </div>
-            )}
+                )
+              )}
+
+              {/* ── Recent tab ── */}
+              {filterTab === 'recent' && (
+                recentMeals.length === 0 ? (
+                  <div style={{ padding:'28px 0', textAlign:'center', fontSize:13, color:T.textMuted }}>
+                    {t('cal.noRecent') || 'No recent meals yet'}
+                  </div>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    {recentMeals.map(m => (
+                      <button key={m.id}
+                        onClick={() => selectFood({ name:m.food_name, cal:m.calories, p:m.protein, c:m.carbs, f:m.fat, serving:'1 serving', source:'Recent' })}
+                        style={{ width:'100%', padding:'12px 14px', borderRadius:12, background:T.surfaceLight, border:`1px solid ${T.border}`, textAlign:'left', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <div style={{ fontSize:13, fontWeight:600, color:T.text }}>{m.food_name}</div>
+                        <div style={{ fontSize:12, color:T.purple, fontWeight:600, flexShrink:0, marginLeft:8 }}>{m.calories} kcal</div>
+                      </button>
+                    ))}
+                  </div>
+                )
+              )}
+            </div>
           </>
         )}
       </div>
-
-      {showAllSaved && (
-        <SavedMealsListModal
-          savedMeals={savedMeals}
-          onSelect={(m) => {
-            selectFood({ name:m.name, cal:m.calories, p:m.protein, c:m.carbs, f:m.fat, serving:'1 serving', source:'Saved', savedMealId:m.id })
-            setShowAllSaved(false)
-          }}
-          onDelete={(id) => onDeleteSavedMeal?.(id)}
-          onClose={() => setShowAllSaved(false)}
-        />
-      )}
     </div>
   )
 }
@@ -1281,26 +1286,6 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
     <div>
       <TabAuronCard tab="nutrition" ctx={nutritionCtx} lang={lang} />
 
-      {/* Primary Nutrition CTA — feels like Auron personally asking, not a generic estimator card */}
-      <button
-        onClick={() => setSubView('describe')}
-        style={{
-          width: '100%', marginBottom: 18, padding: '14px 16px', borderRadius: 18,
-          border: 'none', background: `linear-gradient(135deg, ${C.purple}, ${C.purpleDark || C.purple})`,
-          display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left',
-          boxShadow: `0 4px 16px ${C.purple}44`,
-        }}
-      >
-        <div style={{ flexShrink: 0 }}>
-          <AuronCharacter mood="nutrition" size="compact" />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{t('cal.askAuronCta') || 'Ask Auron'}</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2, lineHeight: 1.35 }}>{t('cal.askAuronCtaSub') || 'What did you eat today?'}</div>
-        </div>
-        <span style={{ fontSize: 20, color: '#fff', flexShrink: 0 }}>›</span>
-      </button>
-
       {/* ── Stats cluster: Calories/Remaining + Macros grouped together ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
         <div style={{ background: C.surfaceLight, borderRadius: 12, padding: '10px 13px', border: `1px solid ${C.border}` }}>
@@ -1404,6 +1389,28 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
           </div>
         )}
       </div>
+
+      {/* Ask Auron — last in the hierarchy, a clear fallback/complement to manual logging */}
+      <button
+        onClick={() => setSubView('describe')}
+        style={{
+          width: '100%', marginTop: 20, marginBottom: 4, padding: '14px 16px', borderRadius: 18,
+          border: 'none', background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark || C.gold})`,
+          display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left',
+          boxShadow: `0 4px 16px ${C.gold}44`,
+        }}
+      >
+        <div style={{ flexShrink: 0 }}>
+          <AuronCharacter mood="nutrition" size="compact" />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{t('cal.askAuronCta') || 'Ask Auron'}</div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', marginTop: 2, lineHeight: 1.4 }}>
+            {t('cal.askAuronCtaSub2') || "Describe a meal and I'll estimate the calories and macros for you"}
+          </div>
+        </div>
+        <span style={{ fontSize: 20, color: '#fff', flexShrink: 0 }}>›</span>
+      </button>
 
       {/* Disclaimer */}
       <div style={{ fontSize: 11, color: C.textDim, marginTop: 20, lineHeight: 1.6, textAlign: 'center' }}>
