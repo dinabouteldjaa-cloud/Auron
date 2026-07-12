@@ -490,7 +490,7 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
 // ─────────────────────────────────────────────
 // AI Suggestion card
 // ─────────────────────────────────────────────
-function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF, lang = 'en', onLog, onSave, mealSlot, savedMeals = [], onDeleteSavedMeal }) {
+function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF, lang = 'en', onLog, onSave, mealSlot, onViewSavedMeals }) {
   const { t } = useTranslation()
   const MEAL_SLOTS = getMealSlotsNutrition(t)
   const [suggestion,   setSuggestion]   = useState(null)   // parsed { meal, calories, protein, carbs, fat, whyItFits, ingredients, steps }
@@ -502,7 +502,6 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   const [logged,       setLogged]       = useState(false)
   const [selectedSlot, setSelectedSlot] = useState(mealSlot || 'breakfast')
   const [showMoreOptions, setShowMoreOptions] = useState(false)
-  const [showSavedMeals, setShowSavedMeals] = useState(false)
 
   const parseResponse = (raw) => {
     const clean = raw.replace(/```json|```/g, '').trim()
@@ -553,7 +552,6 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   ]
 
   return (
-    <>
     <Card style={{ borderColor: C.borderStrong, marginBottom: 24 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: fetched || loading ? 12 : 10 }}>
         <div style={{ flexShrink: 0 }}>
@@ -598,7 +596,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
               {loading ? <><Spinner /> {t('cal.thinking')}</> : t('cal.askAI')}
             </button>
             <button
-              onClick={() => setShowSavedMeals(true)}
+              onClick={onViewSavedMeals}
               style={{
                 flex: 1, padding: 12, borderRadius: 14,
                 background: 'transparent', border: `1px solid ${C.border}`,
@@ -797,107 +795,93 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
         </div>
       )}
     </Card>
-
-    {showSavedMeals && (
-      <SavedMealsListModal
-        savedMeals={savedMeals}
-        onSelect={(m) => {
-          onLog?.({ name: m.name, cal: m.calories, p: m.protein, c: m.carbs, f: m.fat }, selectedSlot)
-          setShowSavedMeals(false)
-        }}
-        onDelete={(id) => onDeleteSavedMeal?.(id)}
-        onClose={() => setShowSavedMeals(false)}
-      />
-    )}
-    </>
   )
 }
 
 // ─────────────────────────────────────────────
-// Saved Meals — full detail browser (macros, ingredients, recipe steps)
+// Saved Meals — full-screen page (macros, ingredients, recipe steps)
 // ─────────────────────────────────────────────
-function SavedMealsListModal({ savedMeals, onSelect, onDelete, onClose }) {
+function SavedMealsPage({ savedMeals, onSelect, onDelete, onBack }) {
   const { t } = useTranslation()
   const [expandedId, setExpandedId] = useState(null)
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(26,26,46,0.55)', zIndex:110, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background:T.surface, borderRadius:'20px 20px 0 0', padding:24, width:'100%', maxWidth:480, maxHeight:'85vh', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:T.shadowStrong }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-          <div style={{ fontSize:18, fontWeight:700, color:T.text }}>{t('cal.savedMeals')}</div>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:T.textMuted, fontSize:22, cursor:'pointer' }}>×</button>
-        </div>
-        <div style={{ overflowY:'auto', flex:1 }}>
-          {savedMeals.length === 0 ? (
-            <div style={{ textAlign:'center', padding:'30px 0', color:T.textMuted, fontSize:13 }}>{t('cal.noSaved')}</div>
-          ) : savedMeals.map(m => {
-            const isOpen = expandedId === m.id
-            return (
-              <div key={m.id} style={{ borderRadius:14, marginBottom:10, border:`1px solid ${T.border}`, overflow:'hidden' }}>
-                <div
-                  onClick={() => setExpandedId(isOpen ? null : m.id)}
-                  style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 14px', cursor:'pointer' }}
-                >
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13.5, fontWeight:600, color:T.text }}>{m.name}</div>
-                    <div style={{ fontSize:11.5, color:T.textMuted, marginTop:2 }}>
-                      <span style={{ color:T.purple, fontWeight:600 }}>{m.calories} kcal</span>
-                      <span> · P {m.protein}g · C {m.carbs}g · F {m.fat}g</span>
-                    </div>
+    <div style={{ position:'fixed', inset:0, background:T.pageBg || '#F7F6FB', zIndex:300, display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto', overflowY:'auto' }}>
+      <div style={{ padding:'18px 20px 0', display:'flex', alignItems:'center', gap:12 }}>
+        <button onClick={onBack} style={{ background:'none', border:'none', color:T.textMuted, fontSize:22, cursor:'pointer', padding:0, lineHeight:1 }}>‹</button>
+        <div style={{ fontSize:18, fontWeight:700, color:T.text }}>{t('cal.savedMeals')}</div>
+      </div>
+
+      <div style={{ flex:1, padding:'16px 20px 32px' }}>
+        {savedMeals.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'40px 0', color:T.textMuted, fontSize:13 }}>{t('cal.noSaved')}</div>
+        ) : savedMeals.map(m => {
+          const isOpen = expandedId === m.id
+          return (
+            <div key={m.id} style={{ borderRadius:14, marginBottom:10, border:`1px solid ${T.border}`, overflow:'hidden', background:T.surface }}>
+              <div
+                onClick={() => setExpandedId(isOpen ? null : m.id)}
+                style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 14px', cursor:'pointer' }}
+              >
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:13.5, fontWeight:600, color:T.text }}>{m.name}</div>
+                  <div style={{ fontSize:11.5, color:T.textMuted, marginTop:2 }}>
+                    <span style={{ color:T.purple, fontWeight:600 }}>{m.calories} kcal</span>
+                    <span> · P {m.protein}g · C {m.carbs}g · F {m.fat}g</span>
                   </div>
-                  <span style={{ fontSize:13, color:T.textDim, flexShrink:0 }}>{isOpen ? '▲' : '▾'}</span>
                 </div>
-
-                {isOpen && (
-                  <div style={{ padding:'0 14px 14px', borderTop:`1px solid ${T.divider}` }}>
-                    {/* Macro breakdown */}
-                    <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, margin:'12px 0' }}>
-                      {[['Kcal', m.calories, T.purple], [t('cal.protein'), `${m.protein}g`, T.blue], [t('cal.carbs'), `${m.carbs}g`, T.amber], ['Fat', `${m.fat}g`, T.red]].map(([l,v,c]) => (
-                        <div key={l} style={{ background:T.surfaceLight, borderRadius:10, padding:'8px 4px', textAlign:'center' }}>
-                          <div style={{ fontSize:15, fontWeight:700, color:c }}>{v}</div>
-                          <div style={{ fontSize:9.5, color:T.textMuted }}>{l}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Ingredients */}
-                    {m.ingredients?.length > 0 && (
-                      <div style={{ marginBottom: m.steps?.length ? 12 : 14 }}>
-                        <div style={{ fontSize:10.5, color:T.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>
-                          {t('cal.ingredients')}
-                        </div>
-                        <div style={{ fontSize:12.5, color:T.text, lineHeight:1.6 }}>{m.ingredients.join(' · ')}</div>
-                      </div>
-                    )}
-
-                    {/* Recipe steps — only present for meals saved from a Coach Auron suggestion */}
-                    {m.steps?.length > 0 && (
-                      <div style={{ marginBottom:14 }}>
-                        <div style={{ fontSize:10.5, color:T.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>
-                          {t('cal.prepSteps')}
-                        </div>
-                        <ol style={{ margin:0, padding:'0 0 0 18px', display:'flex', flexDirection:'column', gap:4 }}>
-                          {m.steps.map((s,i) => <li key={i} style={{ fontSize:12.5, color:T.text, lineHeight:1.5 }}>{s}</li>)}
-                        </ol>
-                      </div>
-                    )}
-
-                    <div style={{ display:'flex', gap:8 }}>
-                      <button onClick={() => onSelect(m)}
-                        style={{ flex:2, padding:11, borderRadius:14, background:T.purple, color:'#fff', border:'none', fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
-                        {t('cal.logMeal')}
-                      </button>
-                      <button onClick={() => onDelete(m.id)}
-                        style={{ flex:1, padding:11, borderRadius:14, background:T.redLight, color:T.red, border:`1px solid ${T.red}44`, fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
-                        {t('cal.delete') || 'Delete'}
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <span style={{ fontSize:13, color:T.textDim, flexShrink:0 }}>{isOpen ? '▲' : '▾'}</span>
               </div>
-            )
-          })}
-        </div>
+
+              {isOpen && (
+                <div style={{ padding:'0 14px 14px', borderTop:`1px solid ${T.divider}` }}>
+                  {/* Macro breakdown */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, margin:'12px 0' }}>
+                    {[['Kcal', m.calories, T.purple], [t('cal.protein'), `${m.protein}g`, T.blue], [t('cal.carbs'), `${m.carbs}g`, T.amber], ['Fat', `${m.fat}g`, T.red]].map(([l,v,c]) => (
+                      <div key={l} style={{ background:T.surfaceLight, borderRadius:10, padding:'8px 4px', textAlign:'center' }}>
+                        <div style={{ fontSize:15, fontWeight:700, color:c }}>{v}</div>
+                        <div style={{ fontSize:9.5, color:T.textMuted }}>{l}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Ingredients */}
+                  {m.ingredients?.length > 0 && (
+                    <div style={{ marginBottom: m.steps?.length ? 12 : 14 }}>
+                      <div style={{ fontSize:10.5, color:T.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>
+                        {t('cal.ingredients')}
+                      </div>
+                      <div style={{ fontSize:12.5, color:T.text, lineHeight:1.6 }}>{m.ingredients.join(' · ')}</div>
+                    </div>
+                  )}
+
+                  {/* Recipe steps — only present for meals saved from a Coach Auron suggestion */}
+                  {m.steps?.length > 0 && (
+                    <div style={{ marginBottom:14 }}>
+                      <div style={{ fontSize:10.5, color:T.textDim, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>
+                        {t('cal.prepSteps')}
+                      </div>
+                      <ol style={{ margin:0, padding:'0 0 0 18px', display:'flex', flexDirection:'column', gap:4 }}>
+                        {m.steps.map((s,i) => <li key={i} style={{ fontSize:12.5, color:T.text, lineHeight:1.5 }}>{s}</li>)}
+                      </ol>
+                    </div>
+                  )}
+
+                  <div style={{ display:'flex', gap:8 }}>
+                    <button onClick={() => onSelect(m)}
+                      style={{ flex:2, padding:11, borderRadius:14, background:T.purple, color:'#fff', border:'none', fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
+                      {t('cal.logMeal')}
+                    </button>
+                    <button onClick={() => onDelete(m.id)}
+                      style={{ flex:1, padding:11, borderRadius:14, background:T.redLight, color:T.red, border:`1px solid ${T.red}44`, fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
+                      {t('cal.delete') || 'Delete'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -1207,7 +1191,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
   const [loading,      setLoading]      = useState(true)
   const [modal,        setModal]        = useState(false)
   const [selectedMeal, setSelectedMeal] = useState('breakfast')
-  const [subView,      setSubView]      = useState('log') // 'log' | 'describe'
+  const [subView,      setSubView]      = useState('log') // 'log' | 'describe' | 'savedMeals'
   const [recentMeals,  setRecentMeals]  = useState([])
   const [savedMeals,   setSavedMeals]   = useState([])
 
@@ -1353,6 +1337,20 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
     )
   }
 
+  if (subView === 'savedMeals') {
+    return (
+      <SavedMealsPage
+        savedMeals={savedMeals}
+        onSelect={(m) => {
+          addFood({ name: m.name, cal: m.calories, p: m.protein, c: m.carbs, f: m.fat }, defaultMealSlotByHour())
+          setSubView('log')
+        }}
+        onDelete={deleteSavedMeal}
+        onBack={() => setSubView('log')}
+      />
+    )
+  }
+
   return (
     <div>
       <TabAuronCard tab="nutrition" ctx={nutritionCtx} lang={lang} />
@@ -1391,8 +1389,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
         onLog={addFood}
         onSave={saveMeal}
         mealSlot={defaultMealSlotByHour()}
-        savedMeals={savedMeals}
-        onDeleteSavedMeal={deleteSavedMeal}
+        onViewSavedMeals={() => setSubView('savedMeals')}
       />
 
       {/* Food log by meal slot */}
