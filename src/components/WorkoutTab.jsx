@@ -86,10 +86,14 @@ function Card({ children, style={} }) {
 function Label({ children }) {
   return <div style={{ fontSize:10.5, fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:12 }}>{children}</div>
 }
-function BackBtn({ onBack, label }) {
+function BackBtn({ onBack, label = 'Back' }) {
   return (
-    <button onClick={onBack} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', color:C.textMuted, fontSize:14, cursor:'pointer', marginBottom:20, padding:0 }}>
-      ‹ {label}
+    <button onClick={onBack} style={{
+      display:'flex', alignItems:'center', gap:6, cursor:'pointer', marginBottom:20,
+      background:C.surfaceLight, border:`1px solid ${C.divider}`, borderRadius:20,
+      padding:'8px 16px 8px 12px', color:C.text, fontSize:13.5, fontWeight:600,
+    }}>
+      <span style={{ fontSize:16, lineHeight:1 }}>‹</span> {label}
     </button>
   )
 }
@@ -244,12 +248,25 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [] }) {
     const LEVELS   = ['All','Beginner','Intermediate','Advanced']
     const totalForSport = LIBRARY_WORKOUTS.filter(w => w.sport === sport).length
     const workouts = LIBRARY_WORKOUTS.filter(w => w.sport === sport && (filter === 'All' || w.level === filter))
+    const allLevelsForSport = LIBRARY_WORKOUTS.filter(w => w.sport === sport).map(w => w.level)
+    const levelRange = (() => {
+      const order = ['Beginner', 'Intermediate', 'Advanced']
+      const present = order.filter(lv => allLevelsForSport.includes(lv))
+      if (present.length === 0) return ''
+      if (present.length === 1) return tLevel(present[0])
+      return `${tLevel(present[0])} ${t('workout.to') || 'to'} ${tLevel(present[present.length - 1])}`
+    })()
     return (
       <div>
-        <BackBtn onBack={() => setSport(null)} />
-        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
+        <BackBtn onBack={() => setSport(null)} label={t('workout.backToLibrary') || 'Back to Library'} />
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:6 }}>
           <span style={{ fontSize:32 }}>{s.icon}</span>
           <div style={{ fontSize:22, fontWeight:700, color:C.text }}>{tSport(sport)}</div>
+        </div>
+        {/* Subtitle — subtle, secondary framing of what's here */}
+        <div style={{ fontSize:12.5, color:C.textMuted, marginBottom:18 }}>
+          {totalForSport} {totalForSport === 1 ? (t('workout.plan1') || 'workout plan') : (t('workout.plansN') || 'workout plans')}
+          {levelRange && <> · {levelRange}</>}
         </div>
         {/* Level filter */}
         <div style={{ display:'flex', gap:6, marginBottom:16 }}>
@@ -275,17 +292,22 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [] }) {
           )
         ) : workouts.map(w => (
           <button key={w.id} onClick={() => setWorkout(w)}
-            style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', marginBottom:10, boxShadow:C.shadowCard }}>
+            style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', marginBottom:10, boxShadow:C.shadowCard, position:'relative' }}>
+            {/* Reserved slot for future favorite toggle — intentionally empty for now */}
+            <div style={{ position:'absolute', top:10, right:10, width:16, height:16 }} />
             <div style={{ width:50, height:50, borderRadius:14, background:`${s.color||C.purple}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, flexShrink:0 }}>{w.icon}</div>
-            <div style={{ flex:1 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
-                <span style={{ fontSize:15, fontWeight:700, color:C.text }}>{tWorkout(w.id)}</span>
-                <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:`${LEVEL_COLOR[w.level]||C.purple}22`, color:LEVEL_COLOR[w.level]||C.purple, fontWeight:600 }}>{tLevel(w.level)}</span>
+            <div style={{ flex:1, minWidth:0 }}>
+              {/* Primary — workout name + level badge */}
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+                <span style={{ fontSize:15.5, fontWeight:700, color:C.text }}>{tWorkout(w.id)}</span>
+                <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:`${LEVEL_COLOR[w.level]||C.purple}22`, color:LEVEL_COLOR[w.level]||C.purple, fontWeight:600, flexShrink:0 }}>{tLevel(w.level)}</span>
               </div>
-              <div style={{ fontSize:12, color:C.textMuted }}>{tMuscles(w.muscles)}</div>
-              <div style={{ fontSize:11, color:C.purple, marginTop:3 }}>⏱ {w.duration} · {w.exercises.length} {t('workout.exercises')}</div>
+              {/* Secondary — muscle groups */}
+              <div style={{ fontSize:12.5, color:C.textMuted, marginBottom:4 }}>{tMuscles(w.muscles)}</div>
+              {/* Tertiary — duration + exercise count, reserved space below for future progress data (completed count, last done) */}
+              <div style={{ fontSize:11, color:C.purple, fontWeight:500 }}>⏱ {w.duration} · {w.exercises.length} {t('workout.exercises')}</div>
             </div>
-            <span style={{ fontSize:20, color:C.textDim }}>›</span>
+            <span style={{ fontSize:20, color:C.textDim, flexShrink:0 }}>›</span>
           </button>
         ))}
       </div>
