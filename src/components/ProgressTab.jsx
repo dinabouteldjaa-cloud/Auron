@@ -154,16 +154,16 @@ function StreakHeatmap({ loggedDates, timezone }) {
   return (
     <div>
       {/* Day labels */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3, marginBottom: 4 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, marginBottom: 3 }}>
         {DAYS_SHORT.map((d, i) => (
-          <div key={i} style={{ textAlign: 'center', fontSize: 9, color: T.textDim }}>{d}</div>
+          <div key={i} style={{ textAlign: 'center', fontSize: 8, color: T.textDim }}>{d}</div>
         ))}
       </div>
       {/* Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2, maxWidth: 260, margin: '0 auto' }}>
         {padded.map((day, i) => (
           <div key={i} style={{
-            aspectRatio: '1', borderRadius: 4,
+            aspectRatio: '1', borderRadius: 3,
             background: !day ? 'transparent'
               : day.isToday  ? T.purple
               : day.logged   ? T.green + 'CC'
@@ -172,10 +172,10 @@ function StreakHeatmap({ loggedDates, timezone }) {
           }} />
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 10, color: T.textMuted, justifyContent: 'flex-end', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: T.green + 'CC' }} /> Active</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: T.purple }} /> Today</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><div style={{ width: 10, height: 10, borderRadius: 2, background: T.surfaceMid, border: `1px solid ${T.divider}` }} /> Rest</div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 9, color: T.textMuted, justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}><div style={{ width: 8, height: 8, borderRadius: 2, background: T.green + 'CC' }} /> Active</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}><div style={{ width: 8, height: 8, borderRadius: 2, background: T.purple }} /> Today</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}><div style={{ width: 8, height: 8, borderRadius: 2, background: T.surfaceMid, border: `1px solid ${T.divider}` }} /> Rest</div>
       </div>
     </div>
   )
@@ -263,6 +263,7 @@ export default function ProgressTab({ userId, profile }) {
   const { t, lang } = useTranslation()
   const timezone  = profile?.timezone
   const [range,   setRange]   = useState(7)   // 7 or 30 days — controls chart display only
+  const [trendTab, setTrendTab] = useState('score') // 'score' | 'calories' | 'protein' | 'water' | 'workout'
   const [loading, setLoading] = useState(true)
   const [refresh, setRefresh] = useState(0)
 
@@ -471,7 +472,7 @@ export default function ProgressTab({ userId, profile }) {
         <div style={{ textAlign: 'center', padding: 40, color: T.textMuted }}>{t('progress.loading') || 'Loading…'}</div>
       ) : (
         <>
-          {/* ── Auron Score — the primary progress metric ── */}
+          {/* ── Auron Score summary — this week / this month / trend ── */}
           <Card style={{ marginBottom: 14, borderColor: T.borderStrong }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <SectionLabel>✦ {t('progress.auronScore') || 'Auron Score'}</SectionLabel>
@@ -481,7 +482,7 @@ export default function ProgressTab({ userId, profile }) {
                 </div>
               )}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div style={{ background: T.surfaceLight, borderRadius: 12, padding: '10px 13px' }}>
                 <div style={{ fontSize: 10.5, color: T.textMuted, marginBottom: 2 }}>{t('progress.avgWeek') || 'This week'}</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: T.purple }}>{scoreSummary?.avgWeek ?? '—'}%</div>
@@ -496,45 +497,76 @@ export default function ProgressTab({ userId, profile }) {
                 <div style={{ fontSize: 22, fontWeight: 700, color: T.text }}>{scoreSummary?.avgMonth ?? '—'}%</div>
               </div>
             </div>
-            <LineChart data={scoreData} color={T.purple} height={70} />
           </Card>
 
-          {/* Calories chart */}
+          {/* ── Nutrition & Activity Trends — one chart at a time ── */}
           <Card style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <SectionLabel>{t('progress.calories') || 'Calories'}</SectionLabel>
-              <div style={{ fontSize: 11, color: T.textMuted }}>{t('progress.goal') || 'Goal'}: {calorieGoal} kcal</div>
+            <SectionLabel>{t('progress.trendsTitle') || 'Nutrition & Activity Trends'}</SectionLabel>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: T.surfaceMid, borderRadius: 12, padding: 4 }}>
+              {[
+                ['score',    '✦ ' + (t('progress.score') || 'Score')],
+                ['calories', t('progress.calories') || 'Calories'],
+                ['protein',  t('progress.protein') || 'Protein'],
+                ['water',    t('progress.water') || 'Water'],
+                ['workout',  t('progress.workout') || 'Workout'],
+              ].map(([id, label]) => (
+                <button key={id} onClick={() => setTrendTab(id)}
+                  style={{
+                    flex: 1, padding: '7px 2px', borderRadius: 9, border: 'none', cursor: 'pointer',
+                    background: trendTab === id ? T.surface : 'transparent',
+                    color: trendTab === id ? T.purple : T.textMuted,
+                    fontWeight: trendTab === id ? 700 : 500, fontSize: 10.5,
+                    boxShadow: trendTab === id ? T.shadowCard : 'none',
+                  }}>
+                  {label}
+                </button>
+              ))}
             </div>
-            <BarChart data={calData} goal={calorieGoal} color={T.purple} height={90} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, fontSize: 12, color: T.textMuted }}>
-              <span>{t('progress.avg') || 'Avg'}: <strong style={{ color: T.text }}>{weekSummary?.avgCal || 0} kcal</strong></span>
-              <span>{t('progress.logged') || 'Logged'}: <strong style={{ color: T.text }}>{weekSummary?.daysLogged || 0}/{range} {t('progress.daysWord') || 'days'}</strong></span>
-            </div>
-          </Card>
 
-          {/* Protein chart */}
-          <Card style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <SectionLabel>{t('progress.protein') || 'Protein'}</SectionLabel>
-              <div style={{ fontSize: 11, color: T.textMuted }}>{t('progress.goal') || 'Goal'}: {proteinGoal}g</div>
-            </div>
-            <BarChart data={proteinData} goal={proteinGoal} color={T.blue} height={70} />
-          </Card>
+            {trendTab === 'score' && (
+              <>
+                <LineChart data={scoreData} color={T.purple} height={90} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, fontSize: 12, color: T.textMuted }}>
+                  <span>{t('progress.avgWeek') || 'This week'}: <strong style={{ color: T.text }}>{scoreSummary?.avgWeek ?? '—'}%</strong></span>
+                  <span>{t('progress.avgMonth') || 'This month'}: <strong style={{ color: T.text }}>{scoreSummary?.avgMonth ?? '—'}%</strong></span>
+                </div>
+              </>
+            )}
 
-          {/* Water + Workout side by side */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-            <Card>
-              <SectionLabel>{t('progress.water') || 'Water'}</SectionLabel>
-              <BarChart data={waterData} goal={waterGoal} color={T.blue} height={60} />
-            </Card>
-            <Card>
-              <SectionLabel>{t('progress.workout') || 'Workout'}</SectionLabel>
-              <BarChart data={workoutData} goal={60} color={T.green} height={60} />
-              <div style={{ fontSize: 10, color: T.textMuted, marginTop: 8 }}>
-                {weekSummary?.totalWorkout || 0} {t('progress.minTotal') || 'min total'}
-              </div>
-            </Card>
-          </div>
+            {trendTab === 'calories' && (
+              <>
+                <div style={{ fontSize: 11, color: T.textMuted, textAlign: 'right', marginBottom: 6 }}>{t('progress.goal') || 'Goal'}: {calorieGoal} kcal</div>
+                <BarChart data={calData} goal={calorieGoal} color={T.purple} height={90} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, fontSize: 12, color: T.textMuted }}>
+                  <span>{t('progress.avg') || 'Avg'}: <strong style={{ color: T.text }}>{weekSummary?.avgCal || 0} kcal</strong></span>
+                  <span>{t('progress.logged') || 'Logged'}: <strong style={{ color: T.text }}>{weekSummary?.daysLogged || 0}/{range} {t('progress.daysWord') || 'days'}</strong></span>
+                </div>
+              </>
+            )}
+
+            {trendTab === 'protein' && (
+              <>
+                <div style={{ fontSize: 11, color: T.textMuted, textAlign: 'right', marginBottom: 6 }}>{t('progress.goal') || 'Goal'}: {proteinGoal}g</div>
+                <BarChart data={proteinData} goal={proteinGoal} color={T.blue} height={90} />
+              </>
+            )}
+
+            {trendTab === 'water' && (
+              <>
+                <div style={{ fontSize: 11, color: T.textMuted, textAlign: 'right', marginBottom: 6 }}>{t('progress.goal') || 'Goal'}: {waterGoal} {profile?.water_unit || 'cups'}</div>
+                <BarChart data={waterData} goal={waterGoal} color={T.blue} height={90} />
+              </>
+            )}
+
+            {trendTab === 'workout' && (
+              <>
+                <BarChart data={workoutData} goal={60} color={T.green} height={90} />
+                <div style={{ fontSize: 11, color: T.textMuted, marginTop: 12 }}>
+                  {weekSummary?.totalWorkout || 0} {t('progress.minTotal') || 'min total'}
+                </div>
+              </>
+            )}
+          </Card>
 
           {/* Weight tracker — intentional current-weight framing */}
           <Card style={{ marginBottom: 14 }}>
@@ -548,11 +580,11 @@ export default function ProgressTab({ userId, profile }) {
             />
           </Card>
 
-          {/* Activity heatmap */}
-          <Card style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          {/* Activity heatmap — compact */}
+          <Card style={{ marginBottom: 14, padding: '14px 16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <SectionLabel>{t('progress.activity') || 'Activity'}</SectionLabel>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.amber }}>🔥 {streakDays} {t('progress.dayStreak') || 'day streak'}</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: T.amber }}>🔥 {streakDays} {t('progress.dayStreak') || 'day streak'}</div>
             </div>
             <StreakHeatmap loggedDates={loggedDates} timezone={timezone} />
           </Card>
