@@ -135,13 +135,15 @@ function ExerciseHowTo({ name }) {
 // ─────────────────────────────────────────────
 // Library tab — Sports → Workouts → Detail
 // ─────────────────────────────────────────────
-function LibraryTab({ onUseAsTemplate }) {
+function LibraryTab({ onUseAsTemplate, recentWorkouts = [] }) {
   const { t } = useTranslation()
   const { tSport, tCatName, tWorkout, tLevel, tMuscles, lang } = useSportT()
   const [sport,   setSport]   = useState(null)
   const [workout, setWorkout] = useState(null)
   const [search,  setSearch]  = useState('')
   const [filter,  setFilter]  = useState('All')
+  const [expandedGroups, setExpandedGroups] = useState({}) // { [groupKey]: true } once "View all" tapped
+  const GROUP_PREVIEW_COUNT = 4
 
   const tFilterLabel = f => ({ All: t('workout.level.all'), Beginner: t('workout.level.beginner'), Intermediate: t('workout.level.intermediate'), Advanced: t('workout.level.advanced') })[f] || f
 
@@ -341,6 +343,39 @@ function LibraryTab({ onUseAsTemplate }) {
       ) : (
       /* Library groups — only sports with real workouts are ever shown */
         <div>
+          {/* Recent Workouts — quick re-access, hidden entirely if no history yet */}
+          {!showSearch && recentWorkouts.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <Label>{t('workout.recentWorkouts') || 'Recent Workouts'}</Label>
+              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
+                {recentWorkouts.map((log, i) => {
+                  const match = LIBRARY_WORKOUTS.find(w => w.name.toLowerCase() === (log.workout_name || '').toLowerCase())
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => match && setWorkout(match)}
+                      disabled={!match}
+                      style={{
+                        flexShrink: 0, minWidth: 140, padding: '12px 14px', borderRadius: 16,
+                        background: C.surface, border: `1px solid ${C.divider}`, boxShadow: C.shadowCard,
+                        textAlign: 'left', cursor: match ? 'pointer' : 'default',
+                        display: 'flex', flexDirection: 'column', gap: 4, position: 'relative',
+                      }}
+                    >
+                      {/* Reserved slot for a future favorite/star toggle — intentionally empty for now */}
+                      <div style={{ position: 'absolute', top: 8, right: 8, width: 16, height: 16 }} />
+                      <span style={{ fontSize: 20 }}>{match?.icon || '💪'}</span>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: C.text, lineHeight: 1.25 }}>{log.workout_name}</div>
+                      <div style={{ fontSize: 10, color: C.textMuted }}>
+                        {log.duration_minutes ? `${log.duration_minutes} min` : t('workout.tapToView') || 'Logged'}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {LIBRARY_GROUPS.map(group => {
             const availableSports = group.sportIds
               .map(id => SPORTS.find(s => s.id === id))
@@ -348,18 +383,32 @@ function LibraryTab({ onUseAsTemplate }) {
               .filter(s => LIBRARY_WORKOUTS.some(w => w.sport === s.id))
             if (availableSports.length === 0) return null // hide empty groups entirely
 
+            const isExpanded = !!expandedGroups[group.key]
+            const visibleSports = isExpanded ? availableSports : availableSports.slice(0, GROUP_PREVIEW_COUNT)
+            const hasMore = availableSports.length > GROUP_PREVIEW_COUNT
+
             return (
-              <div key={group.key} style={{ marginBottom:24 }}>
-                <Label>{t(`libgroup.${group.key}`)}</Label>
+              <div key={group.key} style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <Label style={{ marginBottom: 0 }}>{t(`libgroup.${group.key}`)}</Label>
+                  {hasMore && (
+                    <button onClick={() => setExpandedGroups(prev => ({ ...prev, [group.key]: !isExpanded }))}
+                      style={{ background: 'none', border: 'none', color: C.purple, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                      {isExpanded ? (t('workout.showLess') || 'Show less') : (t('workout.viewAll') || 'View all')} {isExpanded ? '▲' : `(${availableSports.length}) ›`}
+                    </button>
+                  )}
+                </div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-                  {availableSports.map(s => {
+                  {visibleSports.map(s => {
                     // Total workout count for this sport, independent of the
                     // level filter — a sport never appears to be "coming soon"
                     // just because the current filter has no match.
                     const count = LIBRARY_WORKOUTS.filter(w => w.sport === s.id).length
                     return (
                       <button key={s.id} onClick={() => setSport(s.id)}
-                        style={{ padding:'14px 12px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:5 }}>
+                        style={{ padding:'14px 12px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:5, position:'relative' }}>
+                        {/* Reserved slot for a future favorite/star toggle — intentionally empty for now */}
+                        <div style={{ position:'absolute', top:10, right:10, width:16, height:16 }} />
                         <span style={{ fontSize:26 }}>{s.icon}</span>
                         <div style={{ fontSize:13, fontWeight:700, color:C.text, lineHeight:1.2 }}>{tSport(s.id)}</div>
                         <div style={{ fontSize:10, color:C.purple }}>
@@ -1483,11 +1532,12 @@ export default function WorkoutTab({ userId, profile }) {
   const [session,      setSession]      = useState(null)
   const [logs,         setLogs]         = useState([])
   const [logsLoading,  setLogsLoading]  = useState(true)
+  const [recentLogs,   setRecentLogs]   = useState([]) // last 30 days, for streak/recent-workouts/Auron context
   const [preloadPlan,  setPreloadPlan]  = useState(null)
   const [showBuilder,  setShowBuilder]  = useState(false)
   const [planRefreshKey, setPlanRefreshKey] = useState(0)
 
-  useEffect(() => { fetchLogs() }, [userId])
+  useEffect(() => { fetchLogs(); fetchRecentLogs() }, [userId])
 
   const fetchLogs = async () => {
     if (!userId) return
@@ -1495,6 +1545,18 @@ export default function WorkoutTab({ userId, profile }) {
     const { data } = await supabase.from('workout_logs').select('*').eq('user_id', userId).eq('log_date', today).order('created_at', { ascending:false })
     setLogs(data || [])
     setLogsLoading(false)
+  }
+
+  const fetchRecentLogs = async () => {
+    if (!userId) return
+    const from = new Date()
+    from.setDate(from.getDate() - 30)
+    const fromStr = from.toISOString().split('T')[0]
+    const { data } = await supabase.from('workout_logs')
+      .select('log_date, workout_name, duration_minutes, calories_burned')
+      .eq('user_id', userId).gte('log_date', fromStr)
+      .order('log_date', { ascending: false })
+    setRecentLogs(data || [])
   }
 
   const deleteLog = async id => {
@@ -1511,9 +1573,52 @@ export default function WorkoutTab({ userId, profile }) {
     }
   }
 
+  // ── Derived from recentLogs: streak, days-since-last, this week's count ──
+  const recentDatesSet = new Set(recentLogs.map(l => l.log_date))
+  let currentStreakDays = 0
+  {
+    let checkDate = new Date()
+    // Grace: if today has no workout yet, start counting from yesterday
+    // so an in-progress day doesn't zero out an otherwise real streak.
+    if (!recentDatesSet.has(today)) checkDate.setDate(checkDate.getDate() - 1)
+    for (let i = 0; i < 30; i++) {
+      const ds = checkDate.toISOString().split('T')[0]
+      if (recentDatesSet.has(ds)) { currentStreakDays++; checkDate.setDate(checkDate.getDate() - 1) }
+      else break
+    }
+  }
+  const daysSinceLastWorkout = (() => {
+    if (recentLogs.length === 0) return null
+    const lastDate = recentLogs[0].log_date // already ordered desc
+    const diffMs = new Date(today + 'T12:00:00') - new Date(lastDate + 'T12:00:00')
+    return Math.round(diffMs / 86400000)
+  })()
+  const weekCount = (() => {
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 6)
+    const weekAgoStr = weekAgo.toISOString().split('T')[0]
+    return new Set(recentLogs.filter(l => l.log_date >= weekAgoStr).map(l => l.log_date)).size
+  })()
+  // Recent workouts for quick re-access in the Library — distinct names, most recent first
+  const recentWorkoutNames = (() => {
+    const seen = new Set()
+    const out = []
+    for (const l of recentLogs) {
+      if (l.workout_name && !seen.has(l.workout_name)) {
+        seen.add(l.workout_name)
+        out.push(l)
+        if (out.length >= 5) break
+      }
+    }
+    return out
+  })()
+
   const workoutCtx = logsLoading ? null : {
     workoutDone: logs.length > 0,
     hour: new Date().getHours(),
+    streakDays: currentStreakDays,
+    daysSinceLastWorkout,
+    weekCount,
   }
 
   if (session) {
@@ -1540,7 +1645,7 @@ export default function WorkoutTab({ userId, profile }) {
         ))}
       </div>
 
-      {tab==='library' && <LibraryTab onUseAsTemplate={handleUseAsTemplate} />}
+      {tab==='library' && <LibraryTab onUseAsTemplate={handleUseAsTemplate} recentWorkouts={recentWorkoutNames} />}
 
       {tab==='plans' && (
         <>

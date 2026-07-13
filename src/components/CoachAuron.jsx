@@ -321,15 +321,17 @@ function medicationMessage(p, ctx, lang) {
 
 // ---- Workout -------------------------------------------------
 function workoutPriority(ctx) {
-  const { workoutDone, steps, streakDays, hour } = ctx
-  if (streakDays >= 7) return { type: 'streak', days: streakDays }
+  const { workoutDone, steps, streakDays, daysSinceLastWorkout, weekCount, hour } = ctx
   if (workoutDone) return { type: 'done' }
+  if (streakDays >= 3) return { type: 'streak', days: streakDays }
+  if (daysSinceLastWorkout != null && daysSinceLastWorkout >= 4) return { type: 'gap', days: daysSinceLastWorkout }
+  if (weekCount != null && weekCount >= 3) return { type: 'week_count', count: weekCount }
   if (steps < 3000 && hour >= 15) return { type: 'low_steps' }
   if (hour >= 17) return { type: 'evening_nudge' }
   return { type: 'default' }
 }
 function workoutMood(p) {
-  return { streak:'celebrating', done:'workout', low_steps:'motivating', evening_nudge:'motivating', default:'habit' }[p.type] || 'workout'
+  return { streak:'celebrating', done:'workout', gap:'concerned', week_count:'happy', low_steps:'motivating', evening_nudge:'motivating', default:'habit' }[p.type] || 'workout'
 }
 function workoutMessage(p, ctx, lang) {
   const fr = lang === 'fr'
@@ -337,6 +339,8 @@ function workoutMessage(p, ctx, lang) {
     switch (p.type) {
       case 'streak':       return [`${p.days} jours d'affilée ! Une vraie habitude est en train de se construire.`, `Série de ${p.days} jours — impressionnant, continuez.`]
       case 'done':         return ["Séance faite aujourd'hui — beau travail. Pensez à bien récupérer.", "Entraînement du jour terminé. Bien joué !"]
+      case 'gap':          return [`Ça fait ${p.days} jours depuis votre dernière séance. Une courte reprise aujourd'hui ferait du bien.`, `${p.days} jours sans entraînement — un petit pas suffit pour reprendre le rythme.`]
+      case 'week_count':   return [`${p.count} séances cette semaine — belle régularité !`, `Déjà ${p.count} entraînements cette semaine. Continuez comme ça.`]
       case 'low_steps':    return ["Peu de mouvement pour l'instant. Une courte marche ferait du bien.", "Vous pouvez encore bouger un peu aujourd'hui — même 10 minutes comptent."]
       case 'evening_nudge':return ["Pas encore de séance aujourd'hui. Même un entraînement court compte.", "Il reste du temps pour bouger un peu ce soir."]
       default:               return ["Prêt(e) pour une séance aujourd'hui ? Choisissez un entraînement dans la bibliothèque.", "Chaque séance compte, même une courte."]
@@ -345,6 +349,8 @@ function workoutMessage(p, ctx, lang) {
   switch (p.type) {
     case 'streak':       return [`${p.days} days in a row! You're building a real habit.`, `${p.days}-day streak — impressive, keep it going.`]
     case 'done':         return ["Workout done today — nice work. Make sure to recover well.", "Today's session is complete. Well done!"]
+    case 'gap':          return [`It's been ${p.days} days since your last workout. A short session today would help.`, `${p.days} days since you last trained — even a quick one gets you back on track.`]
+    case 'week_count':   return [`${p.count} workouts this week — great consistency!`, `Already ${p.count} sessions logged this week. Keep it up.`]
     case 'low_steps':    return ["Movement's a bit low so far. A short walk would help.", "There's still time to move a little today — even 10 minutes counts."]
     case 'evening_nudge':return ["No workout logged yet today. Even a short session counts.", "There's still time for a quick workout this evening."]
     default:               return ["Ready for a session today? Pick a workout from the library.", "Every session counts, even a short one."]
