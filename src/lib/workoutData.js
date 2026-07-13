@@ -1365,3 +1365,56 @@ export function getExerciseIconSrc(name) {
   const key = WEIGHT_TRAINING_ICON_KEYS[name]
   return key ? EXERCISE_ICON_SVG[key] : null
 }
+
+// ─────────────────────────────────────────────────────────────
+// Workout/sport-level icons — Lucide icon NAMES (not components; the
+// WorkoutIcon component in WorkoutTab.jsx resolves the name to an
+// actual icon). Same lookup-with-fallback pattern as the exercise icon
+// system above, just one level up (sport/workout cards, not exercises).
+// Checked in order: specific workout id -> sport id -> 'Dumbbell'.
+// ─────────────────────────────────────────────────────────────
+export const WORKOUT_ICON_BY_ID = {
+  // Weight Training plans
+  push_day: 'Dumbbell', pull_day: 'Activity', leg_day: 'Footprints',
+  full_body: 'Dumbbell', upper_body: 'Dumbbell', core_blast: 'CircleDot',
+  // CrossFit / HIIT
+  wod_classic: 'Zap', wod_beginner: 'Zap', hiit_20: 'Zap', hiit_tabata: 'Zap', hiit_beginner: 'Zap',
+  // Calisthenics / Kettlebell / Functional
+  cali_basics: 'Activity', cali_advanced: 'Activity', kb_beginner: 'Dumbbell', kb_power: 'Dumbbell', functional1: 'Activity',
+  // Cardio
+  run_easy: 'Footprints', run_interval: 'Footprints', run_long: 'Footprints', run_5k: 'Footprints',
+  walk_power: 'Footprints', walk_hiit: 'Footprints',
+  cycle_endur: 'Bike', cycle_hiit: 'Bike',
+  rope_basics: 'Activity', rope_hiit: 'Activity',
+  swim_laps: 'Waves', swim_endur: 'Waves', row_endur: 'Waves', row_power: 'Waves',
+  // Mobility
+  yoga_morning: 'HeartPulse', yoga_yin: 'HeartPulse', yoga_power: 'HeartPulse',
+  pilates_core: 'HeartPulse', pilates_full: 'HeartPulse', stretch_full: 'HeartPulse', stretch_post: 'HeartPulse',
+  // Combat
+  box_basics: 'Zap', box_advanced: 'Zap', muay_basics: 'Zap', martial1: 'Zap', mma_cond: 'Zap',
+  // Sports training
+  tennis_cond: 'Activity', badminton1: 'Activity', football_fit: 'Activity', bball_cond: 'Activity',
+  volley_cond: 'Activity', golf_fitness: 'Activity', dance_zumba: 'Activity', hiphop1: 'Activity', gymn_basics: 'Activity',
+  hike_prep: 'Footprints', hike_strength: 'Footprints', climb_cond: 'Activity', tri_cond: 'Activity',
+  // Powerlifting / Bodybuilding
+  pl_beginner: 'Dumbbell', pl_advanced: 'Dumbbell', bb_chest: 'Dumbbell', bb_back: 'Dumbbell',
+}
+
+export const WORKOUT_ICON_BY_SPORT = {
+  gym: 'Dumbbell', powerlifting: 'Dumbbell', bodybuilding: 'Dumbbell', kettlebell: 'Dumbbell',
+  crossfit: 'Zap', hiit: 'Zap', boxing: 'Zap', muay_thai: 'Zap', martial: 'Zap', mma: 'Zap',
+  calisthenics: 'Activity', functional: 'Activity', jumpRope: 'Activity',
+  running: 'Footprints', walking: 'Footprints', hiking: 'Footprints',
+  cycling: 'Bike',
+  swimming: 'Waves', rowing: 'Waves',
+  yoga: 'HeartPulse', pilates: 'HeartPulse', stretching: 'HeartPulse',
+  tennis: 'Activity', badminton: 'Activity', football: 'Activity', basketball: 'Activity',
+  volleyball: 'Activity', golf: 'Activity', dance: 'Activity', hiphop: 'Activity',
+  gymnastics: 'Activity', rockClimbing: 'Activity', triathlon: 'Activity',
+}
+
+// Returns a Lucide icon name for a workout or sport, always falling
+// back to 'Dumbbell' so a card is never left without an icon.
+export function getWorkoutIconType({ workoutId, sportId } = {}) {
+  return WORKOUT_ICON_BY_ID[workoutId] || WORKOUT_ICON_BY_SPORT[sportId] || 'Dumbbell'
+}
