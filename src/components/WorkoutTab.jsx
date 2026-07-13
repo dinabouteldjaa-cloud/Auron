@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
-import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconSrc } from '../lib/workoutData.js'
+import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconSrc, getWorkoutIconType } from '../lib/workoutData.js'
+import { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot } from 'lucide-react'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 import { TabAuronCard } from './CoachAuron'
 
@@ -28,6 +29,21 @@ function ExerciseIcon({ name, fallback, size = 20 }) {
       style={{ width: size, height: size, opacity: 0.85 }}
     />
   )
+}
+
+const LUCIDE_WORKOUT_ICONS = { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot }
+
+// ─────────────────────────────────────────────
+// WorkoutIcon — renders a Lucide icon for a sport/workout card, resolved
+// via getWorkoutIconType({ workoutId, sportId }). Always falls back to
+// Dumbbell so a card is never left without an icon. Meant to sit inside
+// the existing soft-purple rounded icon container already used across
+// sport/workout cards — this component only renders the icon itself.
+// ─────────────────────────────────────────────
+function WorkoutIcon({ workoutId, sportId, size = 24, color, label }) {
+  const type = getWorkoutIconType({ workoutId, sportId })
+  const Icon = LUCIDE_WORKOUT_ICONS[type] || Dumbbell
+  return <Icon size={size} color={color || C.purple} strokeWidth={2} aria-label={label} role={label ? 'img' : undefined} />
 }
 
 // ─────────────────────────────────────────────
@@ -139,7 +155,7 @@ function ExerciseHowTo({ name }) {
 // ─────────────────────────────────────────────
 // Library tab — Sports → Workouts → Detail
 // ─────────────────────────────────────────────
-function LibraryTab({ onUseAsTemplate, recentWorkouts = [] }) {
+function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
   const { t } = useTranslation()
   const { tSport, tCatName, tWorkout, tLevel, tMuscles, lang } = useSportT()
   const [sport,   setSport]   = useState(null)
@@ -148,6 +164,12 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [] }) {
   const [filter,  setFilter]  = useState('All')
   const [expandedGroups, setExpandedGroups] = useState({}) // { [groupKey]: true } once "View all" tapped
   const GROUP_PREVIEW_COUNT = 4
+
+  // Report navigation depth up to WorkoutTab so it knows whether this is
+  // a root screen (Auron visible) or a nested one (category/detail — Auron hidden).
+  useEffect(() => {
+    onScreenChange?.(workout ? 'detail' : sport ? 'category' : 'root')
+  }, [sport, workout])
 
   const tFilterLabel = f => ({ All: t('workout.level.all'), Beginner: t('workout.level.beginner'), Intermediate: t('workout.level.intermediate'), Advanced: t('workout.level.advanced') })[f] || f
 
@@ -163,7 +185,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [] }) {
       <div>
         <BackBtn onBack={() => setWorkout(null)} />
         <div style={{ background:`linear-gradient(135deg, ${sport_obj.color||C.purple}, ${sport_obj.color||C.purple}BB)`, borderRadius:20, padding:'22px 20px', marginBottom:20, color:'#fff' }}>
-          <div style={{ fontSize:32, marginBottom:8 }}>{workout.icon}</div>
+          <div style={{ fontSize:32, marginBottom:8 }}><WorkoutIcon workoutId={workout.id} sportId={workout.sport} size={32} color="#fff" label={tWorkout(workout.id)} /></div>
           <div style={{ fontSize:22, fontWeight:700 }}>{tWorkout(workout.id)}</div>
           <div style={{ fontSize:13, opacity:0.85, marginTop:4 }}>{workout.description}</div>
           <div style={{ display:'flex', gap:16, marginTop:14, flexWrap:'wrap' }}>
@@ -260,7 +282,9 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [] }) {
       <div>
         <BackBtn onBack={() => setSport(null)} label={t('workout.backToLibrary') || 'Back to Library'} />
         <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:6 }}>
-          <span style={{ fontSize:32 }}>{s.icon}</span>
+          <div style={{ width:44, height:44, borderRadius:14, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <WorkoutIcon sportId={sport} size={26} label={tSport(sport)} />
+          </div>
           <div style={{ fontSize:22, fontWeight:700, color:C.text }}>{tSport(sport)}</div>
         </div>
         {/* Subtitle — subtle, secondary framing of what's here */}
@@ -295,7 +319,9 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [] }) {
             style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', marginBottom:10, boxShadow:C.shadowCard, position:'relative' }}>
             {/* Reserved slot for future favorite toggle — intentionally empty for now */}
             <div style={{ position:'absolute', top:10, right:10, width:16, height:16 }} />
-            <div style={{ width:50, height:50, borderRadius:14, background:`${s.color||C.purple}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, flexShrink:0 }}>{w.icon}</div>
+            <div style={{ width:50, height:50, borderRadius:14, background:`${s.color||C.purple}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <WorkoutIcon workoutId={w.id} sportId={w.sport} size={26} label={tWorkout(w.id)} />
+            </div>
             <div style={{ flex:1, minWidth:0 }}>
               {/* Primary — workout name + level badge */}
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
@@ -347,7 +373,9 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [] }) {
             return (
               <button key={w.id} onClick={() => setWorkout(w)}
                 style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', marginBottom:10, boxShadow:C.shadowCard }}>
-                <div style={{ width:48, height:48, borderRadius:14, background:`${s.color||C.purple}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>{w.icon}</div>
+                <div style={{ width:48, height:48, borderRadius:14, background:`${s.color||C.purple}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <WorkoutIcon workoutId={w.id} sportId={w.sport} size={24} label={tWorkout(w.id)} />
+                </div>
                 <div style={{ flex:1 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
                     <span style={{ fontSize:14, fontWeight:700, color:C.text }}>{tWorkout(w.id)}</span>
@@ -386,7 +414,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [] }) {
                     >
                       {/* Reserved slot for a future favorite/star toggle — intentionally empty for now */}
                       <div style={{ position: 'absolute', top: 8, right: 8, width: 16, height: 16 }} />
-                      <span style={{ fontSize: 20 }}>{match?.icon || '💪'}</span>
+                      <WorkoutIcon workoutId={match?.id} sportId={match?.sport} size={20} label={log.workout_name} />
                       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.text, lineHeight: 1.25 }}>{log.workout_name}</div>
                       <div style={{ fontSize: 10, color: C.textMuted }}>
                         {log.duration_minutes ? `${log.duration_minutes} min` : t('workout.tapToView') || 'Logged'}
@@ -431,7 +459,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [] }) {
                         style={{ padding:'14px 12px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:5, position:'relative' }}>
                         {/* Reserved slot for a future favorite/star toggle — intentionally empty for now */}
                         <div style={{ position:'absolute', top:10, right:10, width:16, height:16 }} />
-                        <span style={{ fontSize:26 }}>{s.icon}</span>
+                        <WorkoutIcon sportId={s.id} size={24} label={tSport(s.id)} />
                         <div style={{ fontSize:13, fontWeight:700, color:C.text, lineHeight:1.2 }}>{tSport(s.id)}</div>
                         <div style={{ fontSize:10, color:C.purple }}>
                           {count} {count===1?t('workout.workout1','workout'):t('workout.workouts','workouts')}
@@ -694,7 +722,7 @@ function PlanEditor({ plan, onSave, onCancel }) {
 // ─────────────────────────────────────────────
 // My Plans tab
 // ─────────────────────────────────────────────
-function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBuildWithAuron }) {
+function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBuildWithAuron, onScreenChange }) {
   const { t } = useTranslation()
   const [plans,   setPlans]   = useState([])
   const [loading, setLoading] = useState(true)
@@ -702,6 +730,9 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBui
   const consumedRef = useRef(false)
 
   useEffect(() => { fetchPlans() }, [userId])
+  useEffect(() => {
+    onScreenChange?.(editing ? 'editor' : 'root')
+  }, [editing])
   useEffect(() => {
     if (preloadPlan && !consumedRef.current) {
       consumedRef.current = true
@@ -1558,6 +1589,8 @@ export default function WorkoutTab({ userId, profile }) {
   const [preloadPlan,  setPreloadPlan]  = useState(null)
   const [showBuilder,  setShowBuilder]  = useState(false)
   const [planRefreshKey, setPlanRefreshKey] = useState(0)
+  const [libraryScreen, setLibraryScreen] = useState('root') // 'root' | 'category' | 'detail'
+  const [plansScreen,   setPlansScreen]   = useState('root') // 'root' | 'editor'
 
   useEffect(() => { fetchLogs(); fetchRecentLogs() }, [userId])
 
@@ -1643,6 +1676,16 @@ export default function WorkoutTab({ userId, profile }) {
     weekCount,
   }
 
+  // Auron is only shown on root-level screens — hidden on category pages,
+  // workout detail, the plan editor, and the builder sub-screen. Active
+  // sessions are already excluded entirely via the `if (session)` early
+  // return below.
+  const isRootScreen =
+    tab === 'library' ? libraryScreen === 'root' :
+    tab === 'plans'   ? (plansScreen === 'root' && !showBuilder) :
+    tab === 'log'     ? true :
+    false
+
   if (session) {
     return (
       <WorkoutSession
@@ -1655,7 +1698,7 @@ export default function WorkoutTab({ userId, profile }) {
 
   return (
     <div>
-      <TabAuronCard tab="workout" ctx={workoutCtx} lang={lang} />
+      {isRootScreen && <TabAuronCard tab="workout" ctx={workoutCtx} lang={lang} />}
 
       {/* Tab switcher */}
       <div style={{ display:'flex', gap:6, marginBottom:20, background:C.surfaceMid, borderRadius:14, padding:4 }}>
@@ -1667,7 +1710,7 @@ export default function WorkoutTab({ userId, profile }) {
         ))}
       </div>
 
-      {tab==='library' && <LibraryTab onUseAsTemplate={handleUseAsTemplate} recentWorkouts={recentWorkoutNames} />}
+      {tab==='library' && <LibraryTab onUseAsTemplate={handleUseAsTemplate} recentWorkouts={recentWorkoutNames} onScreenChange={setLibraryScreen} />}
 
       {tab==='plans' && (
         <>
@@ -1688,6 +1731,7 @@ export default function WorkoutTab({ userId, profile }) {
             preloadPlan={preloadPlan}
             onPreloadConsumed={() => setPreloadPlan(null)}
             onBuildWithAuron={() => setShowBuilder(true)}
+            onScreenChange={setPlansScreen}
           />
         </>
       )}
