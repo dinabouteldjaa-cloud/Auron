@@ -252,7 +252,6 @@ export const SPORTS_CATEGORIES = [
       { id:'hiking',       name:'Hiking',            icon:'🥾', color:'#92400E' },
       { id:'rockClimbing', name:'Rock Climbing',     icon:'🧗', color:'#78716C' },
       { id:'trailRunning', name:'Trail Running',     icon:'🏔️', color:'#6B7280' },
-      { id:'triathlon',    name:'Triathlon',         icon:'🏅', color:'#0EA5E9' },
       { id:'mountainBike', name:'Mountain Biking',   icon:'🚵', color:'#78350F' },
       { id:'skiing',       name:'Skiing',            icon:'⛷️', color:'#E0F2FE' },
       { id:'snowboard',    name:'Snowboarding',      icon:'🏂', color:'#BAE6FD' },
@@ -266,7 +265,6 @@ export const SPORTS_CATEGORIES = [
     sports: [
       { id:'dance',        name:'Dance',             icon:'💃', color:'#EC4899' },
       { id:'zumba',        name:'Zumba',             icon:'🎵', color:'#F43F5E' },
-      { id:'hiphop',       name:'Hip Hop Dance',     icon:'🎤', color:'#8B5CF6' },
       { id:'ballet',       name:'Ballet',            icon:'🩰', color:'#FCA5A5' },
       { id:'contemporary', name:'Contemporary',      icon:'🎭', color:'#C084FC' },
       { id:'salsa',        name:'Salsa',             icon:'🌶️', color:'#EF4444' },
@@ -333,8 +331,8 @@ export const LIBRARY_GROUPS = [
       'tennis', 'badminton', 'squash', 'pickleball', 'tableTennis', 'padel',
       'football', 'basketball', 'volleyball', 'rugby', 'hockey', 'handball', 'baseball', 'cricket', 'lacrosse', 'futsal',
       'golf', 'archery', 'fencing', 'shooting', 'bowling', 'darts',
-      'hiking', 'rockClimbing', 'trailRunning', 'triathlon', 'mountainBike', 'skiing', 'snowboard', 'skateboard', 'surfing_out', 'paragliding',
-      'dance', 'zumba', 'hiphop', 'ballet', 'contemporary', 'salsa',
+      'hiking', 'rockClimbing', 'trailRunning', 'mountainBike', 'skiing', 'snowboard', 'skateboard', 'surfing_out', 'paragliding',
+      'dance', 'zumba', 'ballet', 'contemporary', 'salsa',
       'gymnastics', 'aerobics', 'trampoline', 'parkour', 'cheerleading',
       'openWater', 'diving', 'surfing', 'kayaking', 'waterPolo', 'kitesurfing',
       'horseRiding', 'polo',
@@ -873,7 +871,7 @@ export const LIBRARY_WORKOUTS = [
       rx('Zumba Basic Step', 4, 180, 'Follow your own rhythm, 3-min blocks.'),
       rx('Jumping Jacks', 3, 30, ''),
     ] },
-  { id:'hiphop1', sport:'hiphop', name:'Hip Hop Dance', icon:'🎤', level:'Beginner', duration:'40 min', muscles:'Full Body, Coordination',
+  { id:'hiphop1', sport:'dance', name:'Hip Hop Dance', icon:'🎤', level:'Beginner', duration:'40 min', muscles:'Full Body, Coordination',
     description:'Fun cardio through hip hop movement — a beginner-friendly way to build coordination and get your heart rate up.',
     exercises:[
       rx('Zumba Basic Step', 4, 180, ''),
@@ -921,15 +919,6 @@ export const LIBRARY_WORKOUTS = [
       rx('Plank', 3, 40, ''),
       rx('Farmer\'s Carry', 3, 40, 'Grip strength carryover.'),
       rx('Calf Raises', 3, 15, ''),
-    ] },
-
-  // ── TRIATHLON ─────────────────────────────
-  { id:'tri_cond', sport:'triathlon', name:'Triathlon Training', icon:'🏅', level:'Advanced', duration:'60 min', muscles:'Full Body, Endurance',
-    description:'A "brick" session — swim, bike and run back to back, training your body to transition between disciplines.',
-    exercises:[
-      rx('Swimming', 1, 900, '15 min swim.'),
-      rx('Cycling', 1, 1500, '25 min bike, straight after swimming.'),
-      rx('Running', 1, 1200, '20 min run, straight off the bike — legs will feel heavy at first, that\'s normal.'),
     ] },
 
   // ── POWERLIFTING ──────────────────────────
@@ -1409,12 +1398,61 @@ export const WORKOUT_ICON_BY_SPORT = {
   swimming: 'Waves', rowing: 'Waves',
   yoga: 'HeartPulse', pilates: 'HeartPulse', stretching: 'HeartPulse',
   tennis: 'Activity', badminton: 'Activity', football: 'Activity', basketball: 'Activity',
-  volleyball: 'Activity', golf: 'Activity', dance: 'Activity', hiphop: 'Activity',
-  gymnastics: 'Activity', rockClimbing: 'Activity', triathlon: 'Activity',
+  volleyball: 'Activity', golf: 'Activity', dance: 'Activity',
+  gymnastics: 'Activity', rockClimbing: 'Activity',
 }
 
 // Returns a Lucide icon name for a workout or sport, always falling
 // back to 'Dumbbell' so a card is never left without an icon.
 export function getWorkoutIconType({ workoutId, sportId } = {}) {
   return WORKOUT_ICON_BY_ID[workoutId] || WORKOUT_ICON_BY_SPORT[sportId] || 'Dumbbell'
+}
+
+// ─────────────────────────────────────────────────────────────
+// Category icon pack — custom PNGs in /public/workout-icons/, one
+// per sport/category (not per individual workout plan). This is now
+// the primary icon system for category-level displays (Library grid,
+// category detail headers). Centralized here so no UI code hardcodes
+// image paths; if a sport has no entry, callers fall back to the
+// Lucide WorkoutIcon system above — rendering never breaks.
+// ─────────────────────────────────────────────────────────────
+export const WORKOUT_CATEGORY_ICON_FILES = {
+  gym: 'weight-training.png',
+  powerlifting: 'powerlifting.png',
+  bodybuilding: 'bodybuilding.png',
+  crossfit: 'crossfit.png',
+  functional: 'functional-fitness.png',
+  jumpRope: 'jump-rope.png',
+  rowing: 'rowing.png',
+  swimming: 'swimming.png',
+  pilates: 'pilates.png',
+  stretching: 'stretching.png',
+  boxing: 'boxing.png',
+  muay_thai: 'muay-thai.png',
+  martial: 'martial-arts.png',
+  mma: 'mma.png',
+  tennis: 'tennis.png',
+  badminton: 'badminton.png',
+  football: 'football.png',
+  basketball: 'basketball.png',
+  volleyball: 'volleyball.png',
+  rockClimbing: 'rock-climbing.png',
+  running: 'running.png',
+  walking: 'walking.png',
+  hiit: 'hit.png',
+  gymnastics: 'gymnastics.png',
+  dance: 'dance.png',
+  yoga: 'yoga.png',
+  golf: 'golf.png',
+  hiking: 'hiking.png',
+  cycling: 'cycling.png',
+  calisthenics: 'calisthenics.png',
+  kettlebell: 'kettlebell.png',
+}
+
+// Returns the category icon path for a sport, or null if unmapped —
+// callers should fall back to getWorkoutIconType()/WorkoutIcon in that case.
+export function getWorkoutCategoryIconSrc(sportId) {
+  const file = WORKOUT_CATEGORY_ICON_FILES[sportId]
+  return file ? `/workout-icons/${file}` : null
 }
