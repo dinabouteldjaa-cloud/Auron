@@ -1300,23 +1300,37 @@ export function getExercise(name, lang) {
 export function getExerciseIconName(name) {
   const n = (name || '').toLowerCase()
 
+  // ── Exact/specific overrides — checked first, take priority over the
+  // broader movement-family buckets below ──
+  if (/^doorway chest stretch$/.test(n)) return 'ion:body'
+  if (/^standing quadriceps stretch$/.test(n)) return 'streamline-ultimate:yoga-back-stretch-1-bold'
+  if (/^seated cable row$/.test(n)) return 'mingcute:indoor-rowing-line'
+  if (/plank/.test(n)) return 'arcticons:plank-workout' // Front Plank, Side Plank, etc. — same family, same icon
+  if (/squat/.test(n)) return 'mingcute:squats-fill' // Bodyweight/Goblet/Back/Jump/Pistol Squat, etc.
+  if (!/lunge/.test(n) && /\bwalk\b|walking/.test(n)) return 'tabler:walk' // Walking, Brisk/Slow/Easy Walk — not "Walking Lunge"
+
   // Breathing & recovery
   if (/breath|meditat/.test(n)) return 'mdi:meditation'
 
-  // Mobility & stretches (yoga poses, every *Stretch entry, spinal/hip mobility)
+  // Any exercise with "Dumbbell" in its name — explicit override so every
+  // dumbbell variant reads as a dumbbell exercise regardless of movement family.
+  if (/dumbbell/.test(n)) return 'mdi:dumbbell'
+
+  // Mobility & stretches (yoga poses, remaining *Stretch entries, spinal/hip mobility)
   if (/stretch|yoga|pose|salutation|pigeon|opener|rotation|cat-cow|downward dog|arm circle/.test(n)) return 'mdi:yoga'
 
-  // Core (plank family, anti-rotation/anti-extension work)
-  if (/plank|crunch|dead bug|twist|leg raise|the hundred|roll up|pallof|suitcase carry|bird dog|mountain climber|pelvic tilt/.test(n)) return 'hugeicons:body-part-six-pack'
+  // Core (remaining anti-rotation/anti-extension work — plank already carved out above)
+  if (/crunch|dead bug|twist|leg raise|the hundred|roll up|pallof|suitcase carry|bird dog|mountain climber|pelvic tilt/.test(n)) return 'hugeicons:body-part-six-pack'
 
-  // Warm-up cardio / walking / cycling / easy row — checked before squat
-  // patterns so compound names like "Walking Lunge" fall through to squat.
-  if (!/lunge/.test(n) && /walk|bike|cycl|rowing|running|(^|\W)run(\W|$)|swim|jump rope|sprint|high knees|jumping jack|\bhiit\b/.test(n)) return 'mdi:run-fast'
+  // Warm-up cardio / cycling / easy row — walking already handled above.
+  // Checked before squat/lunge patterns so compound names like "Walking Lunge" fall through correctly.
+  if (!/lunge/.test(n) && /bike|cycl|rowing|running|(^|\W)run(\W|$)|swim|jump rope|sprint|high knees|jumping jack|\bhiit\b/.test(n)) return 'mdi:run-fast'
 
-  // Squats & lower-body squat patterns
-  if (/squat|lunge|leg press|hip thrust/.test(n)) return 'game-icons:weight-lifting-up'
+  // Lower-body patterns other than squat (lunges, leg press, hip thrust)
+  if (/lunge|leg press|hip thrust/.test(n)) return 'game-icons:weight-lifting-up'
 
-  // Deadlifts, Romanian deadlifts, hip-hinge patterns
+  // Deadlifts, Romanian deadlifts, hip-hinge patterns — the best available
+  // hinge/deadlift-style icon, preferred over a generic gym icon.
   if (/deadlift|hip hinge|glute bridge/.test(n)) return 'mdi:weight-lifter'
 
   // Bench press, push-ups, dips, chest pressing
@@ -1325,7 +1339,7 @@ export function getExerciseIconName(name) {
   // Pull-ups & lat pulldowns
   if (/pull.?up|pulldown/.test(n)) return 'hugeicons:equipment-gym-02'
 
-  // Rows (strength) — cardio "rowing" already handled above
+  // Rows (strength) — cardio "rowing" and Seated Cable Row already handled above
   if (/row/.test(n)) return 'mdi:rowing'
 
   // Shoulder press & overhead press
@@ -1334,7 +1348,7 @@ export function getExerciseIconName(name) {
   // Biceps & triceps isolation
   if (/curl|tricep|skull crusher/.test(n)) return 'mdi:arm-flex-outline'
 
-  // Generic strength fallback
+  // Generic strength fallback — no good exercise-specific icon available
   return 'mdi:dumbbell'
 }
 
