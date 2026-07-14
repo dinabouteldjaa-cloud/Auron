@@ -684,6 +684,7 @@ const translations = {
     'sport.horseRiding':'Horse Riding','sport.polo':'Polo',
     // Workout names (library)
     'w.push_day':'Push Day','w.pull_day':'Pull Day','w.leg_day':'Leg Day',
+    'w.lower_body_foundation':'Lower Body Foundation','w.adv_full_body_strength':'Advanced Full Body Strength','w.adv_upper_body_strength':'Advanced Upper Body Strength',
     'w.full_body':'Full Body','w.upper_body':'Upper Body','w.core_blast':'Core Blast',
     'w.arnold_split':'Arnold Press Special','w.chest_focus':'Chest Focus','w.back_focus':'Back & Lats',
     'w.wod_classic':'Classic WOD','w.wod_beginner':'Beginner WOD',
@@ -760,6 +761,7 @@ const translations = {
     'sport.horseRiding':'Horse Riding','sport.polo':'Polo',
     // Workout names
     'w.push_day':'Push Day','w.pull_day':'Pull Day','w.leg_day':'Leg Day',
+    'w.lower_body_foundation':'Lower Body Foundation','w.adv_full_body_strength':'Advanced Full Body Strength','w.adv_upper_body_strength':'Advanced Upper Body Strength',
     'w.full_body':'Full Body','w.upper_body':'Upper Body','w.core_blast':'Core Blast',
     'w.arnold_split':'Arnold Press Special','w.chest_focus':'Chest Focus','w.back_focus':'Back & Lats',
     'w.wod_classic':'Classic WOD','w.wod_beginner':'Beginner WOD',
@@ -1541,6 +1543,7 @@ const translations = {
     'sport.horseRiding':'Horse Riding','sport.polo':'Polo',
     // Workout names (library)
     'w.push_day':'Push Day','w.pull_day':'Pull Day','w.leg_day':'Leg Day',
+    'w.lower_body_foundation':'Lower Body Foundation','w.adv_full_body_strength':'Advanced Full Body Strength','w.adv_upper_body_strength':'Advanced Upper Body Strength',
     'w.full_body':'Full Body','w.upper_body':'Upper Body','w.core_blast':'Core Blast',
     'w.arnold_split':'Arnold Press Special','w.chest_focus':'Chest Focus','w.back_focus':'Back & Lats',
     'w.wod_classic':'Classic WOD','w.wod_beginner':'Beginner WOD',
@@ -1617,6 +1620,7 @@ const translations = {
     'sport.horseRiding':'Équitation','sport.polo':'Polo',
     // Workout names FR
     'w.push_day':'Jour Push','w.pull_day':'Jour Pull','w.leg_day':'Jour Jambes',
+    'w.lower_body_foundation':'Bas du Corps Fondamental','w.adv_full_body_strength':'Force Corps Entier Avancée','w.adv_upper_body_strength':'Force Haut du Corps Avancée',
     'w.full_body':'Corps Entier','w.upper_body':'Haut du Corps','w.core_blast':'Abdos & Core',
     'w.arnold_split':'Spécial Arnold Press','w.chest_focus':'Focus Pectoraux','w.back_focus':'Dos & Dorsaux',
     'w.wod_classic':'WOD Classique','w.wod_beginner':'WOD Débutant',
