@@ -1289,141 +1289,53 @@ export function getExercise(name, lang) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Weight Training custom icon system
-// Maps specific Weight Training exercise names to a small set of
-// reusable icon keys. Each key points at a placeholder SVG under
-// /public/exercise-icons/ — swap those files for real artwork later
-// without touching any workout logic or this mapping.
-// Only exercises used in Weight Training (gym) workouts are mapped;
-// every other sport keeps using its plain emoji icon unchanged.
+// Exercise icons — Iconify, movement-family based (v1 source of truth).
+// Applies to every exercise across every workout (not just Weight
+// Training). Exercises are matched by keyword against their movement
+// family rather than mapped one-by-one, so related exercises share the
+// same icon (e.g. every squat/lunge variant uses the same icon).
+// Checked in priority order — first match wins. Always falls back to
+// 'mdi:dumbbell' so an exercise is never left without an icon.
 // ─────────────────────────────────────────────────────────────
-export const WEIGHT_TRAINING_ICON_KEYS = {
-  // bench-press
-  'Barbell Bench Press': 'bench-press',
-  'Dumbbell Bench Press': 'bench-press',
-  'Incline Dumbbell Press': 'bench-press',
-  'Bench Press': 'bench-press',
-  'Incline Bench Press': 'bench-press',
-  'Cable Chest Fly': 'bench-press',
-  'Chest Fly': 'bench-press',
-  'Cable Crossover': 'bench-press',
-  'Dips': 'bench-press',
+export function getExerciseIconName(name) {
+  const n = (name || '').toLowerCase()
 
-  // squat
-  'Back Squat': 'squat',
-  'Bodyweight Squat': 'squat',
-  'Goblet Squat': 'squat',
-  'Squat': 'squat',
-  'Leg Press': 'squat',
-  'Walking Lunge': 'squat',
-  'Lunges': 'squat',
-  'Reverse Lunge': 'squat',
-  'Standing Calf Raise': 'squat',
-  'Calf Raises': 'squat',
-  'Hip Thrust': 'squat',
-  'Glute Bridge': 'squat',
+  // Breathing & recovery
+  if (/breath|meditat/.test(n)) return 'mdi:meditation'
 
-  // deadlift
-  'Deadlift': 'deadlift',
-  'Dumbbell Romanian Deadlift': 'deadlift',
-  'Romanian Deadlift': 'deadlift',
-  'Hip Hinge Drill': 'deadlift',
+  // Mobility & stretches (yoga poses, every *Stretch entry, spinal/hip mobility)
+  if (/stretch|yoga|pose|salutation|pigeon|opener|rotation|cat-cow|downward dog|arm circle/.test(n)) return 'mdi:yoga'
 
-  // row
-  'Seated Cable Row': 'row',
-  'Chest-Supported Dumbbell Row': 'row',
-  'Bent Over Row': 'row',
-  'Light Cable Row': 'row',
-  'Face Pull': 'row',
-  'Band Pull-Aparts': 'row',
+  // Core (plank family, anti-rotation/anti-extension work)
+  if (/plank|crunch|dead bug|twist|leg raise|the hundred|roll up|pallof|suitcase carry|bird dog|mountain climber|pelvic tilt/.test(n)) return 'hugeicons:body-part-six-pack'
 
-  // lat-pulldown
-  'Lat Pulldown or Assisted Pull-Up': 'lat-pulldown',
-  'Lat Pulldown': 'lat-pulldown',
-  'Pull Ups': 'lat-pulldown',
-  'Band Straight-Arm Pulldown': 'lat-pulldown',
-  'Scapular Pull-Up or Scapular Pulldown': 'lat-pulldown',
+  // Warm-up cardio / walking / cycling / easy row — checked before squat
+  // patterns so compound names like "Walking Lunge" fall through to squat.
+  if (!/lunge/.test(n) && /walk|bike|cycl|rowing|running|(^|\W)run(\W|$)|swim|jump rope|sprint|high knees|jumping jack|\bhiit\b/.test(n)) return 'mdi:run-fast'
 
-  // shoulder-press
-  'Seated Dumbbell Shoulder Press': 'shoulder-press',
-  'Overhead Press': 'shoulder-press',
-  'Arnold Press': 'shoulder-press',
-  'Dumbbell Lateral Raise': 'shoulder-press',
-  'Lateral Raise': 'shoulder-press',
-  'Wall Push-Up': 'shoulder-press',
-  'Push Ups': 'shoulder-press',
-  'Scapular Push-Ups': 'shoulder-press',
-  'Arm Circles': 'shoulder-press',
+  // Squats & lower-body squat patterns
+  if (/squat|lunge|leg press|hip thrust/.test(n)) return 'game-icons:weight-lifting-up'
 
-  // curl
-  'Dumbbell Curl': 'curl',
-  'Bicep Curl': 'curl',
-  'Hammer Curl': 'curl',
-  'Triceps Rope Pushdown': 'curl',
-  'Tricep Pushdown': 'curl',
-  'Skull Crushers': 'curl',
+  // Deadlifts, Romanian deadlifts, hip-hinge patterns
+  if (/deadlift|hip hinge|glute bridge/.test(n)) return 'mdi:weight-lifter'
 
-  // plank
-  'Front Plank': 'plank',
-  'Plank': 'plank',
-  'Side Plank from Knees or Feet': 'plank',
-  'Dead Bug': 'plank',
-  'Bird Dog': 'plank',
-  'Bird Dog Practice': 'plank',
-  'Pallof Press': 'plank',
-  'Suitcase Carry': 'plank',
-  'Cat-Cow': 'plank',
-  'Pelvic Tilt': 'plank',
+  // Bench press, push-ups, dips, chest pressing
+  if (/bench|push.?up|dip|chest|fly|crossover/.test(n)) return 'mdi:arm-flex'
 
-  // stretch
-  'Standing Quadriceps Stretch': 'stretch',
-  'Doorway Chest Stretch': 'stretch',
-  'Seated Hamstring Stretch': 'stretch',
-  'Hamstring Stretch': 'stretch',
-  'Cross-Body Shoulder Stretch': 'stretch',
-  'Cross-Body Rear Shoulder Stretch': 'stretch',
-  'Overhead Triceps Stretch': 'stretch',
-  'Lat Stretch': 'stretch',
-  'Forearm Flexor Stretch': 'stretch',
-  'Half-Kneeling Hip Flexor Stretch': 'stretch',
-  'Hip Flexor Stretch': 'stretch',
-  'Calf Stretch': 'stretch',
-  'Supine Knee-to-Chest Stretch': 'stretch',
-  'Gentle Supine Trunk Rotation': 'stretch',
-  'Slow Diaphragmatic Breathing': 'stretch',
-  'Diaphragmatic Breathing': 'stretch',
-  'Slow Breathing': 'stretch',
-  "Child's Pose": 'stretch',
+  // Pull-ups & lat pulldowns
+  if (/pull.?up|pulldown/.test(n)) return 'hugeicons:equipment-gym-02'
 
-  // warmup-cardio
-  'Brisk Walk or Easy Bike': 'warmup-cardio',
-  'Easy Rowing or Bike': 'warmup-cardio',
-  'Easy Rowing Machine': 'warmup-cardio',
-  'Easy Bike': 'warmup-cardio',
-  'Easy Bike or Row': 'warmup-cardio',
-  'Easy Walk': 'warmup-cardio',
-  'Slow Walk': 'warmup-cardio',
-}
+  // Rows (strength) — cardio "rowing" already handled above
+  if (/row/.test(n)) return 'mdi:rowing'
 
-const EXERCISE_ICON_SVG = {
-  'bench-press':    '/exercise-icons/bench-press.svg',
-  'squat':          '/exercise-icons/squat.svg',
-  'deadlift':       '/exercise-icons/deadlift.svg',
-  'row':            '/exercise-icons/row.svg',
-  'lat-pulldown':   '/exercise-icons/lat-pulldown.svg',
-  'shoulder-press': '/exercise-icons/shoulder-press.svg',
-  'curl':           '/exercise-icons/curl.svg',
-  'plank':          '/exercise-icons/plank.svg',
-  'stretch':        '/exercise-icons/stretch.svg',
-  'warmup-cardio':  '/exercise-icons/warmup-cardio.svg',
-}
+  // Shoulder press & overhead press
+  if (/shoulder press|overhead press|arnold press|handstand/.test(n)) return 'mdi:human-handsup'
 
-// Returns an SVG path for a Weight Training exercise name, or null if
-// this exercise isn't mapped (every other sport, or anything not yet
-// covered) — callers should fall back to the plain emoji icon in that case.
-export function getExerciseIconSrc(name) {
-  const key = WEIGHT_TRAINING_ICON_KEYS[name]
-  return key ? EXERCISE_ICON_SVG[key] : null
+  // Biceps & triceps isolation
+  if (/curl|tricep|skull crusher/.test(n)) return 'mdi:arm-flex-outline'
+
+  // Generic strength fallback
+  return 'mdi:dumbbell'
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1495,7 +1407,7 @@ export const WORKOUT_PLAN_ICON_BY_ID = {
   // Weight Training
   push_day: 'mdi:human-barbell',
   pull_day: 'hugeicons:equipment-gym-02',
-  leg_day: 'game-icons:leg',
+  leg_day: 'mdi:weight-lifter',
   full_body: 'ion:body',
   upper_body: 'mdi:arm-flex',
   core_blast: 'hugeicons:body-part-six-pack',
