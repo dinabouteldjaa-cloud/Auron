@@ -1495,7 +1495,7 @@ export const WORKOUT_PLAN_ICON_BY_ID = {
   // Weight Training
   push_day: 'mdi:human-barbell',
   pull_day: 'hugeicons:equipment-gym-02',
-  leg_day: 'mdi:weight-lifter',
+  leg_day: 'game-icons:leg',
   full_body: 'ion:body',
   upper_body: 'mdi:arm-flex',
   core_blast: 'hugeicons:body-part-six-pack',
