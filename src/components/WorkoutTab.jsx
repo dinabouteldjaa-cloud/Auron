@@ -972,36 +972,28 @@ function RestTimer({ duration, onDone, nextSetLabel, exerciseName }) {
   const r = 54
   const circ = 2 * Math.PI * r
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(26,20,50,0.92)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:20 }}>
+    <div style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(26,20,50,0.92)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:22 }}>
       <div style={{ fontSize:14, fontWeight:600, color:'rgba(255,255,255,0.7)', letterSpacing:'0.1em', textTransform:'uppercase' }}>{t('session.rest')}</div>
-      <div style={{ position:'relative', width:160, height:160 }}>
-        <svg viewBox="0 0 120 120" style={{ width:160, height:160, transform:'rotate(-90deg)' }}>
+
+      {/* Countdown + current set — both centered inside the ring, single focal point */}
+      <div style={{ position:'relative', width:176, height:176 }}>
+        <svg viewBox="0 0 120 120" style={{ width:176, height:176, transform:'rotate(-90deg)' }}>
           <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
           <circle cx="60" cy="60" r={r} fill="none" stroke={C.purple} strokeWidth="6"
             strokeDasharray={circ} strokeDashoffset={circ * (1 - pct/100)}
             strokeLinecap="round" style={{ transition:'stroke-dashoffset 1s linear' }} />
         </svg>
         <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-          <div style={{ fontSize:52, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{fmtRest(remaining)}</div>
-          <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', marginTop:4 }}>{t('session.seconds')}</div>
+          <div style={{ fontSize:48, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{fmtRest(remaining)}</div>
+          {nextSetLabel && (
+            <div style={{ fontSize:13, fontWeight:600, color:'rgba(255,255,255,0.6)', marginTop:8 }}>{nextSetLabel}</div>
+          )}
         </div>
       </div>
 
-      {(nextSetLabel || exerciseName) && (
-        <div style={{ background:'rgba(255,255,255,0.08)', borderRadius:16, padding:'12px 20px', textAlign:'center', minWidth:180 }}>
-          {nextSetLabel && (
-            <div style={{ marginBottom: exerciseName ? 6 : 0 }}>
-              <div style={{ fontSize:10, color:'rgba(255,255,255,0.5)', textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('session.nextSet') || 'Next Set'}</div>
-              <div style={{ fontSize:15, fontWeight:700, color:'#fff' }}>{nextSetLabel}</div>
-            </div>
-          )}
-          {exerciseName && (
-            <div>
-              <div style={{ fontSize:10, color:'rgba(255,255,255,0.5)', textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('workout.exercises') ? (t('session.exercise')||'Exercise') : 'Exercise'}</div>
-              <div style={{ fontSize:14, fontWeight:600, color:'rgba(255,255,255,0.9)' }}>{exerciseName}</div>
-            </div>
-          )}
-        </div>
+      {/* Exercise name — below the ring, the one supporting detail */}
+      {exerciseName && (
+        <div style={{ fontSize:17, fontWeight:700, color:'#fff', textAlign:'center' }}>{exerciseName}</div>
       )}
 
       <div style={{ display:'flex', gap:12 }}>
