@@ -1452,7 +1452,18 @@ export const WORKOUT_CATEGORY_ICON_FILES = {
 
 // Returns the category icon path for a sport, or null if unmapped —
 // callers should fall back to getWorkoutIconType()/WorkoutIcon in that case.
+// Prefers the small optimized WebP (~96-128px) over the original
+// full-resolution PNG, which is unnecessarily large for a 28-32px icon.
 export function getWorkoutCategoryIconSrc(sportId) {
+  const file = WORKOUT_CATEGORY_ICON_FILES[sportId]
+  if (!file) return null
+  const base = file.replace(/\.png$/, '')
+  return `/workout-icons/optimized/${base}.webp`
+}
+
+// Fallback to the original full-resolution PNG if the optimized WebP is
+// missing or fails to load — still better than dropping straight to Lucide.
+export function getWorkoutCategoryIconFallbackSrc(sportId) {
   const file = WORKOUT_CATEGORY_ICON_FILES[sportId]
   return file ? `/workout-icons/${file}` : null
 }
