@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
-import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconSrc, getWorkoutIconType } from '../lib/workoutData.js'
+import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconSrc, getWorkoutIconType, getWorkoutCategoryIconSrc } from '../lib/workoutData.js'
 import { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot } from 'lucide-react'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 import { TabAuronCard } from './CoachAuron'
@@ -44,6 +44,27 @@ function WorkoutIcon({ workoutId, sportId, size = 24, color, label }) {
   const type = getWorkoutIconType({ workoutId, sportId })
   const Icon = LUCIDE_WORKOUT_ICONS[type] || Dumbbell
   return <Icon size={size} color={color || C.purple} strokeWidth={2} aria-label={label} role={label ? 'img' : undefined} />
+}
+
+// ─────────────────────────────────────────────
+// WorkoutCategoryIcon — primary icon system for category-level displays
+// (Library grid cards, category detail headers). Uses the custom PNG
+// pack in /public/workout-icons/ via getWorkoutCategoryIconSrc(); if a
+// category has no custom icon (or the image fails to load), falls back
+// to the existing Lucide WorkoutIcon so rendering never breaks.
+// ─────────────────────────────────────────────
+function WorkoutCategoryIcon({ category, size = 28, label }) {
+  const [failed, setFailed] = useState(false)
+  const src = !failed && getWorkoutCategoryIconSrc(category)
+  if (!src) return <WorkoutIcon sportId={category} size={size} label={label} />
+  return (
+    <img
+      src={src}
+      alt={label || ''}
+      onError={() => setFailed(true)}
+      style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
+    />
+  )
 }
 
 // ─────────────────────────────────────────────
@@ -283,7 +304,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
         <BackBtn onBack={() => setSport(null)} label={t('workout.backToLibrary') || 'Back to Library'} />
         <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:6 }}>
           <div style={{ width:44, height:44, borderRadius:14, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <WorkoutIcon sportId={sport} size={26} label={tSport(sport)} />
+            <WorkoutCategoryIcon category={sport} size={26} label={tSport(sport)} />
           </div>
           <div style={{ fontSize:22, fontWeight:700, color:C.text }}>{tSport(sport)}</div>
         </div>
@@ -459,7 +480,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
                         style={{ padding:'14px 12px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:5, position:'relative' }}>
                         {/* Reserved slot for a future favorite/star toggle — intentionally empty for now */}
                         <div style={{ position:'absolute', top:10, right:10, width:16, height:16 }} />
-                        <WorkoutIcon sportId={s.id} size={24} label={tSport(s.id)} />
+                        <WorkoutCategoryIcon category={s.id} size={28} label={tSport(s.id)} />
                         <div style={{ fontSize:13, fontWeight:700, color:C.text, lineHeight:1.2 }}>{tSport(s.id)}</div>
                         <div style={{ fontSize:10, color:C.purple }}>
                           {count} {count===1?t('workout.workout1','workout'):t('workout.workouts','workouts')}
