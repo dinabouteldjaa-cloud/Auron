@@ -917,12 +917,12 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBui
         {t('workout.buildWithAuron')}
       </button>
       {loading ? (
-        <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>Loading…</div>
+        <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>{t('workout.loading')}</div>
       ) : plans.length === 0 ? (
         <Card style={{ textAlign:'center', padding:'32px 20px' }}>
           <div style={{ fontSize:40, marginBottom:12 }}>📋</div>
-          <div style={{ fontSize:16, fontWeight:600, color:C.text, marginBottom:6 }}>No plans yet</div>
-          <div style={{ fontSize:13, color:C.textMuted }}>Create from scratch or save a Library workout as a plan.</div>
+          <div style={{ fontSize:16, fontWeight:600, color:C.text, marginBottom:6 }}>{t('workout.noPlansYet')}</div>
+          <div style={{ fontSize:13, color:C.textMuted }}>{t('workout.noPlansSub')}</div>
         </Card>
       ) : plans.map(plan => (
         <div key={plan.id} style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.divider}`, padding:'14px 16px', marginBottom:10, boxShadow:C.shadowCard }}>
@@ -930,7 +930,7 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBui
             <div style={{ width:44, height:44, borderRadius:13, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>📋</div>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{plan.name}</div>
-              <div style={{ fontSize:12, color:C.textMuted }}>{plan.exercises?.length||0} exercises</div>
+              <div style={{ fontSize:12, color:C.textMuted }}>{plan.exercises?.length||0} {t('workout.exercises')}</div>
               {plan.schedule?.days?.length > 0 && (
                 <div style={{ fontSize:11, color:C.purple, marginTop:3, display:'flex', alignItems:'center', gap:4 }}>
                   <span>📅</span>
@@ -1642,7 +1642,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
             : <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name your workout..."
                 style={{ width:'100%', background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.3)', borderRadius:12, padding:'12px 14px', color:'#fff', fontSize:18, fontWeight:700, outline:'none' }} />
           }
-          <div style={{ fontSize:13, opacity:0.75, marginTop:8 }}>{exercises.length} exercises</div>
+          <div style={{ fontSize:13, opacity:0.75, marginTop:8 }}>{exercises.length} {t('workout.exercises')}</div>
         </div>
 
         {/* Rest setting */}
@@ -1778,7 +1778,7 @@ function WorkoutHistoryCard({ log, onDelete }) {
           )}
           {!confirm
             ? <button onClick={()=>setConfirm(true)} style={{ padding:'6px 10px', borderRadius:10, background:C.redLight, border:'none', color:C.red, fontSize:12, cursor:'pointer' }}>✕</button>
-            : <button onClick={()=>onDelete(log.id)} style={{ padding:'6px 10px', borderRadius:10, background:C.red, border:'none', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>Delete?</button>
+            : <button onClick={()=>onDelete(log.id)} style={{ padding:'6px 10px', borderRadius:10, background:C.red, border:'none', color:'#fff', fontSize:11, fontWeight:600, cursor:'pointer' }}>{t('workout.confirmDelete')}</button>
           }
         </div>
       </div>
@@ -1820,7 +1820,7 @@ function TodayWorkoutTab({ userId, timezone, today, logs, logsLoading, onStartEm
       {/* Scheduled plans */}
       {scheduledToday.length > 0 && (
         <div style={{ marginBottom:16 }}>
-          <Label>Scheduled for today</Label>
+          <Label>{t('workout.scheduledForToday')}</Label>
           {scheduledToday.map(plan => (
             <div key={plan.id} style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.purple}44`, padding:'14px 16px', marginBottom:10, boxShadow:C.shadowCard }}>
               <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10 }}>
@@ -1842,10 +1842,10 @@ function TodayWorkoutTab({ userId, timezone, today, logs, logsLoading, onStartEm
       )}
 
       {logsLoading ? (
-        <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>Loading…</div>
+        <div style={{ textAlign:'center', padding:30, color:C.textMuted }}>{t('workout.loading')}</div>
       ) : logs.length > 0 ? (
         <>
-          <Label>Today's workouts</Label>
+          <Label>{t('workout.todaysWorkouts')}</Label>
           {logs.map(log => <WorkoutHistoryCard key={log.id} log={log} onDelete={onDelete} />)}
         </>
       ) : (

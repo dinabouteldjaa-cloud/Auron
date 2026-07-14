@@ -312,13 +312,13 @@ export default function AuronWorkoutBuilder({ userId, onClose, onPlanSaved }) {
     setStep('generating')
     setError(null)
     try { setPlan(await callAI(answers, lang)); setStep('preview') }
-    catch (e) { setError(e.message || 'Error'); setStep('error') }
+    catch (e) { setError(e.message || t('workoutBuilder.genericError')); setStep('error') }
   }
 
   const handleSave = async (assignedDays) => {
     if (!plan?.workouts?.length) return
     setSaving(true)
-    const planName = plan.planName || 'Auron Plan'
+    const planName = plan.planName || t('workoutBuilder.defaultPlanName')
     for (let wi = 0; wi < plan.workouts.length; wi++) {
       const workout = plan.workouts[wi]
       const dayKey  = assignedDays[wi] || null
