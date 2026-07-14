@@ -1405,8 +1405,84 @@ export const WORKOUT_ICON_BY_SPORT = {
 
 // Returns a Lucide icon name for a workout or sport, always falling
 // back to 'Dumbbell' so a card is never left without an icon.
+// NOTE: this Lucide-based lookup remains as the graceful fallback used
+// inside WorkoutCategoryIcon when a custom category PNG is missing/fails
+// to load. For workout-PLAN cards (Push Day, Leg Day, etc.) the app now
+// uses the broader Iconify-based system below instead.
 export function getWorkoutIconType({ workoutId, sportId } = {}) {
   return WORKOUT_ICON_BY_ID[workoutId] || WORKOUT_ICON_BY_SPORT[sportId] || 'Dumbbell'
+}
+
+// ─────────────────────────────────────────────────────────────
+// Workout-PLAN icons — Iconify (Tabler primary, Phosphor where Tabler
+// has no meaningful equivalent). Lucide was too limited for the range
+// of workout plans in the library; several cards were reusing unrelated
+// icons. Centralized here, static names only (no runtime icon search),
+// module-scope so nothing is recreated on re-render.
+// ─────────────────────────────────────────────────────────────
+export const WORKOUT_PLAN_ICON_BY_ID = {
+  // Weight Training
+  push_day: 'tabler:arrow-big-up-lines',
+  pull_day: 'tabler:arrow-big-down-lines',
+  leg_day: 'tabler:shoe',
+  full_body: 'tabler:barbell',
+  upper_body: 'tabler:body-scan',
+  core_blast: 'tabler:target-arrow',
+  // CrossFit / HIIT
+  wod_classic: 'tabler:bolt', wod_beginner: 'tabler:bolt',
+  hiit_20: 'tabler:bolt', hiit_tabata: 'tabler:bolt', hiit_beginner: 'tabler:bolt',
+  // Calisthenics / Kettlebell / Functional
+  cali_basics: 'tabler:barbell', cali_advanced: 'tabler:barbell',
+  kb_beginner: 'tabler:barbell', kb_power: 'tabler:barbell', functional1: 'tabler:barbell',
+  // Cardio
+  run_easy: 'tabler:run', run_interval: 'tabler:run', run_long: 'tabler:run', run_5k: 'tabler:run',
+  walk_power: 'tabler:walk', walk_hiit: 'tabler:walk',
+  cycle_endur: 'tabler:bike', cycle_hiit: 'tabler:bike',
+  rope_basics: 'tabler:bolt', rope_hiit: 'tabler:bolt',
+  swim_laps: 'tabler:swimming', swim_endur: 'tabler:swimming',
+  row_endur: 'tabler:swimming', row_power: 'tabler:swimming',
+  // Mobility
+  yoga_morning: 'tabler:yoga', yoga_yin: 'tabler:yoga', yoga_power: 'tabler:yoga',
+  pilates_core: 'ph:person-simple', pilates_full: 'ph:person-simple',
+  stretch_full: 'tabler:stretching-2', stretch_post: 'tabler:stretching-2',
+  // Combat
+  box_basics: 'ph:boxing-glove', box_advanced: 'ph:boxing-glove',
+  muay_basics: 'tabler:karate', martial1: 'tabler:karate', mma_cond: 'tabler:karate',
+  // Sports training
+  tennis_cond: 'tabler:ball-tennis', badminton1: 'tabler:ball-tennis',
+  football_fit: 'tabler:ball-football', bball_cond: 'tabler:ball-basketball',
+  volley_cond: 'tabler:ball-volleyball', golf_fitness: 'tabler:golf',
+  dance_zumba: 'ph:person-simple', hiphop1: 'ph:person-simple', gymn_basics: 'tabler:stretching-2',
+  hike_prep: 'tabler:walk', hike_strength: 'tabler:walk', climb_cond: 'tabler:barbell',
+  // Powerlifting / Bodybuilding
+  pl_beginner: 'tabler:barbell', pl_advanced: 'tabler:barbell',
+  bb_chest: 'tabler:barbell', bb_back: 'tabler:barbell',
+}
+
+export const WORKOUT_PLAN_ICON_BY_SPORT = {
+  gym: 'tabler:barbell', powerlifting: 'tabler:barbell', bodybuilding: 'tabler:barbell', kettlebell: 'tabler:barbell',
+  crossfit: 'tabler:bolt', hiit: 'tabler:bolt', jumpRope: 'tabler:bolt',
+  boxing: 'ph:boxing-glove', muay_thai: 'tabler:karate', martial: 'tabler:karate', mma: 'tabler:karate',
+  calisthenics: 'tabler:barbell', functional: 'tabler:barbell',
+  running: 'tabler:run', walking: 'tabler:walk', hiking: 'tabler:walk',
+  cycling: 'tabler:bike',
+  swimming: 'tabler:swimming', rowing: 'tabler:swimming',
+  yoga: 'tabler:yoga', pilates: 'ph:person-simple', stretching: 'tabler:stretching-2',
+  tennis: 'tabler:ball-tennis', badminton: 'tabler:ball-tennis', football: 'tabler:ball-football', basketball: 'tabler:ball-basketball',
+  volleyball: 'tabler:ball-volleyball', golf: 'tabler:golf', dance: 'ph:person-simple',
+  gymnastics: 'tabler:stretching-2', rockClimbing: 'tabler:barbell',
+}
+
+// Returns a static Iconify icon name for a workout plan card, always
+// falling back to 'tabler:activity' — never breaks rendering.
+export function getWorkoutPlanIcon(workout) {
+  if (!workout) return 'tabler:activity'
+  const byId    = WORKOUT_PLAN_ICON_BY_ID[workout.id]
+  const bySport = WORKOUT_PLAN_ICON_BY_SPORT[workout.sport]
+  if (!byId && !bySport && import.meta.env?.DEV) {
+    console.warn(`[getWorkoutPlanIcon] no mapping for workout "${workout.id}" (sport "${workout.sport}") — using fallback icon`)
+  }
+  return byId || bySport || 'tabler:activity'
 }
 
 // ─────────────────────────────────────────────────────────────
