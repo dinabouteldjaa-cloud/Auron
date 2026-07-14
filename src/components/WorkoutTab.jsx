@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
-import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconSrc, getWorkoutIconType, getWorkoutCategoryIconSrc, getWorkoutCategoryIconFallbackSrc } from '../lib/workoutData.js'
+import { Icon } from '@iconify/react'
+import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconSrc, getWorkoutIconType, getWorkoutCategoryIconSrc, getWorkoutCategoryIconFallbackSrc, getWorkoutPlanIcon } from '../lib/workoutData.js'
 import { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot, ArrowUp, ArrowDown, Target, Flower2, Move, Shield, ShieldAlert, ShieldCheck, Trophy } from 'lucide-react'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 import { TabAuronCard } from './CoachAuron'
@@ -45,6 +46,19 @@ function WorkoutIcon({ workoutId, sportId, size = 24, color, label }) {
   const Icon = LUCIDE_WORKOUT_ICONS[type] || Dumbbell
   return <Icon size={size} color={color || C.purple} strokeWidth={2} aria-label={label} role={label ? 'img' : undefined} />
 }
+
+// ─────────────────────────────────────────────
+// WorkoutPlanIcon — Iconify-based icon system for individual workout-plan
+// cards (Push Day, Leg Day, etc). Replaces the old Lucide-only lookup for
+// this purpose — Lucide didn't have enough variety and several plans were
+// reusing unrelated icons. Icon names are resolved via getWorkoutPlanIcon()
+// (static, module-scope mapping — no runtime icon search). Memoized so
+// filtering/search/expanding a section doesn't re-render already-shown icons.
+// ─────────────────────────────────────────────
+const WorkoutPlanIcon = memo(function WorkoutPlanIcon({ workout, size = 24, color, label }) {
+  const iconName = getWorkoutPlanIcon(workout)
+  return <Icon icon={iconName} width={size} height={size} color={color || C.purple} aria-label={label} />
+})
 
 // ─────────────────────────────────────────────
 // WorkoutCategoryIcon — primary icon system for category-level displays
@@ -254,7 +268,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
       <div>
         <BackBtn onBack={() => setWorkout(null)} />
         <div style={{ background:`linear-gradient(135deg, ${sport_obj.color||C.purple}, ${sport_obj.color||C.purple}BB)`, borderRadius:20, padding:'22px 20px', marginBottom:20, color:'#fff' }}>
-          <div style={{ fontSize:32, marginBottom:8 }}><WorkoutIcon workoutId={workout.id} sportId={workout.sport} size={32} color="#fff" label={tWorkout(workout.id)} /></div>
+          <div style={{ fontSize:32, marginBottom:8 }}><WorkoutPlanIcon workout={workout} size={32} color="#fff" label={tWorkout(workout.id)} /></div>
           <div style={{ fontSize:22, fontWeight:700 }}>{tWorkout(workout.id)}</div>
           <div style={{ fontSize:13, opacity:0.85, marginTop:4 }}>{workout.description}</div>
           <div style={{ display:'flex', gap:16, marginTop:14, flexWrap:'wrap' }}>
@@ -389,7 +403,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
             {/* Reserved slot for future favorite toggle — intentionally empty for now */}
             <div style={{ position:'absolute', top:10, right:10, width:16, height:16 }} />
             <div style={{ width:50, height:50, borderRadius:14, background:`${s.color||C.purple}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <WorkoutIcon workoutId={w.id} sportId={w.sport} size={26} label={tWorkout(w.id)} />
+              <WorkoutPlanIcon workout={w} size={26} label={tWorkout(w.id)} />
             </div>
             <div style={{ flex:1, minWidth:0 }}>
               {/* Primary — workout name + level badge */}
@@ -443,7 +457,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
               <button key={w.id} onClick={() => setWorkout(w)}
                 style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', marginBottom:10, boxShadow:C.shadowCard }}>
                 <div style={{ width:48, height:48, borderRadius:14, background:`${s.color||C.purple}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <WorkoutIcon workoutId={w.id} sportId={w.sport} size={24} label={tWorkout(w.id)} />
+                  <WorkoutPlanIcon workout={w} size={24} label={tWorkout(w.id)} />
                 </div>
                 <div style={{ flex:1 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
@@ -483,7 +497,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
                     >
                       {/* Reserved slot for a future favorite/star toggle — intentionally empty for now */}
                       <div style={{ position: 'absolute', top: 8, right: 8, width: 16, height: 16 }} />
-                      <WorkoutIcon workoutId={match?.id} sportId={match?.sport} size={20} label={log.workout_name} />
+                      <WorkoutPlanIcon workout={match} size={20} label={log.workout_name} />
                       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.text, lineHeight: 1.25 }}>{log.workout_name}</div>
                       <div style={{ fontSize: 10, color: C.textMuted }}>
                         {log.duration_minutes ? `${log.duration_minutes} min` : t('workout.tapToView') || 'Logged'}
