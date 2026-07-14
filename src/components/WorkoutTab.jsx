@@ -27,6 +27,26 @@ const ExerciseIcon = memo(function ExerciseIcon({ name, size = 20, color }) {
   return <Icon icon={iconName} width={renderSize} height={renderSize} color={color || C.purple} aria-label={name} />
 })
 
+// Bodyweight-only exercises never take a weight value — hide the weight
+// card entirely for these rather than show an empty/dashed "Weight —".
+function isBodyweightExercise(name) {
+  const n = (name || '').toLowerCase()
+  return /push.?up|plank|bodyweight|glute bridge|dead bug|bird dog|mountain climber|jumping jack|high knees|burpee|crunch|sit.?up|pull.?up|^dip|wall push|cat-cow|pelvic tilt|leg raise|russian twist|box jump|jump squat|pistol squat|walking lunge|reverse lunge|air squat|bodyweight squat/.test(n)
+}
+
+// Friendly category label for the exercise header — prefers the workout's
+// own section tag (warm-up/cool-down), falls back to the exercise's own
+// data category, and finally a generic "Strength".
+function getExerciseCategoryLabel(exercise, data, t) {
+  if (exercise?.section === 'warmup')   return t('workout.warmupSection')   || 'Warm-up'
+  if (exercise?.section === 'cooldown') return t('workout.cooldownSection') || 'Cool-down'
+  const cat = (data?.category || '').toLowerCase()
+  if (/core/.test(cat))        return t('workout.categoryCore')     || 'Core'
+  if (/stretch|mobility/.test(cat)) return t('workout.categoryStretch') || 'Stretch'
+  if (/cardio|warm-up/.test(cat))   return t('workout.categoryCardio')  || 'Cardio'
+  return t('workout.categoryStrength') || 'Strength'
+}
+
 const LUCIDE_WORKOUT_ICONS = { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot, ArrowUp, ArrowDown, Target, Flower2, Move, Shield, ShieldAlert, ShieldCheck, Trophy }
 
 // ─────────────────────────────────────────────
@@ -934,7 +954,11 @@ function MyPlansTab({ userId, onStartPlan, preloadPlan, onPreloadConsumed, onBui
 // ─────────────────────────────────────────────
 // Rest Timer — fullscreen overlay
 // ─────────────────────────────────────────────
-function RestTimer({ duration, onDone }) {
+function fmtRest(s) {
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+}
+
+function RestTimer({ duration, onDone, nextSetLabel, exerciseName }) {
   const { t } = useTranslation()
   const [remaining, setRemaining] = useState(duration)
   useEffect(() => {
@@ -948,8 +972,8 @@ function RestTimer({ duration, onDone }) {
   const r = 54
   const circ = 2 * Math.PI * r
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(26,20,50,0.92)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:24 }}>
-      <div style={{ fontSize:16, fontWeight:600, color:'rgba(255,255,255,0.7)', letterSpacing:'0.1em', textTransform:'uppercase' }}>{t('session.rest')}</div>
+    <div style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(26,20,50,0.92)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:20 }}>
+      <div style={{ fontSize:14, fontWeight:600, color:'rgba(255,255,255,0.7)', letterSpacing:'0.1em', textTransform:'uppercase' }}>{t('session.rest')}</div>
       <div style={{ position:'relative', width:160, height:160 }}>
         <svg viewBox="0 0 120 120" style={{ width:160, height:160, transform:'rotate(-90deg)' }}>
           <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
@@ -958,18 +982,76 @@ function RestTimer({ duration, onDone }) {
             strokeLinecap="round" style={{ transition:'stroke-dashoffset 1s linear' }} />
         </svg>
         <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-          <div style={{ fontSize:52, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{remaining}</div>
+          <div style={{ fontSize:52, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{fmtRest(remaining)}</div>
           <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', marginTop:4 }}>{t('session.seconds')}</div>
         </div>
       </div>
+
+      {(nextSetLabel || exerciseName) && (
+        <div style={{ background:'rgba(255,255,255,0.08)', borderRadius:16, padding:'12px 20px', textAlign:'center', minWidth:180 }}>
+          {nextSetLabel && (
+            <div style={{ marginBottom: exerciseName ? 6 : 0 }}>
+              <div style={{ fontSize:10, color:'rgba(255,255,255,0.5)', textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('session.nextSet') || 'Next Set'}</div>
+              <div style={{ fontSize:15, fontWeight:700, color:'#fff' }}>{nextSetLabel}</div>
+            </div>
+          )}
+          {exerciseName && (
+            <div>
+              <div style={{ fontSize:10, color:'rgba(255,255,255,0.5)', textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('workout.exercises') ? (t('session.exercise')||'Exercise') : 'Exercise'}</div>
+              <div style={{ fontSize:14, fontWeight:600, color:'rgba(255,255,255,0.9)' }}>{exerciseName}</div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ display:'flex', gap:12 }}>
-        <button onClick={() => setRemaining(r => Math.max(0, r - 15))}
-          style={{ padding:'10px 20px', borderRadius:20, background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', fontSize:14, cursor:'pointer' }}>-15s</button>
         <button onClick={onDone}
           style={{ padding:'10px 32px', borderRadius:20, background:C.purple, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>{t('session.skipRest')}</button>
         <button onClick={() => setRemaining(r => r + 15)}
           style={{ padding:'10px 20px', borderRadius:20, background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', fontSize:14, cursor:'pointer' }}>+15s</button>
       </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────
+// Exercise transition — shown between exercises (not between sets of the
+// same exercise). Confirms what was just completed and previews what's
+// next, with its own countdown separate from the between-set RestTimer.
+// ─────────────────────────────────────────────
+function ExerciseTransitionScreen({ completedName, nextExercise, nextMuscles, duration, onDone }) {
+  const { t } = useTranslation()
+  const [remaining, setRemaining] = useState(duration)
+  useEffect(() => {
+    const id = setInterval(() => setRemaining(r => {
+      if (r <= 1) { clearInterval(id); onDone?.(); return 0 }
+      return r - 1
+    }), 1000)
+    return () => clearInterval(id)
+  }, [])
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(26,20,50,0.94)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:24, textAlign:'center' }}>
+      <div style={{ fontSize:15, fontWeight:700, color:C.green, display:'flex', alignItems:'center', gap:6 }}>
+        ✓ {completedName} {t('session.complete') || 'Complete'}
+      </div>
+
+      <div style={{ fontSize:12, color:'rgba(255,255,255,0.6)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', marginTop:12 }}>
+        {t('session.nextExercise') || 'Next Exercise'}
+      </div>
+      <div style={{ width:64, height:64, borderRadius:20, background:'rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <ExerciseIcon name={nextExercise} size={32} color="#fff" />
+      </div>
+      <div style={{ fontSize:22, fontWeight:800, color:'#fff' }}>{nextExercise}</div>
+      {nextMuscles && <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)', marginTop:-8 }}>{nextMuscles}</div>}
+
+      <div style={{ fontSize:13, color:'rgba(255,255,255,0.5)', marginTop:8 }}>
+        {(t('session.startsIn') || 'Starts in')} {remaining}s
+      </div>
+
+      <button onClick={onDone}
+        style={{ marginTop:8, padding:'12px 32px', borderRadius:20, background:C.purple, border:'none', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>
+        {t('session.skipRest') || 'Skip Rest'}
+      </button>
     </div>
   )
 }
@@ -1163,17 +1245,19 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration, onRestStart }) {
 // ─────────────────────────────────────────────
 // Fullscreen exercise view
 // ─────────────────────────────────────────────
-function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTogglePause, onSetDone, onPrev, onNext, onFinish, restSecs, saving, fmt, isLast }) {
+function FullscreenExercise({ exercise, setIdx, totalSets, exIdx, totalExercises, elapsed, paused, onTogglePause, onSetDone, onPrev, onNext, onFinish, restSecs, saving, fmt, isLast }) {
   const { t, lang } = useTranslation()
   const { tMuscles } = useSportT()
   const data      = getExercise(exercise.name, lang)
   const timed     = data.timed || exercise.timed
   const set       = exercise.sets[setIdx]
+  const bodyweight = !timed && isBodyweightExercise(exercise.name)
   const [showHow, setShowHow] = useState(false)
   const [sheet,   setSheet]   = useState(null)
   const [weight,  setWeight]  = useState(set?.weight || '')
   const [reps,    setReps]    = useState(set?.reps   || '')
   const [dur,     setDur]     = useState(set?.duration || '')
+  const [justDone, setJustDone] = useState(false)
 
   // Sync local state when set/exercise changes — but NOT showRest
   useEffect(() => {
@@ -1183,13 +1267,29 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
     setShowHow(false)
   }, [setIdx, exercise.name])
 
-  const isFinishing = isLast && setIdx === totalSets - 1
+  const isLastSetOfExercise = setIdx === totalSets - 1
+  const isFinishing = isLast && isLastSetOfExercise
 
   const handleDone = () => {
+    setJustDone(true)
+    setTimeout(() => setJustDone(false), 900)
     onSetDone({ weight, reps, duration: dur })
   }
 
   const doneCount = exercise.sets.filter(s => s.done).length
+  const categoryLabel = getExerciseCategoryLabel(exercise, data, t)
+
+  // Overall workout progress — exercises completed + fraction of current
+  // exercise's sets done, out of the total exercise count.
+  const overallPct = totalExercises > 0
+    ? Math.min(100, ((exIdx + (doneCount / Math.max(totalSets, 1))) / totalExercises) * 100)
+    : 0
+
+  const primaryLabel = isFinishing
+    ? t('session.finishWorkout')
+    : isLastSetOfExercise
+      ? (t('session.finishExercise') || 'Finish Exercise')
+      : (t('session.completeSet') || 'Complete Set')
 
   return (
     <div style={{ position:'fixed', inset:0, background:C.pageBg||'#F0EFF8', zIndex:200, display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto', overflow:'hidden' }}>
@@ -1202,8 +1302,21 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
         />
       )}
 
+      {/* Set-complete feedback — subtle, auto-dismissing */}
+      {justDone && (
+        <div style={{
+          position:'fixed', top:90, left:'50%', transform:'translateX(-50%)', zIndex:600,
+          background:C.green, color:'#fff', padding:'10px 22px', borderRadius:20,
+          fontSize:13.5, fontWeight:700, boxShadow:`0 6px 20px ${C.green}55`,
+          display:'flex', alignItems:'center', gap:6, animation:'auronFadeSlide 0.9s ease-out',
+        }}>
+          <style>{`@keyframes auronFadeSlide{0%{opacity:0;transform:translate(-50%,-8px)}15%{opacity:1;transform:translate(-50%,0)}75%{opacity:1}100%{opacity:0}}`}</style>
+          ✓ {t('session.setComplete') || 'Set Complete'} — {t('session.keepGoing') || 'Keep Going!'}
+        </div>
+      )}
+
       {/* Top bar */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px 8px', flexShrink:0 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px 6px', flexShrink:0 }}>
         <button onClick={onFinish} style={{ background:'none', border:'none', color:C.textMuted, fontSize:14, cursor:'pointer', padding:0, display:'flex', alignItems:'center', gap:4 }}>
           ✕ End
         </button>
@@ -1213,78 +1326,118 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
         </button>
       </div>
 
-      {/* Progress dots */}
-      <div style={{ display:'flex', gap:6, padding:'0 20px 12px', flexShrink:0, overflowX:'auto' }}>
-        {exercise.sets.map((s, i) => (
-          <div key={i} style={{ width: i===setIdx?24:8, height:8, borderRadius:4, background:s.done?C.green:i===setIdx?C.purple:C.border, transition:'all 0.2s', flexShrink:0 }} />
-        ))}
+      {/* Overall workout progress */}
+      <div style={{ padding:'6px 20px 10px', flexShrink:0 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:11.5, color:C.textMuted, marginBottom:5, fontWeight:600 }}>
+          <span>{(t('session.exercise')||'Exercise')} {exIdx+1} {t('session.of')||'of'} {totalExercises}</span>
+          <span>{(t('session.set')||'Set')} {setIdx+1} {t('session.of')||'of'} {totalSets}</span>
+        </div>
+        <div style={{ height:5, background:C.surfaceMid, borderRadius:3, overflow:'hidden' }}>
+          <div style={{ width:`${overallPct}%`, height:'100%', background:C.purple, borderRadius:3, transition:'width 0.3s ease' }} />
+        </div>
+        {/* Set dots for the current exercise */}
+        <div style={{ display:'flex', gap:6, marginTop:8, overflowX:'auto' }}>
+          {exercise.sets.map((s, i) => (
+            <div key={i} style={{ width: i===setIdx?20:7, height:7, borderRadius:4, background:s.done?C.green:i===setIdx?C.purple:C.border, transition:'all 0.2s', flexShrink:0 }} />
+          ))}
+        </div>
       </div>
 
       {/* Main content — scrollable */}
       <div style={{ flex:1, overflowY:'auto', padding:'0 24px' }}>
-        {/* Exercise name + icon */}
-        <div style={{ textAlign:'center', marginBottom:24 }}>
-          <div style={{ fontSize:56, marginBottom:12 }}><ExerciseIcon name={exercise.name} size={56} /></div>
-          <div style={{ fontSize:26, fontWeight:800, color:C.text, lineHeight:1.2, marginBottom:6 }}>{exercise.name}</div>
-          <div style={{ fontSize:13, color:C.textMuted }}>{tMuscles(data.muscles)}</div>
-          <div style={{ fontSize:13, color:C.purple, fontWeight:600, marginTop:4 }}>
-            Set {setIdx+1}/{totalSets} · {doneCount} {t('session.doneMark').replace('✓ ','')}
+        {/* Exercise image/icon — prominent hero visual */}
+        <div style={{ textAlign:'center', marginBottom:16 }}>
+          <div style={{
+            width:104, height:104, borderRadius:28, margin:'0 auto 12px',
+            background:`linear-gradient(135deg, ${C.purpleLight}, ${C.purple}22)`,
+            display:'flex', alignItems:'center', justifyContent:'center',
+            border:`1px solid ${C.purple}22`,
+          }}>
+            <ExerciseIcon name={exercise.name} size={52} />
+          </div>
+          <div style={{ fontSize:25, fontWeight:800, color:C.text, lineHeight:1.2, marginBottom:5 }}>{exercise.name}</div>
+          <div style={{ fontSize:13, color:C.textMuted }}>
+            {tMuscles(data.muscles)}{tMuscles(data.muscles) ? ' • ' : ''}{categoryLabel}
           </div>
           {(exercise.repRange || exercise.unilateral) && (
-            <div style={{ fontSize:12, color:C.textDim, marginTop:6 }}>
+            <div style={{ fontSize:12, color:C.textDim, marginTop:5 }}>
               {exercise.repRange && `${exercise.repRange} ${timed ? '' : (t('session.reps')||'reps')}`}
               {exercise.repRange && exercise.unilateral ? ' · ' : ''}
               {exercise.unilateral && (exercise.unilateralLabel || t('workout.eachSide') || 'each side')}
             </div>
           )}
           {exercise.note && (
-            <div style={{ fontSize:12, color:C.purple, marginTop:8, lineHeight:1.5, padding:'0 8px' }}>💡 {exercise.note}</div>
+            <div style={{ fontSize:12, color:C.purple, marginTop:6, lineHeight:1.5, padding:'0 8px' }}>💡 {exercise.note}</div>
           )}
         </div>
 
-        {/* Weight & Reps — big tap targets */}
+        {/* Current set — large, unmistakably highlighted */}
+        <div style={{
+          background:`linear-gradient(135deg, ${C.purple}, ${C.purpleDark||C.purple})`, borderRadius:20,
+          padding:'14px 16px', marginBottom:16, textAlign:'center', boxShadow:`0 6px 18px ${C.purple}33`,
+        }}>
+          <div style={{ fontSize:11.5, color:'rgba(255,255,255,0.75)', fontWeight:700, letterSpacing:'0.08em', marginBottom:2 }}>
+            {(t('session.set')||'SET').toUpperCase()} {setIdx+1} / {totalSets}
+          </div>
+          <div style={{ fontSize:15, color:'#fff', fontWeight:600 }}>
+            {timed
+              ? `${dur || exercise.repRange || set?.duration || '—'} ${t('workout.duration2')?'sec':'sec'}`
+              : `${reps || exercise.repRange || '—'} ${t('session.reps')||'reps'}`}
+          </div>
+        </div>
+
+        {/* Weight & Reps / Duration — big tap targets */}
         {timed ? (
-          <div style={{ textAlign:'center', marginBottom:32 }}>
-            <div style={{ fontSize:13, color:C.textMuted, marginBottom:8, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('workout.duration2')}</div>
+          <div style={{ textAlign:'center', marginBottom:20 }}>
+            <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('workout.duration2')}</div>
             <button onClick={() => setSheet('duration')}
-              style={{ background:C.surface, border:`2px solid ${C.purple}`, borderRadius:20, padding:'20px 40px', cursor:'pointer', boxShadow:C.shadowCard }}>
-              <span style={{ fontSize:52, fontWeight:800, color:dur?C.purple:C.textDim, fontVariantNumeric:'tabular-nums' }}>{dur||'—'}</span>
-              <span style={{ fontSize:20, color:C.textMuted, marginLeft:6 }}>sec</span>
+              style={{ background:C.surface, border:`2px solid ${C.purple}`, borderRadius:20, padding:'16px 36px', cursor:'pointer', boxShadow:C.shadowCard }}>
+              <span style={{ fontSize:44, fontWeight:800, color:dur?C.purple:C.textDim, fontVariantNumeric:'tabular-nums' }}>{dur||'—'}</span>
+              <span style={{ fontSize:18, color:C.textMuted, marginLeft:6 }}>sec</span>
+            </button>
+          </div>
+        ) : bodyweight ? (
+          <div style={{ textAlign:'center', marginBottom:20 }}>
+            <div style={{ fontSize:12, color:C.textMuted, marginBottom:6, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('session.reps')}</div>
+            <button onClick={() => setSheet('reps')}
+              style={{ background:C.surface, border:`2px solid ${reps?C.purple:C.border}`, borderRadius:20, padding:'16px 44px', cursor:'pointer', boxShadow:C.shadowCard }}>
+              <span style={{ fontSize:44, fontWeight:800, color:reps?C.purple:C.textDim, fontVariantNumeric:'tabular-nums' }}>{reps||'—'}</span>
+              <span style={{ fontSize:16, color:C.textMuted, marginLeft:8 }}>{t('session.reps').toLowerCase()}</span>
             </button>
           </div>
         ) : (
-          <div style={{ display:'flex', gap:16, justifyContent:'center', alignItems:'center', marginBottom:32 }}>
+          <div style={{ display:'flex', gap:14, justifyContent:'center', alignItems:'center', marginBottom:20 }}>
             {/* Weight */}
             <div style={{ textAlign:'center', flex:1 }}>
-              <div style={{ fontSize:11, color:C.textMuted, marginBottom:8, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('session.weight').replace(' (kg)','')}</div>
+              <div style={{ fontSize:11, color:C.textMuted, marginBottom:6, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('session.weight').replace(' (kg)','')}</div>
               <button onClick={() => setSheet('weight')}
-                style={{ width:'100%', background:C.surface, border:`2px solid ${weight?C.purple:C.border}`, borderRadius:18, padding:'18px 12px', cursor:'pointer', boxShadow:C.shadowCard }}>
-                <div style={{ fontSize:40, fontWeight:800, color:weight?C.purple:C.textDim, fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{weight||'—'}</div>
-                <div style={{ fontSize:13, color:C.textMuted, marginTop:4 }}>{t('session.weight').replace(' (kg)','').toLowerCase()}</div>
+                style={{ width:'100%', background:C.surface, border:`2px solid ${weight?C.purple:C.border}`, borderRadius:18, padding:'14px 12px', cursor:'pointer', boxShadow:C.shadowCard }}>
+                <div style={{ fontSize:36, fontWeight:800, color:weight?C.purple:C.textDim, fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{weight||'—'}</div>
+                <div style={{ fontSize:12, color:C.textMuted, marginTop:3 }}>{t('session.weight').replace(' (kg)','').toLowerCase()}</div>
               </button>
             </div>
 
-            <div style={{ fontSize:28, color:C.border, fontWeight:300, flexShrink:0, marginTop:8 }}>×</div>
+            <div style={{ fontSize:26, color:C.border, fontWeight:300, flexShrink:0, marginTop:6 }}>×</div>
 
             {/* Reps */}
             <div style={{ textAlign:'center', flex:1 }}>
-              <div style={{ fontSize:11, color:C.textMuted, marginBottom:8, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('session.reps')}</div>
+              <div style={{ fontSize:11, color:C.textMuted, marginBottom:6, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em' }}>{t('session.reps')}</div>
               <button onClick={() => setSheet('reps')}
-                style={{ width:'100%', background:C.surface, border:`2px solid ${reps?C.purple:C.border}`, borderRadius:18, padding:'18px 12px', cursor:'pointer', boxShadow:C.shadowCard }}>
-                <div style={{ fontSize:40, fontWeight:800, color:reps?C.purple:C.textDim, fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{reps||'—'}</div>
-                <div style={{ fontSize:13, color:C.textMuted, marginTop:4 }}>{t('session.reps').toLowerCase()}</div>
+                style={{ width:'100%', background:C.surface, border:`2px solid ${reps?C.purple:C.border}`, borderRadius:18, padding:'14px 12px', cursor:'pointer', boxShadow:C.shadowCard }}>
+                <div style={{ fontSize:36, fontWeight:800, color:reps?C.purple:C.textDim, fontVariantNumeric:'tabular-nums', lineHeight:1 }}>{reps||'—'}</div>
+                <div style={{ fontSize:12, color:C.textMuted, marginTop:3 }}>{t('session.reps').toLowerCase()}</div>
               </button>
             </div>
           </div>
         )}
 
-        {/* How to perform */}
+        {/* How to perform — cleaner card */}
         {data.howTo?.length > 0 && (
-          <div style={{ marginBottom:24 }}>
+          <div style={{ marginBottom:16 }}>
             <button onClick={() => setShowHow(h=>!h)}
               style={{ width:'100%', background:C.surface, border:`1px solid ${C.divider}`, borderRadius:14, padding:'12px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:C.shadowCard }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ fontSize:16 }}>📋</span>
+                <span style={{ fontSize:14, color:C.purple }}>▶</span>
                 <span style={{ fontSize:14, fontWeight:600, color:C.text }}>{t('workout.howTo')}</span>
               </div>
               <span style={{ color:C.purple, fontSize:16 }}>{showHow ? '▲' : '▼'}</span>
@@ -1294,14 +1447,23 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
               const tips   = data.tips  || ''
               return (
                 <div style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, padding:'16px', marginTop:8 }}>
-                  <ol style={{ margin:0, padding:'0 0 0 18px', display:'flex', flexDirection:'column', gap:10 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
+                    {t('workout.howTo')}
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom: tips ? 12 : 0 }}>
                     {howTo.map((step,i) => (
-                      <li key={i} style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>{step}</li>
+                      <div key={i} style={{ display:'flex', gap:8, fontSize:13, color:C.text, lineHeight:1.5 }}>
+                        <span style={{ color:C.purple, flexShrink:0 }}>•</span>
+                        <span>{step}</span>
+                      </div>
                     ))}
-                  </ol>
+                  </div>
                   {tips && (
-                    <div style={{ marginTop:12, fontSize:12, color:C.purple, fontStyle:'italic', borderTop:`1px solid ${C.divider}`, paddingTop:10 }}>
-                      💡 {tips}
+                    <div style={{ borderTop:`1px solid ${C.divider}`, paddingTop:10 }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:C.purple, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>
+                        {t('workout.tips') || 'Tips'}
+                      </div>
+                      <div style={{ fontSize:12, color:C.purple, fontStyle:'italic' }}>💡 {tips}</div>
                     </div>
                   )}
                 </div>
@@ -1310,14 +1472,14 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
           </div>
         )}
 
-        <div style={{ height:120 }} />
+        <div style={{ height:80 }} />
       </div>
 
       {/* Bottom action bar — fixed */}
-      <div style={{ padding:'12px 20px 32px', background:C.pageBg||'#F0EFF8', borderTop:`1px solid ${C.divider}`, flexShrink:0 }}>
+      <div style={{ padding:'12px 20px 28px', background:C.pageBg||'#F0EFF8', borderTop:`1px solid ${C.divider}`, flexShrink:0 }}>
         <button onClick={handleDone}
-          style={{ width:'100%', padding:'18px', borderRadius:20, background:`linear-gradient(135deg, ${C.green}, #1aad6b)`, border:'none', color:'#fff', fontSize:18, fontWeight:800, cursor:'pointer', letterSpacing:'0.02em', boxShadow:`0 6px 24px ${C.green}44` }}>
-          {isFinishing ? t('session.finishWorkout') : t('session.doneMark')}
+          style={{ width:'100%', padding:'18px', borderRadius:20, background:`linear-gradient(135deg, ${C.green}, #1aad6b)`, border:'none', color:'#fff', fontSize:17, fontWeight:800, cursor:'pointer', letterSpacing:'0.02em', boxShadow:`0 6px 24px ${C.green}44` }}>
+          {primaryLabel}
         </button>
         {/* Skip */}
         {!isFinishing && (
@@ -1404,6 +1566,9 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   // exercise-specific prescribed restSec always wins over the universal
   // picker value, so different rest lengths line up with the plan exactly.
   const [activeRestSec, setActiveRestSec] = useState(null)
+  // Exercise transition (rest BETWEEN exercises) — distinct from the
+  // between-set RestTimer above; shows what was just finished and what's next.
+  const [exerciseTransition, setExerciseTransition] = useState(null) // { completedName, nextExercise, nextMuscles } | null
 
   const handleSetDone = ({ weight, reps, duration }) => {
     const ex   = exercises[activeEx]
@@ -1420,10 +1585,21 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
       return
     }
 
-    // Show rest timer between sets — the exercise's own prescribed rest
-    // (including 0 for cool-down/no-rest steps) overrides the universal picker.
+    // The exercise's own prescribed rest (including 0 for cool-down/no-rest
+    // steps) overrides the universal picker.
     const thisRestSec = ex.restSec != null ? ex.restSec : restSecs
-    if (thisRestSec > 0) {
+
+    if (isLastSet) {
+      // Moving to a NEW exercise — show the exercise-transition screen
+      // instead of the plain between-set rest timer.
+      const nextEx = exercises[activeEx + 1]
+      setExerciseTransition({
+        completedName: ex.name,
+        nextExercise: nextEx.name,
+        nextMuscles: tMuscles(getExercise(nextEx.name, lang).muscles),
+        duration: thisRestSec > 0 ? thisRestSec : 20,
+      })
+    } else if (thisRestSec > 0) {
       setActiveRestSec(thisRestSec)
       setShowRest(true)
     }
@@ -1547,11 +1723,29 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
   // Render rest timer as fullscreen overlay while exercise view is still mounted
   return (
     <>
-      {showRest && <RestTimer duration={activeRestSec != null ? activeRestSec : restSecs} onDone={() => setShowRest(false)} />}
+      {exerciseTransition && (
+        <ExerciseTransitionScreen
+          completedName={exerciseTransition.completedName}
+          nextExercise={exerciseTransition.nextExercise}
+          nextMuscles={exerciseTransition.nextMuscles}
+          duration={exerciseTransition.duration}
+          onDone={() => setExerciseTransition(null)}
+        />
+      )}
+      {!exerciseTransition && showRest && (
+        <RestTimer
+          duration={activeRestSec != null ? activeRestSec : restSecs}
+          onDone={() => setShowRest(false)}
+          nextSetLabel={`${t('session.set') || 'Set'} ${activeSet + 1} ${t('session.of') || 'of'} ${exercises[activeEx]?.sets.length}`}
+          exerciseName={exercises[activeEx]?.name}
+        />
+      )}
       <FullscreenExercise
         exercise={exercises[activeEx]}
         setIdx={activeSet}
         totalSets={exercises[activeEx].sets.length}
+        exIdx={activeEx}
+        totalExercises={exercises.length}
         elapsed={elapsed}
         paused={paused}
         onTogglePause={togglePause}
