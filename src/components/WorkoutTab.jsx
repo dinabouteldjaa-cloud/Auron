@@ -20,7 +20,11 @@ const C = T
 // ─────────────────────────────────────────────
 const ExerciseIcon = memo(function ExerciseIcon({ name, size = 20, color }) {
   const iconName = getExerciseIconName(name)
-  return <Icon icon={iconName} width={size} height={size} color={color || C.purple} aria-label={name} />
+  // arcticons:plank-workout has more internal padding than the rest of the
+  // set and reads visually smaller at the same box size — scale it up a
+  // little so it matches the others.
+  const renderSize = iconName === 'arcticons:plank-workout' ? Math.round(size * 1.2) : size
+  return <Icon icon={iconName} width={renderSize} height={renderSize} color={color || C.purple} aria-label={name} />
 })
 
 const LUCIDE_WORKOUT_ICONS = { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot, ArrowUp, ArrowDown, Target, Flower2, Move, Shield, ShieldAlert, ShieldCheck, Trophy }
