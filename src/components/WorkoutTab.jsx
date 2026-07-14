@@ -4,7 +4,7 @@ import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
 import { Icon } from '@iconify/react'
-import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconSrc, getWorkoutIconType, getWorkoutCategoryIconSrc, getWorkoutCategoryIconFallbackSrc, getWorkoutPlanIcon } from '../lib/workoutData.js'
+import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconName, getWorkoutIconType, getWorkoutCategoryIconSrc, getWorkoutCategoryIconFallbackSrc, getWorkoutPlanIcon } from '../lib/workoutData.js'
 import { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot, ArrowUp, ArrowDown, Target, Flower2, Move, Shield, ShieldAlert, ShieldCheck, Trophy } from 'lucide-react'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 import { TabAuronCard } from './CoachAuron'
@@ -18,19 +18,10 @@ const C = T
 // error). Same footprint as the emoji it replaces — drop-in swap,
 // no layout changes.
 // ─────────────────────────────────────────────
-function ExerciseIcon({ name, fallback, size = 20 }) {
-  const [failed, setFailed] = useState(false)
-  const src = !failed && getExerciseIconSrc(name)
-  if (!src) return <span style={{ fontSize: size, lineHeight: 1 }}>{fallback}</span>
-  return (
-    <img
-      src={src}
-      alt=""
-      onError={() => setFailed(true)}
-      style={{ width: size, height: size, opacity: 0.85 }}
-    />
-  )
-}
+const ExerciseIcon = memo(function ExerciseIcon({ name, size = 20, color }) {
+  const iconName = getExerciseIconName(name)
+  return <Icon icon={iconName} width={size} height={size} color={color || C.purple} aria-label={name} />
+})
 
 const LUCIDE_WORKOUT_ICONS = { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot, ArrowUp, ArrowDown, Target, Flower2, Move, Shield, ShieldAlert, ShieldCheck, Trophy }
 
@@ -55,9 +46,14 @@ function WorkoutIcon({ workoutId, sportId, size = 24, color, label }) {
 // (static, module-scope mapping — no runtime icon search). Memoized so
 // filtering/search/expanding a section doesn't re-render already-shown icons.
 // ─────────────────────────────────────────────
+// Centralized color for the Iconify-based workout-plan icon system —
+// keep this the single source of truth rather than hardcoding the hex
+// value at each call site.
+const WORKOUT_PLAN_ICON_COLOR = '#735bd2'
+
 const WorkoutPlanIcon = memo(function WorkoutPlanIcon({ workout, size = 24, color, label }) {
   const iconName = getWorkoutPlanIcon(workout)
-  return <Icon icon={iconName} width={size} height={size} color={color || C.purple} aria-label={label} />
+  return <Icon icon={iconName} width={size} height={size} color={color || WORKOUT_PLAN_ICON_COLOR} aria-label={label} />
 })
 
 // ─────────────────────────────────────────────
@@ -185,7 +181,7 @@ function ExerciseHowTo({ name }) {
     <div style={{ marginTop:8, paddingLeft:0 }}>
       <button onClick={() => setOpen(o => !o)}
         style={{ background:'none', border:'none', color:C.purple, fontSize:12, fontWeight:600, cursor:'pointer', padding:0, display:'flex', alignItems:'center', gap:4 }}>
-        {open ? t('workout.hideHowTo') : t('workout.howTo')}
+        {open ? t('workout.hideHowTo') : `▶ ${t('workout.howTo')}`}
       </button>
       {open && (
         <div style={{ marginTop:8, padding:'12px 14px', background:C.purpleLight, borderRadius:12 }}>
@@ -296,6 +292,20 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
               ].filter(s => s.items.length > 0)
             : [{ key:'all', label:`${t('workout.exercises')} (${exercises.length})`, items:exercises }]
 
+          // Warm-up/cooldown items shouldn't be counted as if they were
+          // normal exercises — show "N exercises + warm-up + cooldown"
+          // when sections exist, otherwise fall back to a plain activity count.
+          const countLabel = (() => {
+            if (!hasSections) return null
+            const mainCount = exercises.filter(ex => ex.section === 'main' || !ex.section).length
+            const hasWarmup   = exercises.some(ex => ex.section === 'warmup')
+            const hasCooldown = exercises.some(ex => ex.section === 'cooldown')
+            const parts = [`${mainCount} ${mainCount === 1 ? (t('workout.exercise')||'exercise') : t('workout.exercises')}`]
+            if (hasWarmup)   parts.push(t('workout.warmupSection') || 'warm-up')
+            if (hasCooldown) parts.push(t('workout.cooldownSection') || 'cooldown')
+            return parts.join(' + ')
+          })()
+
           const renderExercise = (ex, i, arr) => {
             const isTimed = !!ex.timed
             const repDisplay = ex.repRange || ex.reps
@@ -311,7 +321,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
             return (
               <div key={i} style={{ padding:'14px 16px', borderBottom: i < arr.length-1 ? `1px solid ${C.divider}` : 'none' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                  <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}><ExerciseIcon name={ex.name} fallback={ex.icon} size={20} /></div>
+                  <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}><ExerciseIcon name={ex.name} size={20} /></div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
                     <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)} · {prescription}{restLabel ? ` · ${restLabel}` : ''}</div>
@@ -325,14 +335,21 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
             )
           }
 
-          return sections.map(section => (
-            <div key={section.key} style={{ marginBottom:20 }}>
-              <Label>{section.label}</Label>
-              <Card style={{ padding:0, overflow:'hidden' }}>
-                {section.items.map((ex, i) => renderExercise(ex, i, section.items))}
-              </Card>
-            </div>
-          ))
+          return (
+            <>
+              {countLabel && (
+                <div style={{ fontSize:12, color:C.textMuted, marginBottom:14 }}>{countLabel}</div>
+              )}
+              {sections.map(section => (
+                <div key={section.key} style={{ marginBottom:20 }}>
+                  <Label>{section.label}</Label>
+                  <Card style={{ padding:0, overflow:'hidden' }}>
+                    {section.items.map((ex, i) => renderExercise(ex, i, section.items))}
+                  </Card>
+                </div>
+              ))}
+            </>
+          )
         })()}
 
         <button onClick={() => onUseAsTemplate({ ...workout, startNow:true })}
@@ -616,7 +633,7 @@ function ExercisePickerModal({ onAdd, onClose }) {
           {filtered.map((ex, i) => (
             <button key={i} onClick={() => { onAdd(ex); onClose() }}
               style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 0', background:'none', border:'none', borderBottom:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left' }}>
-              <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}><ExerciseIcon name={ex.name} fallback={ex.icon} size={20} /></div>
+              <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}><ExerciseIcon name={ex.name} size={20} /></div>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:14, fontWeight:500, color:C.text }}>{ex.name}</div>
                 <div style={{ fontSize:11, color:C.textMuted }}>{ex.category} · {tMuscles(ex.muscles)}</div>
@@ -705,7 +722,7 @@ function PlanEditor({ plan, onSave, onCancel }) {
       {exercises.map((ex, i) => (
         <div key={i} style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, padding:'12px 14px', marginBottom:8 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
-            <span style={{ fontSize:20 }}><ExerciseIcon name={ex.name} fallback={ex.icon} size={20} /></span>
+            <span style={{ fontSize:20 }}><ExerciseIcon name={ex.name} size={20} /></span>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
               <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)}</div>
@@ -1089,7 +1106,7 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration, onRestStart }) {
         {/* Header */}
         <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px 10px', borderBottom:`1px solid ${C.divider}` }}>
           <div style={{ width:42, height:42, borderRadius:12, background:allDone?`${C.green}18`:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
-            <ExerciseIcon name={ex.name} fallback={data.icon || '💪'} size={20} />
+            <ExerciseIcon name={ex.name} size={20} />
           </div>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{ex.name}</div>
@@ -1203,7 +1220,7 @@ function FullscreenExercise({ exercise, setIdx, totalSets, elapsed, paused, onTo
       <div style={{ flex:1, overflowY:'auto', padding:'0 24px' }}>
         {/* Exercise name + icon */}
         <div style={{ textAlign:'center', marginBottom:24 }}>
-          <div style={{ fontSize:56, marginBottom:12 }}><ExerciseIcon name={exercise.name} fallback={data.icon||'💪'} size={56} /></div>
+          <div style={{ fontSize:56, marginBottom:12 }}><ExerciseIcon name={exercise.name} size={56} /></div>
           <div style={{ fontSize:26, fontWeight:800, color:C.text, lineHeight:1.2, marginBottom:6 }}>{exercise.name}</div>
           <div style={{ fontSize:13, color:C.textMuted }}>{tMuscles(data.muscles)}</div>
           <div style={{ fontSize:13, color:C.purple, fontWeight:600, marginTop:4 }}>
@@ -1473,7 +1490,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
           const data = getExercise(ex.name, lang)
           return (
             <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 14px', background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, marginBottom:8 }}>
-              <span style={{ fontSize:20 }}><ExerciseIcon name={ex.name} fallback={data.icon||'💪'} size={20} /></span>
+              <span style={{ fontSize:20 }}><ExerciseIcon name={ex.name} size={20} /></span>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
                 <div style={{ fontSize:11, color:C.textMuted }}>{ex.sets.length} {t('plan.sets').toLowerCase()} · {tMuscles(data.muscles)}</div>
