@@ -370,6 +370,7 @@ function rx(name, sets, reps, extra) {
 
 export const LIBRARY_WORKOUTS = [
   // ── GYM (WEIGHT TRAINING) ─────────────────
+  // ── Beginner ──
   { id:'full_body', sport:'gym', name:'Beginner Full Body', icon:'🏋️', level:'Beginner', duration:'45 min', muscles:'All muscle groups',
     description:'Learn fundamental movement patterns and build a balanced strength foundation across the whole body.',
     suggestedRestSec:75,
@@ -394,6 +395,75 @@ export const LIBRARY_WORKOUTS = [
       rx('Slow Diaphragmatic Breathing', 1, 30, { section:'cooldown', restSec:0, note:'5 controlled breaths.' }),
     ] },
 
+  { id:'upper_body', sport:'gym', name:'Upper Body Foundation', icon:'🏋️', level:'Beginner', duration:'45–50 min', muscles:'Chest · Back · Shoulders · Arms',
+    description:'Build balanced upper-body pushing and pulling strength.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Easy Bike or Row', 1, 180, { section:'warmup', restSec:0 }),
+      rx('Arm Circles', 1, 10, { section:'warmup', restSec:0, note:'10 each direction.' }),
+      rx('Band Pull-Aparts', 2, 12, { section:'warmup', restSec:30 }),
+      rx('Wall Push-Up', 1, 10, { section:'warmup', restSec:30 }),
+      rx('Light Cable Row', 1, 12, { section:'warmup', restSec:45, note:'Rest 45s before starting the main workout.' }),
+
+      rx('Dumbbell Bench Press', 3, 10, { section:'main', restSec:90 }),
+      rx('Lat Pulldown or Assisted Pull-Up', 3, 10, { section:'main', restSec:90 }),
+      rx('Seated Dumbbell Shoulder Press', 3, 10, { section:'main', restSec:75 }),
+      rx('Seated Cable Row', 3, 12, { section:'main', restSec:75 }),
+      rx('Dumbbell Lateral Raise', 2, 13, { section:'main', restSec:45, repRange:'12–15' }),
+      rx('Triceps Rope Pushdown', 2, 12, { section:'main', restSec:60 }),
+      rx('Dumbbell Curl', 2, 12, { section:'main', restSec:60, note:'Choose manageable resistance — focus on learning the movement patterns rather than reaching muscular failure.' }),
+
+      rx('Easy Walk', 1, 60, { section:'cooldown', restSec:0 }),
+      rx('Doorway Chest Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Lat Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Cross-Body Shoulder Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Slow Breathing', 1, 30, { section:'cooldown', restSec:0, note:'5 controlled breaths.' }),
+    ] },
+
+  { id:'lower_body_foundation', sport:'gym', name:'Lower Body Foundation', icon:'🦵', level:'Beginner', duration:'45–50 min', muscles:'Quads · Hamstrings · Glutes · Calves',
+    description:'Teach the basic lower-body movement patterns — squat, hinge and lunge — while building confidence and technique.',
+    suggestedRestSec:75,
+    exercises:[
+      rx('Easy Bike', 1, 180, { section:'warmup', restSec:0 }),
+      rx('Bodyweight Squat', 2, 10, { section:'warmup', restSec:30 }),
+      rx('Glute Bridge', 2, 10, { section:'warmup', restSec:30 }),
+      rx('Hip Hinge Drill', 1, 10, { section:'warmup', restSec:30, note:'Rest 30s before starting the main workout.' }),
+
+      rx('Goblet Squat', 3, 10, { section:'main', restSec:75, repRange:'8–12', note:'Sit back and down, chest up — this is the pattern every lower-body lift builds on.' }),
+      rx('Dumbbell Romanian Deadlift', 3, 10, { section:'main', restSec:75, repRange:'8–12', note:'Hinge at the hips, weights stay close to the legs — feel the stretch in the hamstrings, not the lower back.' }),
+      rx('Reverse Lunge', 2, 10, { section:'main', restSec:60, repRange:'8–12', unilateral:true, unilateralLabel:'each leg', note:'Front knee stays over the ankle. Rest 60s after both legs.' }),
+      rx('Seated or Lying Leg Curl', 3, 12, { section:'main', restSec:60, repRange:'8–12' }),
+      rx('Standing Calf Raise', 3, 12, { section:'main', restSec:60, repRange:'8–12', note:'Full range of motion — pause briefly at the top of each rep.' }),
+
+      rx('Standing Quadriceps Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Hamstring Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Hip Flexor Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Calf Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+    ] },
+
+  { id:'core_blast', sport:'gym', name:'Core Stability', icon:'🧘', level:'Beginner', duration:'25–30 min', muscles:'Core · Abs · Obliques',
+    description:'Improve trunk control, anti-extension, anti-rotation and lateral stability.',
+    suggestedRestSec:45,
+    exercises:[
+      rx('Cat-Cow', 1, 8, { section:'warmup', restSec:0, note:'8 controlled reps.' }),
+      rx('Pelvic Tilt', 1, 10, { section:'warmup', restSec:0 }),
+      rx('Glute Bridge', 2, 10, { section:'warmup', restSec:30 }),
+      rx('Bird Dog Practice', 1, 6, { section:'warmup', restSec:30, unilateral:true, unilateralLabel:'each side' }),
+
+      rx('Dead Bug', 3, 8, { section:'main', restSec:45, unilateral:true, unilateralLabel:'each side' }),
+      rx('Front Plank', 3, 35, { section:'main', restSec:45, repRange:'30–40s' }),
+      rx('Bird Dog', 3, 8, { section:'main', restSec:45, unilateral:true, unilateralLabel:'each side' }),
+      rx('Side Plank from Knees or Feet', 2, 25, { section:'main', restSec:45, repRange:'20–30s', unilateral:true, unilateralLabel:'each side', note:'Rest 45s after both sides.' }),
+      rx('Pallof Press', 3, 10, { section:'main', restSec:60, unilateral:true, unilateralLabel:'each side', note:'Rest 60s after both sides.' }),
+      rx('Suitcase Carry', 3, 30, { section:'main', restSec:60, unilateral:true, unilateralLabel:'each side', note:'Rest 60s after both sides. Prioritise breathing, control and trunk position — stop a set once good alignment can no longer be held.' }),
+
+      rx('Child\'s Pose', 1, 45, { section:'cooldown', restSec:0 }),
+      rx('Supine Knee-to-Chest Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Gentle Supine Trunk Rotation', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Diaphragmatic Breathing', 1, 30, { section:'cooldown', restSec:0, note:'6 slow breaths.' }),
+    ] },
+
+  // ── Intermediate ──
   { id:'push_day', sport:'gym', name:'Push Day', icon:'💪', level:'Intermediate', duration:'55–65 min', muscles:'Chest · Shoulders · Triceps',
     description:'Develop chest, shoulder and triceps strength and muscular development.',
     suggestedRestSec:90,
@@ -468,51 +538,52 @@ export const LIBRARY_WORKOUTS = [
       rx('Calf Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
     ] },
 
-  { id:'upper_body', sport:'gym', name:'Upper Body Foundation', icon:'🏋️', level:'Beginner', duration:'45–50 min', muscles:'Chest · Back · Shoulders · Arms',
-    description:'Build balanced upper-body pushing and pulling strength.',
-    suggestedRestSec:75,
+  // ── Advanced ──
+  { id:'adv_full_body_strength', sport:'gym', name:'Advanced Full Body Strength', icon:'🏋️', level:'Advanced', duration:'65–75 min', muscles:'Full Body · Max Strength',
+    description:'Develop maximal strength using the big compound lifts. A demanding session — recover well before repeating it.',
+    suggestedRestSec:150,
     exercises:[
-      rx('Easy Bike or Row', 1, 180, { section:'warmup', restSec:0 }),
-      rx('Arm Circles', 1, 10, { section:'warmup', restSec:0, note:'10 each direction.' }),
-      rx('Band Pull-Aparts', 2, 12, { section:'warmup', restSec:30 }),
-      rx('Wall Push-Up', 1, 10, { section:'warmup', restSec:30 }),
-      rx('Light Cable Row', 1, 12, { section:'warmup', restSec:45, note:'Rest 45s before starting the main workout.' }),
+      rx('Easy Rowing or Bike', 1, 180, { section:'warmup', restSec:0 }),
+      rx('Bodyweight Squat', 2, 10, { section:'warmup', restSec:30 }),
+      rx('Hip Hinge Drill', 1, 10, { section:'warmup', restSec:30 }),
+      rx('Arm Circles', 1, 10, { section:'warmup', restSec:30, note:'10 forward + 10 backward. Rest 30s before starting the main workout.' }),
 
-      rx('Dumbbell Bench Press', 3, 10, { section:'main', restSec:90 }),
-      rx('Lat Pulldown or Assisted Pull-Up', 3, 10, { section:'main', restSec:90 }),
-      rx('Seated Dumbbell Shoulder Press', 3, 10, { section:'main', restSec:75 }),
-      rx('Seated Cable Row', 3, 12, { section:'main', restSec:75 }),
-      rx('Dumbbell Lateral Raise', 2, 13, { section:'main', restSec:45, repRange:'12–15' }),
-      rx('Triceps Rope Pushdown', 2, 12, { section:'main', restSec:60 }),
-      rx('Dumbbell Curl', 2, 12, { section:'main', restSec:60, note:'Choose manageable resistance — focus on learning the movement patterns rather than reaching muscular failure.' }),
+      rx('Back Squat', 4, 5, { section:'main', restSec:180, repRange:'3–5' }),
+      rx('Bench Press', 4, 5, { section:'main', restSec:180, repRange:'3–5' }),
+      rx('Deadlift', 3, 3, { section:'main', restSec:180, repRange:'3', note:'Legs are already loaded from squatting — this is a lighter top set, not a max effort pull. Keep it crisp.' }),
+      rx('Pull Ups', 3, 6, { section:'main', restSec:120, repRange:'5–6' }),
+      rx('Overhead Press', 3, 6, { section:'main', restSec:120, repRange:'5–6' }),
+      rx('Farmer\'s Carry', 3, 40, { section:'main', restSec:90, note:'By distance or time — tall posture, don\'t let the shoulders round.' }),
+
+      rx('Slow Walk', 1, 120, { section:'cooldown', restSec:0 }),
+      rx('Standing Quadriceps Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Hamstring Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Doorway Chest Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Lat Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+    ] },
+
+  { id:'adv_upper_body_strength', sport:'gym', name:'Advanced Upper Body Strength', icon:'💪', level:'Advanced', duration:'60–70 min', muscles:'Chest · Back · Shoulders · Arms',
+    description:'A demanding upper-body strength session for experienced lifters — heavy compounds first, targeted accessory work to finish.',
+    suggestedRestSec:120,
+    exercises:[
+      rx('Easy Rowing Machine', 1, 180, { section:'warmup', restSec:0 }),
+      rx('Band Pull-Aparts', 2, 15, { section:'warmup', restSec:30 }),
+      rx('Scapular Push-Ups', 2, 8, { section:'warmup', restSec:30 }),
+      rx('Band Straight-Arm Pulldown', 2, 12, { section:'warmup', restSec:30, note:'Rest 30s before starting the main workout.' }),
+
+      rx('Bench Press', 4, 6, { section:'main', restSec:150, repRange:'4–6' }),
+      rx('Pull Ups', 4, 6, { section:'main', restSec:150, repRange:'4–6' }),
+      rx('Overhead Press', 3, 6, { section:'main', restSec:120, repRange:'4–6' }),
+      rx('Bent Over Row', 3, 8, { section:'main', restSec:90, repRange:'6–8' }),
+      rx('Incline Dumbbell Press', 3, 10, { section:'main', restSec:90, repRange:'8–10' }),
+      rx('Dips', 3, 10, { section:'main', restSec:75, repRange:'8–10' }),
+      rx('Face Pull', 3, 15, { section:'main', restSec:60, repRange:'12–15', note:'Keep accessory work controlled — this is about quality volume, not grinding to failure.' }),
 
       rx('Easy Walk', 1, 60, { section:'cooldown', restSec:0 }),
       rx('Doorway Chest Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
-      rx('Lat Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
       rx('Cross-Body Shoulder Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
-      rx('Slow Breathing', 1, 30, { section:'cooldown', restSec:0, note:'5 controlled breaths.' }),
-    ] },
-
-  { id:'core_blast', sport:'gym', name:'Core Stability', icon:'🧘', level:'Beginner', duration:'25–30 min', muscles:'Core · Abs · Obliques',
-    description:'Improve trunk control, anti-extension, anti-rotation and lateral stability.',
-    suggestedRestSec:45,
-    exercises:[
-      rx('Cat-Cow', 1, 8, { section:'warmup', restSec:0, note:'8 controlled reps.' }),
-      rx('Pelvic Tilt', 1, 10, { section:'warmup', restSec:0 }),
-      rx('Glute Bridge', 2, 10, { section:'warmup', restSec:30 }),
-      rx('Bird Dog Practice', 1, 6, { section:'warmup', restSec:30, unilateral:true, unilateralLabel:'each side' }),
-
-      rx('Dead Bug', 3, 8, { section:'main', restSec:45, unilateral:true, unilateralLabel:'each side' }),
-      rx('Front Plank', 3, 35, { section:'main', restSec:45, repRange:'30–40s' }),
-      rx('Bird Dog', 3, 8, { section:'main', restSec:45, unilateral:true, unilateralLabel:'each side' }),
-      rx('Side Plank from Knees or Feet', 2, 25, { section:'main', restSec:45, repRange:'20–30s', unilateral:true, unilateralLabel:'each side', note:'Rest 45s after both sides.' }),
-      rx('Pallof Press', 3, 10, { section:'main', restSec:60, unilateral:true, unilateralLabel:'each side', note:'Rest 60s after both sides.' }),
-      rx('Suitcase Carry', 3, 30, { section:'main', restSec:60, unilateral:true, unilateralLabel:'each side', note:'Rest 60s after both sides. Prioritise breathing, control and trunk position — stop a set once good alignment can no longer be held.' }),
-
-      rx('Child\'s Pose', 1, 45, { section:'cooldown', restSec:0 }),
-      rx('Supine Knee-to-Chest Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
-      rx('Gentle Supine Trunk Rotation', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
-      rx('Diaphragmatic Breathing', 1, 30, { section:'cooldown', restSec:0, note:'6 slow breaths.' }),
+      rx('Overhead Triceps Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
+      rx('Lat Stretch', 1, 30, { section:'cooldown', restSec:0, unilateral:true, unilateralLabel:'each side' }),
     ] },
 
   // ── CROSSFIT ──────────────────────────────
@@ -1422,12 +1493,15 @@ export function getWorkoutIconType({ workoutId, sportId } = {}) {
 // ─────────────────────────────────────────────────────────────
 export const WORKOUT_PLAN_ICON_BY_ID = {
   // Weight Training
-  push_day: 'tabler:arrow-big-up-lines',
-  pull_day: 'tabler:arrow-big-down-lines',
-  leg_day: 'tabler:shoe',
-  full_body: 'tabler:barbell',
-  upper_body: 'tabler:body-scan',
-  core_blast: 'tabler:target-arrow',
+  push_day: 'mdi:human-barbell',
+  pull_day: 'hugeicons:equipment-gym-02',
+  leg_day: 'game-icons:leg',
+  full_body: 'ion:body',
+  upper_body: 'mdi:arm-flex',
+  core_blast: 'hugeicons:body-part-six-pack',
+  lower_body_foundation: 'game-icons:leg',
+  adv_full_body_strength: 'mdi:weight-lifter',
+  adv_upper_body_strength: 'mdi:arm-flex',
   // CrossFit / HIIT
   wod_classic: 'tabler:bolt', wod_beginner: 'tabler:bolt',
   hiit_20: 'tabler:bolt', hiit_tabata: 'tabler:bolt', hiit_beginner: 'tabler:bolt',
