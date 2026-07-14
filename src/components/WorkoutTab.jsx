@@ -4,7 +4,7 @@ import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
 import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconSrc, getWorkoutIconType, getWorkoutCategoryIconSrc, getWorkoutCategoryIconFallbackSrc } from '../lib/workoutData.js'
-import { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot } from 'lucide-react'
+import { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot, ArrowUp, ArrowDown, Target, Flower2, Move, Shield, ShieldAlert, ShieldCheck, Trophy } from 'lucide-react'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 import { TabAuronCard } from './CoachAuron'
 
@@ -31,7 +31,7 @@ function ExerciseIcon({ name, fallback, size = 20 }) {
   )
 }
 
-const LUCIDE_WORKOUT_ICONS = { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot }
+const LUCIDE_WORKOUT_ICONS = { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot, ArrowUp, ArrowDown, Target, Flower2, Move, Shield, ShieldAlert, ShieldCheck, Trophy }
 
 // ─────────────────────────────────────────────
 // WorkoutIcon — renders a Lucide icon for a sport/workout card, resolved
