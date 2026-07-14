@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import { supabase } from '../lib/supabase'
 import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
-import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconSrc, getWorkoutIconType, getWorkoutCategoryIconSrc } from '../lib/workoutData.js'
+import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconSrc, getWorkoutIconType, getWorkoutCategoryIconSrc, getWorkoutCategoryIconFallbackSrc } from '../lib/workoutData.js'
 import { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot } from 'lucide-react'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 import { TabAuronCard } from './CoachAuron'
@@ -53,19 +53,41 @@ function WorkoutIcon({ workoutId, sportId, size = 24, color, label }) {
 // category has no custom icon (or the image fails to load), falls back
 // to the existing Lucide WorkoutIcon so rendering never breaks.
 // ─────────────────────────────────────────────
-function WorkoutCategoryIcon({ category, size = 28, label }) {
-  const [failed, setFailed] = useState(false)
-  const src = !failed && getWorkoutCategoryIconSrc(category)
-  if (!src) return <WorkoutIcon sportId={category} size={size} label={label} />
+// ─────────────────────────────────────────────
+// WorkoutCategoryIcon — primary icon system for category-level displays
+// (Library grid cards, category detail headers). Uses the optimized
+// small WebP pack in /public/workout-icons/optimized/ first (falls back
+// to the original PNG, then to the Lucide WorkoutIcon if both fail).
+// Stable static paths (no cache-busting) so the browser/CDN can cache
+// them normally. Memoized so filtering/search/expanding a group doesn't
+// remount already-loaded icons.
+// `eager`: pass true only for the icons visible on initial load (first
+// group's first few cards) so they don't appear late; everything else
+// lazy-loads as the user scrolls.
+// ─────────────────────────────────────────────
+const WorkoutCategoryIcon = memo(function WorkoutCategoryIcon({ category, size = 28, label, eager = false }) {
+  const [stage, setStage] = useState('webp') // 'webp' -> 'png' -> 'failed'
+  const primarySrc  = getWorkoutCategoryIconSrc(category)
+  const fallbackSrc = getWorkoutCategoryIconFallbackSrc(category)
+  const src = stage === 'webp' ? primarySrc : stage === 'png' ? fallbackSrc : null
+
+  // No mapping at all, or both the WebP and PNG failed to load — use Lucide.
+  if (!src || stage === 'failed') return <WorkoutIcon sportId={category} size={size} label={label} />
+
   return (
     <img
+      key={src}
       src={src}
       alt={label || ''}
-      onError={() => setFailed(true)}
+      width={size}
+      height={size}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      onError={() => setStage(s => s === 'webp' ? 'png' : 'failed')}
       style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
     />
   )
-}
+})
 
 // ─────────────────────────────────────────────
 // ─────────────────────────────────────────────
@@ -192,6 +214,32 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
     onScreenChange?.(workout ? 'detail' : sport ? 'category' : 'root')
   }, [sport, workout])
 
+  // First-visible sport ids (first non-empty group's first preview batch) —
+  // these render eagerly and get a <link rel="preload"> each. Everything
+  // else in the grid lazy-loads as the user scrolls, instead of preloading
+  // the whole 30-icon pack up front.
+  const firstVisibleSportIds = (() => {
+    for (const group of LIBRARY_GROUPS) {
+      const available = group.sportIds.filter(id => LIBRARY_WORKOUTS.some(w => w.sport === id))
+      if (available.length > 0) return available.slice(0, GROUP_PREVIEW_COUNT)
+    }
+    return []
+  })()
+
+  useEffect(() => {
+    const links = firstVisibleSportIds.map(id => {
+      const href = getWorkoutCategoryIconSrc(id)
+      if (!href) return null
+      const link = document.createElement('link')
+      link.rel = 'preload'
+      link.as = 'image'
+      link.href = href
+      document.head.appendChild(link)
+      return link
+    }).filter(Boolean)
+    return () => links.forEach(l => l.remove())
+  }, []) // once, on mount
+
   const tFilterLabel = f => ({ All: t('workout.level.all'), Beginner: t('workout.level.beginner'), Intermediate: t('workout.level.intermediate'), Advanced: t('workout.level.advanced') })[f] || f
 
   // ── Workout detail ────────────────────────
@@ -304,7 +352,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
         <BackBtn onBack={() => setSport(null)} label={t('workout.backToLibrary') || 'Back to Library'} />
         <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:6 }}>
           <div style={{ width:44, height:44, borderRadius:14, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <WorkoutCategoryIcon category={sport} size={26} label={tSport(sport)} />
+            <WorkoutCategoryIcon category={sport} size={26} label={tSport(sport)} eager />
           </div>
           <div style={{ fontSize:22, fontWeight:700, color:C.text }}>{tSport(sport)}</div>
         </div>
@@ -480,7 +528,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
                         style={{ padding:'14px 12px', borderRadius:16, background:C.surface, border:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left', boxShadow:C.shadowCard, display:'flex', flexDirection:'column', gap:5, position:'relative' }}>
                         {/* Reserved slot for a future favorite/star toggle — intentionally empty for now */}
                         <div style={{ position:'absolute', top:10, right:10, width:16, height:16 }} />
-                        <WorkoutCategoryIcon category={s.id} size={28} label={tSport(s.id)} />
+                        <WorkoutCategoryIcon category={s.id} size={28} label={tSport(s.id)} eager={firstVisibleSportIds.includes(s.id)} />
                         <div style={{ fontSize:13, fontWeight:700, color:C.text, lineHeight:1.2 }}>{tSport(s.id)}</div>
                         <div style={{ fontSize:10, color:C.purple }}>
                           {count} {count===1?t('workout.workout1','workout'):t('workout.workouts','workouts')}
