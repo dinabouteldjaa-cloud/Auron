@@ -4,7 +4,7 @@ import { T } from '../lib/theme'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useTranslation } from '../lib/i18n.jsx'
 import { Icon } from '@iconify/react'
-import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconName, getWorkoutIconType, getWorkoutCategoryIconSrc, getWorkoutCategoryIconFallbackSrc, getWorkoutPlanIcon } from '../lib/workoutData.js'
+import { EXERCISES, LIBRARY_WORKOUTS, SPORTS, SPORTS_CATEGORIES, LIBRARY_GROUPS, LEVEL_COLOR, getExercise, getExerciseIconName, getWorkoutIconType, getWorkoutCategoryIconSrc, getWorkoutCategoryIconFallbackSrc, getWorkoutPlanIcon, getLocalizedExerciseName, getLocalizedWorkoutDescription, getLocalizedExerciseNote, getLocalizedText } from '../lib/workoutData.js'
 import { Dumbbell, Zap, Footprints, Bike, Waves, HeartPulse, Activity, CircleDot, ArrowUp, ArrowDown, Target, Flower2, Move, Shield, ShieldAlert, ShieldCheck, Trophy } from 'lucide-react'
 import AuronWorkoutBuilder from './AuronWorkoutBuilder.jsx'
 import { TabAuronCard } from './CoachAuron'
@@ -290,7 +290,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
         <div style={{ background:`linear-gradient(135deg, ${sport_obj.color||C.purple}, ${sport_obj.color||C.purple}BB)`, borderRadius:20, padding:'22px 20px', marginBottom:20, color:'#fff' }}>
           <div style={{ fontSize:32, marginBottom:8 }}><WorkoutPlanIcon workout={workout} size={32} color="#fff" label={tWorkout(workout.id)} /></div>
           <div style={{ fontSize:22, fontWeight:700 }}>{tWorkout(workout.id)}</div>
-          <div style={{ fontSize:13, opacity:0.85, marginTop:4 }}>{workout.description}</div>
+          <div style={{ fontSize:13, opacity:0.85, marginTop:4 }}>{getLocalizedWorkoutDescription(workout, lang)}</div>
           <div style={{ display:'flex', gap:16, marginTop:14, flexWrap:'wrap' }}>
             {[[t('workout.duration2'), workout.duration], [t('workout.level'), tLevel(workout.level)], [t('workout.muscles'), tMuscles(workout.muscles)]].map(([l,v]) => (
               <div key={l}><div style={{ fontSize:13, fontWeight:700 }}>{v}</div><div style={{ fontSize:10, opacity:0.7 }}>{l}</div></div>
@@ -350,7 +350,7 @@ function LibraryTab({ onUseAsTemplate, recentWorkouts = [], onScreenChange }) {
                     <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
                     <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)} · {prescription}{restLabel ? ` · ${restLabel}` : ''}</div>
                     {ex.note && (
-                      <div style={{ fontSize:11, color:C.purple, marginTop:3, lineHeight:1.4 }}>💡 {ex.note}</div>
+                      <div style={{ fontSize:11, color:C.purple, marginTop:3, lineHeight:1.4 }}>💡 {getLocalizedExerciseNote(ex.note, lang)}</div>
                     )}
                   </div>
                 </div>
@@ -633,39 +633,47 @@ function ExercisePickerModal({ onAdd, onClose }) {
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(26,26,46,0.6)', zIndex:300, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background:C.surface, borderRadius:'22px 22px 0 0', width:'100%', maxWidth:480, maxHeight:'80vh', display:'flex', flexDirection:'column' }}>
-        <div style={{ padding:'16px 20px 12px' }}>
-          <div style={{ width:36, height:4, borderRadius:2, background:C.divider, margin:'0 auto 16px' }} />
-          <div style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:12 }}>{t('session.addExercise')}</div>
-          <div style={{ position:'relative', marginBottom:10 }}>
-            <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)' }}>🔍</span>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('workout.searchExPlaceholder')} autoFocus
-              style={{ width:'100%', padding:'10px 14px 10px 36px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none' }} />
+    <div style={{ position:'fixed', inset:0, background:C.pageBg||'#F7F6FB', zIndex:300, display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto', overflowY:'auto' }}>
+      {/* Fixed header */}
+      <div style={{ padding:'20px 20px 12px', flexShrink:0 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <div style={{ fontSize:18, fontWeight:700, color:C.text }}>{t('session.addExercise')}</div>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:C.textMuted, fontSize:22, cursor:'pointer' }}>×</button>
+        </div>
+        <div style={{ position:'relative', marginBottom:10 }}>
+          <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)' }}>🔍</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('workout.searchExPlaceholder')} autoFocus
+            style={{ width:'100%', padding:'10px 14px 10px 36px', borderRadius:12, background:C.surfaceMid, border:`1px solid ${C.border}`, color:C.text, fontSize:14, outline:'none', boxSizing:'border-box' }} />
+        </div>
+        {!search && (
+          <div style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:4 }}>
+            {categories.map(cat => (
+              <button key={cat} onClick={() => setCategory(cat)} style={{ padding:'6px 12px', borderRadius:20, fontSize:11, cursor:'pointer', whiteSpace:'nowrap', border:`1px solid ${category===cat?C.purple:C.border}`, background:category===cat?C.purpleLight:'transparent', color:category===cat?C.purple:C.textMuted, fontWeight:category===cat?600:400, flexShrink:0 }}>
+                {tCat(cat)}
+              </button>
+            ))}
           </div>
-          {!search && (
-            <div style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:4 }}>
-              {categories.map(cat => (
-                <button key={cat} onClick={() => setCategory(cat)} style={{ padding:'6px 12px', borderRadius:20, fontSize:11, cursor:'pointer', whiteSpace:'nowrap', border:`1px solid ${category===cat?C.purple:C.border}`, background:category===cat?C.purpleLight:'transparent', color:category===cat?C.purple:C.textMuted, fontWeight:category===cat?600:400 }}>
-                  {tCat(cat)}
-                </button>
-              ))}
+        )}
+      </div>
+
+      {/* Scrollable exercise list */}
+      <div style={{ overflowY:'auto', flex:1, padding:'0 20px 24px' }}>
+        {filtered.map((ex, i) => (
+          <button key={i} onClick={() => { onAdd(ex); onClose() }}
+            style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 0', background:'none', border:'none', borderBottom:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left' }}>
+            <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}><ExerciseIcon name={ex.name} size={20} /></div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:14, fontWeight:500, color:C.text }}>{getLocalizedExerciseName(ex.name, lang)}</div>
+              <div style={{ fontSize:11, color:C.textMuted }}>{tCat(ex.category)} · {tMuscles(ex.muscles)}</div>
             </div>
-          )}
-        </div>
-        <div style={{ overflowY:'auto', flex:1, padding:'0 20px 24px' }}>
-          {filtered.map((ex, i) => (
-            <button key={i} onClick={() => { onAdd(ex); onClose() }}
-              style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 0', background:'none', border:'none', borderBottom:`1px solid ${C.divider}`, cursor:'pointer', textAlign:'left' }}>
-              <div style={{ width:40, height:40, borderRadius:12, background:C.purpleLight, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}><ExerciseIcon name={ex.name} size={20} /></div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:14, fontWeight:500, color:C.text }}>{ex.name}</div>
-                <div style={{ fontSize:11, color:C.textMuted }}>{ex.category} · {tMuscles(ex.muscles)}</div>
-              </div>
-              <span style={{ fontSize:20, color:C.purple }}>+</span>
-            </button>
-          ))}
-        </div>
+            <span style={{ fontSize:20, color:C.purple }}>+</span>
+          </button>
+        ))}
+        {filtered.length === 0 && (
+          <div style={{ textAlign:'center', padding:'40px 0', color:C.textMuted, fontSize:13 }}>
+            {t('workout.noExercisesFound') || t('cal.noResults')}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -686,7 +694,7 @@ const DAY_DEFS = [
 ]
 
 function PlanEditor({ plan, onSave, onCancel }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const [name,       setName]       = useState(plan?.name || '')
   const [exercises,  setExercises]  = useState(
     (plan?.exercises || []).map(ex => ({
@@ -748,7 +756,7 @@ function PlanEditor({ plan, onSave, onCancel }) {
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
             <span style={{ fontSize:20 }}><ExerciseIcon name={ex.name} size={20} /></span>
             <div style={{ flex:1 }}>
-              <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
+              <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{getLocalizedExerciseName(ex.name, lang)}</div>
               <div style={{ fontSize:11, color:C.textMuted }}>{tMuscles(ex.muscles)}</div>
             </div>
             <div style={{ display:'flex', gap:4 }}>
@@ -1187,7 +1195,7 @@ function SessionExCard({ ex, onUpdate, onRemove, restDuration, onRestStart }) {
             <ExerciseIcon name={ex.name} size={20} />
           </div>
           <div style={{ flex:1 }}>
-            <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{ex.name}</div>
+            <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{getLocalizedExerciseName(ex.name, lang)}</div>
             <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:2 }}>
               <span style={{ fontSize:11, color:C.textMuted }}>{tMuscles(data.muscles)}</span>
               <span style={{ fontSize:11, color:allDone?C.green:doneSets>0?C.amber:C.textDim }}>· {doneSets}/{ex.sets.length} {t('session.doneMark').replace('✓ ','')}</span>
@@ -1347,7 +1355,7 @@ function FullscreenExercise({ exercise, setIdx, totalSets, exIdx, totalExercises
           }}>
             <ExerciseIcon name={exercise.name} size={52} />
           </div>
-          <div style={{ fontSize:25, fontWeight:800, color:C.text, lineHeight:1.2, marginBottom:5 }}>{exercise.name}</div>
+          <div style={{ fontSize:25, fontWeight:800, color:C.text, lineHeight:1.2, marginBottom:5 }}>{getLocalizedExerciseName(exercise.name, lang)}</div>
           <div style={{ fontSize:13, color:C.textMuted }}>
             {tMuscles(data.muscles)}{tMuscles(data.muscles) ? ' • ' : ''}{categoryLabel}
           </div>
@@ -1359,7 +1367,7 @@ function FullscreenExercise({ exercise, setIdx, totalSets, exIdx, totalExercises
             </div>
           )}
           {exercise.note && (
-            <div style={{ fontSize:12, color:C.purple, marginTop:6, lineHeight:1.5, padding:'0 8px' }}>💡 {exercise.note}</div>
+            <div style={{ fontSize:12, color:C.purple, marginTop:6, lineHeight:1.5, padding:'0 8px' }}>💡 {getLocalizedExerciseNote(exercise.note, lang)}</div>
           )}
         </div>
 
@@ -1664,7 +1672,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
             <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 14px', background:C.surface, borderRadius:14, border:`1px solid ${C.divider}`, marginBottom:8 }}>
               <span style={{ fontSize:20 }}><ExerciseIcon name={ex.name} size={20} /></span>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{ex.name}</div>
+                <div style={{ fontSize:14, fontWeight:600, color:C.text }}>{getLocalizedExerciseName(ex.name, lang)}</div>
                 <div style={{ fontSize:11, color:C.textMuted }}>{ex.sets.length} {t('plan.sets').toLowerCase()} · {tMuscles(data.muscles)}</div>
               </div>
               <button onClick={() => removeEx(i)} style={{ background:'none', border:'none', color:C.textDim, fontSize:16, cursor:'pointer' }}>✕</button>
@@ -1757,7 +1765,7 @@ function WorkoutSession({ userId, timezone, plan, onSave, onCancel }) {
 // Workout history card
 // ─────────────────────────────────────────────
 function WorkoutHistoryCard({ log, onDelete }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const [confirm,  setConfirm]  = useState(false)
   return (
@@ -1786,7 +1794,7 @@ function WorkoutHistoryCard({ log, onDelete }) {
         <div style={{ marginTop:12, borderTop:`1px solid ${C.divider}`, paddingTop:12 }}>
           {log.exercises.map((ex,i) => (
             <div key={i} style={{ display:'flex', gap:10, marginBottom:8 }}>
-              <div style={{ fontSize:13, fontWeight:600, color:C.text, minWidth:140 }}>{ex.name}</div>
+              <div style={{ fontSize:13, fontWeight:600, color:C.text, minWidth:140 }}>{getLocalizedExerciseName(ex.name, lang)}</div>
               <div style={{ fontSize:12, color:C.textMuted }}>
                 {ex.sets?.map((s,j)=><span key={j} style={{marginRight:8}}>{s.weight?`${s.weight}kg×${s.reps}`:s.duration?`${s.duration}s`:`×${s.reps}`}</span>)}
               </div>

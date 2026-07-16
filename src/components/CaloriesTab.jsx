@@ -1,4 +1,4 @@
-import { searchFoods, LOCAL_DB } from '../lib/foodSearch.js'
+import { searchFoods, LOCAL_DB, getLocalizedFoodName } from '../lib/foodSearch.js'
 import { toUserDateStr } from '../lib/dateUtils.js'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
@@ -985,7 +985,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, flexShrink:0 }}>
           <div>
             <div style={{ fontSize:18, fontWeight:700, color:T.text }}>
-              {selected ? selected.name.slice(0, 28) + (selected.name.length > 28 ? '…' : '') : t('cal.addFood').replace('+ ','')}
+              {selected ? getLocalizedFoodName(selected, lang).slice(0, 28) + (getLocalizedFoodName(selected, lang).length > 28 ? '…' : '') : t('cal.addFood').replace('+ ','')}
             </div>
             {!selected && (
               <div style={{ fontSize:12, color:T.purple, fontWeight:500, marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
@@ -1123,7 +1123,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
                     <button key={f.id} onClick={() => selectFood(f)}
                       style={{ width:'100%', padding:'12px 0', display:'flex', justifyContent:'space-between', alignItems:'center', background:'none', border:'none', borderBottom:`1px solid ${T.divider}`, cursor:'pointer', textAlign:'left' }}>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:13, fontWeight:500, color:T.text, marginBottom:2 }}>{f.name}</div>
+                        <div style={{ fontSize:13, fontWeight:500, color:T.text, marginBottom:2 }}>{getLocalizedFoodName(f, lang)}</div>
                         <div style={{ fontSize:11, color:T.textMuted }}>
                           {f.brand && <span>{f.brand} · </span>}
                           <span style={{ color:T.purple, fontWeight:600 }}>{f.cal} kcal</span>
