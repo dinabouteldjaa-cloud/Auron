@@ -94,8 +94,13 @@ export function buildMealPrompt(preferences = {}, lang = 'en') {
   }
 
   if (cuisine_preference && cuisine_preference.trim()) {
+    const cuisines = cuisine_preference.split(',').map(c => c.trim()).filter(Boolean)
     lines.push('')
-    lines.push(`CUISINE PREFERENCE: The user prefers ${cuisine_preference.trim()} cuisine. Prioritise meal suggestions inspired by ${cuisine_preference.trim()} dishes and ingredients whenever it's practical and fits their calorie/macro targets. It's fine to occasionally suggest other cuisines for variety, but ${cuisine_preference.trim()}-style options should come first.`)
+    if (cuisines.length > 1) {
+      lines.push(`CUISINE PREFERENCE: The user enjoys these cuisines: ${cuisines.join(', ')}. Rotate between them across suggestions — do not default to the same one every time. Pick whichever of these fits best for this specific meal/macro target, and vary the dish and cuisine choice from anything you may have suggested recently.`)
+    } else {
+      lines.push(`CUISINE PREFERENCE: The user prefers ${cuisines[0]} cuisine. Prioritise meal suggestions inspired by ${cuisines[0]} dishes and ingredients whenever it's practical and fits their calorie/macro targets. Still vary the specific dish suggested each time rather than repeating the same one — it's fine to occasionally suggest other cuisines for variety, but ${cuisines[0]}-style options should come first.`)
+    }
   }
 
   if (health_notes.trim()) {
