@@ -137,6 +137,7 @@ Rules:
 - Base the suggestion on the user's ACTUAL remaining calories and macros for today, not a generic "healthy meal."
 - If one specific gap matters most right now (e.g. remaining protein is low, or fat is already close to the daily limit), mention it briefly in whyItFits. Otherwise keep whyItFits short and still tied to today's numbers — avoid generic nutrition claims that aren't specific to this user's day.
 - Respect all dietary preferences, restrictions, allergies, avoided foods, and cuisine preference already provided.
+- The "meal" name must be the dish name only — never prefix it with the cuisine/region (e.g. write "Chicken Shawarma", not "Middle Eastern Chicken Shawarma"; "Beef Burger", not "American Beef Burger"). The cuisine should be reflected in the ingredients and preparation, not spelled out in the title.
 - ingredients: max 6 short items. steps: max 4 short, practical steps. No long recipe essays — this must be mobile-friendly and quick to read.
 - Keep the meal realistic and easy to prepare at home.`
 
