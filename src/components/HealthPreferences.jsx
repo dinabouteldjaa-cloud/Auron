@@ -59,6 +59,14 @@ const COMMON_AVOIDED_FOODS = [
   'Onions', 'Garlic', 'Tomatoes',
 ]
 
+// Stored as a comma-joined string in the existing `cuisine_preference`
+// column (no DB migration needed) but always worked with as an array in
+// the UI. Tolerates the old single-cuisine string shape too.
+function parseCuisines(stored) {
+  if (!stored) return []
+  return stored.split(',').map(s => s.trim()).filter(Boolean)
+}
+
 const CUISINE_OPTIONS = [
   'Algerian', 'Moroccan', 'Tunisian', 'Middle Eastern',
   'Mediterranean', 'Indian', 'Asian', 'Italian', 'Mexican', 'American',
@@ -203,78 +211,98 @@ function ChipGroup({ options, selected = [], onChange, allowCustom = false, cust
 
 // Single-select cuisine picker — "General" (empty) + presets + custom text
 function CuisineSelect({ value, onChange, generalLabel, otherLabel, placeholder }) {
-  const [customInput, setCustomInput] = useState(
-    value && !CUISINE_OPTIONS.includes(value) ? value : ''
-  )
-  const [showCustom, setShowCustom] = useState(
-    !!value && !CUISINE_OPTIONS.includes(value)
-  )
+  // `value` is now an array of selected cuisines (possibly including custom
+  // ones typed by the user). Empty array = "no preference" / general.
+  const selected = Array.isArray(value) ? value : (value ? [value] : []) // tolerate old single-string shape during migration
+  const [customInput, setCustomInput] = useState('')
+  const [showCustom, setShowCustom]   = useState(false)
 
-  const selectPreset = (opt) => { setShowCustom(false); setCustomInput(''); onChange(opt) }
-  const selectGeneral = () => { setShowCustom(false); setCustomInput(''); onChange('') }
+  const toggle = (opt) => {
+    if (selected.includes(opt)) onChange(selected.filter(c => c !== opt))
+    else onChange([...selected, opt])
+  }
+  const clearAll = () => onChange([])
 
   const addCustom = () => {
     const trimmed = customInput.trim()
-    if (!trimmed) return
-    onChange(trimmed)
+    if (!trimmed || selected.map(c => c.toLowerCase()).includes(trimmed.toLowerCase())) return
+    onChange([...selected, trimmed])
+    setCustomInput('')
+    setShowCustom(false)
   }
 
+  const customSelected = selected.filter(c => !CUISINE_OPTIONS.includes(c))
+
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-      <button
-        onClick={selectGeneral}
-        style={{
-          padding: '7px 14px', borderRadius: 20, fontSize: 13,
-          border: `1px solid ${!value ? C.gold : C.border}`,
-          background: !value ? C.goldLight : 'transparent',
-          color: !value ? C.gold : C.textMuted,
-          transition: 'all 0.15s', cursor: 'pointer',
-        }}
-      >
-        {generalLabel}
-      </button>
-
-      {CUISINE_OPTIONS.map(opt => {
-        const active = value === opt
-        return (
-          <button
-            key={opt}
-            onClick={() => selectPreset(opt)}
-            style={{
-              padding: '7px 14px', borderRadius: 20, fontSize: 13,
-              border: `1px solid ${active ? C.gold : C.border}`,
-              background: active ? C.goldLight : 'transparent',
-              color: active ? C.gold : C.textMuted,
-              transition: 'all 0.15s', cursor: 'pointer',
-            }}
-          >
-            {opt}
-          </button>
-        )
-      })}
-
-      {!showCustom && (
+    <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: showCustom ? 10 : 0 }}>
         <button
-          onClick={() => setShowCustom(true)}
+          onClick={clearAll}
           style={{
             padding: '7px 14px', borderRadius: 20, fontSize: 13,
-            border: `1px dashed ${value && !CUISINE_OPTIONS.includes(value) ? C.gold : C.border}`,
-            background: value && !CUISINE_OPTIONS.includes(value) ? C.goldLight : 'transparent',
-            color: value && !CUISINE_OPTIONS.includes(value) ? C.gold : C.textMuted,
-            cursor: 'pointer',
+            border: `1px solid ${selected.length === 0 ? C.gold : C.border}`,
+            background: selected.length === 0 ? C.goldLight : 'transparent',
+            color: selected.length === 0 ? C.gold : C.textMuted,
+            transition: 'all 0.15s', cursor: 'pointer',
           }}
         >
-          {value && !CUISINE_OPTIONS.includes(value) ? value : `+ ${otherLabel}`}
+          {generalLabel}
         </button>
-      )}
+
+        {CUISINE_OPTIONS.map(opt => {
+          const active = selected.includes(opt)
+          return (
+            <button
+              key={opt}
+              onClick={() => toggle(opt)}
+              style={{
+                padding: '7px 14px', borderRadius: 20, fontSize: 13,
+                border: `1px solid ${active ? C.gold : C.border}`,
+                background: active ? C.goldLight : 'transparent',
+                color: active ? C.gold : C.textMuted,
+                transition: 'all 0.15s', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 5,
+              }}
+            >
+              {active && '✓'} {opt}
+            </button>
+          )
+        })}
+
+        {/* Custom cuisines already added, shown as removable chips */}
+        {customSelected.map(c => (
+          <button key={c} onClick={() => toggle(c)}
+            style={{
+              padding: '7px 14px', borderRadius: 20, fontSize: 13,
+              border: `1px solid ${C.gold}`, background: C.goldLight, color: C.gold,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            ✓ {c} ×
+          </button>
+        ))}
+
+        {!showCustom && (
+          <button
+            onClick={() => setShowCustom(true)}
+            style={{
+              padding: '7px 14px', borderRadius: 20, fontSize: 13,
+              border: `1px dashed ${C.border}`, background: 'transparent',
+              color: C.textMuted, cursor: 'pointer',
+            }}
+          >
+            + {otherLabel}
+          </button>
+        )}
+      </div>
 
       {showCustom && (
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%', marginTop: 4 }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <input
             autoFocus
             value={customInput}
             onChange={e => setCustomInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { addCustom(); setShowCustom(false) }; if (e.key === 'Escape') setShowCustom(false) }}
+            onKeyDown={e => { if (e.key === 'Enter') addCustom(); if (e.key === 'Escape') setShowCustom(false) }}
             placeholder={placeholder}
             style={{
               flex: 1, padding: '8px 12px', borderRadius: 10,
@@ -283,10 +311,16 @@ function CuisineSelect({ value, onChange, generalLabel, otherLabel, placeholder 
             }}
           />
           <button
-            onClick={() => { addCustom(); setShowCustom(false) }}
+            onClick={addCustom}
             style={{ padding: '8px 14px', borderRadius: 10, background: C.gold, color: C.dark, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
           >
             ✓
+          </button>
+          <button
+            onClick={() => { setShowCustom(false); setCustomInput('') }}
+            style={{ padding: '8px 10px', borderRadius: 10, background: 'transparent', border: `1px solid ${C.border}`, color: C.textMuted, fontSize: 12, cursor: 'pointer' }}
+          >
+            ×
           </button>
         </div>
       )}
@@ -415,7 +449,7 @@ export default function HealthPreferences({ preferences = {}, onSave, saving = f
   const [restrictions, setRestrictions] = useState(preferences.food_restrictions    || [])
   const [avoidedFoods, setAvoidedFoods] = useState(preferences.avoided_foods        || [])
   const [healthNotes,  setHealthNotes]  = useState(preferences.health_notes         || '')
-  const [cuisine,      setCuisine]      = useState(preferences.cuisine_preference   || '')
+  const [cuisine,      setCuisine]      = useState(parseCuisines(preferences.cuisine_preference))
   const [allergyOther, setAllergyOther] = useState(
     (preferences.allergies || []).filter(a => !ALLERGY_OPTIONS.includes(a))
   )
@@ -427,7 +461,7 @@ export default function HealthPreferences({ preferences = {}, onSave, saving = f
     setRestrictions(preferences.food_restrictions || [])
     setAvoidedFoods(preferences.avoided_foods   || [])
     setHealthNotes(preferences.health_notes     || '')
-    setCuisine(preferences.cuisine_preference   || '')
+    setCuisine(parseCuisines(preferences.cuisine_preference))
   }, [preferences.updated_at]) // only re-sync on actual DB update
 
   const handleSave = () => {
@@ -437,7 +471,7 @@ export default function HealthPreferences({ preferences = {}, onSave, saving = f
       food_restrictions:    restrictions,
       avoided_foods:        avoidedFoods,
       health_notes:         healthNotes,
-      cuisine_preference:   cuisine,
+      cuisine_preference:   cuisine.join(', '),
     })
   }
 
