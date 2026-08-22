@@ -695,6 +695,10 @@ const DAY_DEFS = [
 
 function PlanEditor({ plan, onSave, onCancel }) {
   const { t, lang } = useTranslation()
+   function PlanEditor({ plan, onSave, onCancel }) {
+   const { t, lang } = useTranslation()
++  const { tMuscles } = useSportT()
+   const [name,       setName]       = useState(plan?.name || '')
   const [name,       setName]       = useState(plan?.name || '')
   const [exercises,  setExercises]  = useState(
     (plan?.exercises || []).map(ex => ({
