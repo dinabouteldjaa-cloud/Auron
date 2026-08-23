@@ -412,7 +412,11 @@ Rules: Generate exactly ${numDays} workouts. Each workout different exercises. O
   const res = await fetch(GROQ_URL, {
     method:'POST',
     headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${key}` },
-    body:JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:2500, temperature:0.7, messages:[{role:'user',content:prompt}] }),
+    body:JSON.stringify({
+      model:'openai/gpt-oss-120b', max_tokens:2500, temperature:0.7,
+      response_format:{ type:'json_object' }, reasoning_effort:'low',
+      messages:[{role:'user',content:prompt}],
+    }),
   })
   if (!res.ok) throw new Error(`AI error (${res.status})`)
   const data  = await res.json()
