@@ -866,6 +866,19 @@ const translations = {
     'plan.selectDay':'Select at least one day',
     'plan.daysLabel':'Days',
 
+    // Push notifications
+    'push.title':'Notifications',
+    'push.webUnavailable':'Push notifications are available in the Auron iOS and Android app. Install the app to turn them on.',
+    'push.deniedHint':'Notifications are turned off for Auron in your phone settings. Enable them there to receive reminders.',
+    'push.enable':'Enable notifications',
+    'push.workoutReminder':'Workout reminder','push.workoutReminderSub':'A nudge when it\'s time to train.',
+    'push.scheduledWorkout':'Scheduled workout','push.scheduledWorkoutSub':'Reminders for workouts on your plan schedule.',
+    'push.restDay':'Rest & recovery','push.restDaySub':'A note on your rest days.',
+    'push.dailyMotivation':'Daily motivation','push.dailyMotivationSub':'A short message from Coach Auron.',
+    'push.nutritionReminder':'Nutrition reminder','push.nutritionReminderSub':'A nudge to log your meals or water.',
+    'push.inactivityReminder':'Inactivity reminder','push.inactivityReminderSub':'A check-in if you\'ve been away for a while.',
+    'push.accountImportant':'Account & app updates','push.accountImportantSub':'Important notices about your account — always on.',
+
     'sport.chest_ex':'Chest','sport.back_ex':'Back','sport.legs_ex':'Legs',
     'sport.shoulders_ex':'Shoulders','sport.arms_ex':'Arms','sport.core_ex':'Core',
     'sport.cardio_ex':'Cardio',
@@ -1771,6 +1784,19 @@ const translations = {
     'plan.scheduleTimeHint':'Laisser vide pour ignorer le rappel',
     'plan.selectDay':'Sélectionnez au moins un jour',
     'plan.daysLabel':'Jours',
+
+    // Notifications push
+    'push.title':'Notifications',
+    'push.webUnavailable':"Les notifications push sont disponibles dans l'application Auron iOS et Android. Installez l'application pour les activer.",
+    'push.deniedHint':'Les notifications sont désactivées pour Auron dans les réglages de votre téléphone. Activez-les pour recevoir des rappels.',
+    'push.enable':'Activer les notifications',
+    'push.workoutReminder':'Rappel de séance','push.workoutReminderSub':"Un rappel quand c'est l'heure de s'entraîner.",
+    'push.scheduledWorkout':'Séance programmée','push.scheduledWorkoutSub':'Rappels pour les séances de votre programme.',
+    'push.restDay':'Repos & récupération','push.restDaySub':'Une note pour vos jours de repos.',
+    'push.dailyMotivation':'Motivation du jour','push.dailyMotivationSub':'Un court message de Coach Auron.',
+    'push.nutritionReminder':'Rappel nutrition','push.nutritionReminderSub':'Un rappel pour enregistrer vos repas ou votre eau.',
+    'push.inactivityReminder':"Rappel d'inactivité",'push.inactivityReminderSub':"Un message si vous n'êtes pas venu depuis un moment.",
+    'push.accountImportant':'Compte & mises à jour','push.accountImportantSub':'Avis importants sur votre compte — toujours actif.',
 
     'sport.chest_ex':'Pectoraux','sport.back_ex':'Dos','sport.legs_ex':'Jambes',
     'sport.shoulders_ex':'Épaules','sport.arms_ex':'Bras','sport.core_ex':'Abdominaux',
