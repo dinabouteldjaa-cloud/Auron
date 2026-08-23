@@ -4,6 +4,8 @@ import { T } from '../lib/theme'
 import { useTranslation } from '../lib/i18n.jsx'
 import { TabAuronCard } from './CoachAuron'
 import HealthPreferences from './HealthPreferences'
+import { unregisterPush, isNativePush, registerForPush } from '../lib/push'
+import { useNotificationPreferences } from '../hooks/useNotificationPreferences'
 
 // ─────────────────────────────────────────────
 // Design tokens
@@ -321,16 +323,86 @@ function HealthPage({ preferences, updatePreferences, onBack }) {
 // ─────────────────────────────────────────────
 // Sub-page: Notifications (placeholder)
 // ─────────────────────────────────────────────
-function NotificationsPage({ onBack }) {
+function ToggleRow({ label, sub, value, onChange, disabled = false }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: `1px solid ${T.divider}` }}>
+      <div style={{ paddingRight: 12 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>{label}</div>
+        {sub && <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>{sub}</div>}
+      </div>
+      <div
+        onClick={() => !disabled && onChange(!value)}
+        style={{
+          width: 48, height: 28, borderRadius: 14, flexShrink: 0,
+          background: value ? T.purple : T.border,
+          cursor: disabled ? 'default' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
+          position: 'relative', transition: 'background 0.2s',
+        }}
+      >
+        <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: value ? 23 : 3, transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
+      </div>
+    </div>
+  )
+}
+
+function NotificationsPage({ userId, onBack }) {
   const { t } = useTranslation()
+  const { prefs, updatePrefs } = useNotificationPreferences(userId)
+  const native = isNativePush()
+  const state  = prefs.push_permission_state
+
+  const CATEGORIES = [
+    { key: 'workout_reminder',    label: t('push.workoutReminder'),    sub: t('push.workoutReminderSub') },
+    { key: 'scheduled_workout',   label: t('push.scheduledWorkout'),   sub: t('push.scheduledWorkoutSub') },
+    { key: 'rest_day',            label: t('push.restDay'),            sub: t('push.restDaySub') },
+    { key: 'daily_motivation',    label: t('push.dailyMotivation'),    sub: t('push.dailyMotivationSub') },
+    { key: 'nutrition_reminder',  label: t('push.nutritionReminder'),  sub: t('push.nutritionReminderSub') },
+    { key: 'inactivity_reminder', label: t('push.inactivityReminder'), sub: t('push.inactivityReminderSub') },
+  ]
+
   return (
     <div>
-      <SubPageHeader title="Notifications" onBack={onBack} />
-      <Card>
-        <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🔔</div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: T.text, marginBottom: 6 }}>{t('app.comingSoon')}</div>
-          <div style={{ fontSize: 13, color: T.textMuted }}>Push notifications will be available when Auron launches as a native app.</div>
+      <SubPageHeader title={t('push.title')} onBack={onBack} />
+
+      {!native && (
+        <Card style={{ marginBottom: 12 }}>
+          <div style={{ textAlign: 'center', padding: '12px 0' }}>
+            <div style={{ fontSize: 28, marginBottom: 10 }}>📱</div>
+            <div style={{ fontSize: 13.5, color: T.textMuted, lineHeight: 1.5 }}>{t('push.webUnavailable')}</div>
+          </div>
+        </Card>
+      )}
+
+      {native && state === 'denied' && (
+        <Card style={{ marginBottom: 12, borderColor: 'rgba(224,82,82,0.3)' }}>
+          <div style={{ fontSize: 13, color: T.red, lineHeight: 1.5 }}>{t('push.deniedHint')}</div>
+        </Card>
+      )}
+
+      {native && (state === 'not_requested' || state === 'unavailable') && (
+        <button
+          onClick={() => registerForPush(userId).then(() => updatePrefs({}))}
+          style={{ width: '100%', padding: 13, borderRadius: 16, background: T.purple, color: '#fff', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}
+        >
+          {t('push.enable')}
+        </button>
+      )}
+
+      <Card style={{ padding: '4px 18px' }}>
+        {CATEGORIES.map(c => (
+          <ToggleRow
+            key={c.key}
+            label={c.label}
+            sub={c.sub}
+            value={prefs[c.key] !== false}
+            disabled={!native || state !== 'granted'}
+            onChange={(v) => updatePrefs({ [c.key]: v })}
+          />
+        ))}
+        <div style={{ padding: '12px 0' }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>{t('push.accountImportant')}</div>
+          <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>{t('push.accountImportantSub')}</div>
         </div>
       </Card>
     </div>
@@ -434,9 +506,9 @@ export default function ProfileTab({ user, profile, updateProfile, preferences, 
   if (page === 'goals')         return <GoalsPage          profile={profile}         onSave={updateProfile}      onBack={() => setPage(null)} />
   if (page === 'health')        return <HealthPage         preferences={preferences} updatePreferences={updatePreferences} onBack={() => setPage(null)} />
   if (page === 'language')      return <LanguagePage       lang={lang}               setLang={setLang}           updateProfile={updateProfile} onBack={() => setPage(null)} />
-  if (page === 'notifications') return <NotificationsPage  onBack={() => setPage(null)} />
+  if (page === 'notifications') return <NotificationsPage  userId={user?.id}         onBack={() => setPage(null)} />
   if (page === 'privacy')       return <PrivacyPage        onBack={() => setPage(null)} />
-  if (page === 'account')       return <AccountPage        user={user}               onSignOut={() => supabase.auth.signOut()} lang={lang} onBack={() => setPage(null)} />
+  if (page === 'account')       return <AccountPage        user={user}               onSignOut={async () => { await unregisterPush(user?.id); await supabase.auth.signOut() }} lang={lang} onBack={() => setPage(null)} />
 
   // ── Hub ──────────────────────────────────────
   return (
@@ -474,7 +546,7 @@ export default function ProfileTab({ user, profile, updateProfile, preferences, 
         <MenuItem icon="🎯" label={t('profile.fitnessGoal')}   onPress={() => setPage('goals')} />
         <MenuItem icon="🥗" label={t('profile.healthPrefs')}   onPress={() => setPage('health')}  badge={activePrefs > 0 ? `${activePrefs}` : null} />
         <MenuItem icon="🌐" label={t('profile.language')}      onPress={() => setPage('language')} badge={lang === 'fr' ? '🇫🇷' : '🇬🇧'} />
-        <MenuItem icon="🔔" label="Notifications"              onPress={() => setPage('notifications')} />
+        <MenuItem icon="🔔" label={t('push.title')}          onPress={() => setPage('notifications')} />
         <MenuItem icon="🔒" label="Privacy"                    onPress={() => setPage('privacy')} />
         <div style={{ borderBottom: 'none' }}>
           <MenuItem icon="⚙️" label={t('profile.account')}    onPress={() => setPage('account')} />

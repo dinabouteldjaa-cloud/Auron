@@ -975,7 +975,7 @@ function WeeklyProgress({ weekDays, selectedDate, todayStr, setSelectedDate, log
 // ─────────────────────────────────────────────────────────────
 // Main TodayTab export
 // ─────────────────────────────────────────────────────────────
-export default function TodayTab({ userId, profile, updateProfile, preferences, updatePreferences, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds, onDateChange, onOpenWorkout, onOpenNutrition, onOpenProgress }) {
+export default function TodayTab({ userId, profile, updateProfile, preferences, updatePreferences, medications = [], takenCount = 0, missedCount = 0, nextMed = null, markTaken, getStatusForMed, onOpenMeds, onDateChange, onOpenWorkout, onOpenNutrition, onOpenProgress, onOnboardingDismiss }) {
   const { t, lang } = useTranslation()
 
   // Use profile timezone (auto-detected from browser, stored in DB)
@@ -1036,6 +1036,7 @@ export default function TodayTab({ userId, profile, updateProfile, preferences, 
   const dismissWelcome = () => {
     if (welcomeKey) localStorage.setItem(welcomeKey, 'seen')
     setShowWelcome(false)
+    onOnboardingDismiss?.()
   }
   const isToday = selectedDate === todayStr
 
