@@ -176,7 +176,7 @@ Keep the same nutrition context above. Adapt the meal to satisfy the modificatio
   }
 
   // Slightly higher temperature here specifically so repeated taps give real variety
-  return callGroq(system, user, 500, 0.9, true)
+  return callGroq(system, user, 700, 0.9, true)
 }
 
 export async function estimateMealFromDescription(preferences, description, lang = 'en', options = {}) {
