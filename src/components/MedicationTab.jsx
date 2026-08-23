@@ -208,14 +208,14 @@ function MedModal({ med, onSave, onClose }) {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, minWidth: 0 }}>
-            <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
               <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 6, fontWeight: 500 }}>{t('meds.startDate')}</div>
-              <input type="date" value={form.start_date} onChange={e => set('start_date')(e.target.value)} style={{ ...inputStyle, colorScheme: 'light', width: '100%', minWidth: 0 }} />
+              <input type="date" value={form.start_date} onChange={e => set('start_date')(e.target.value)} style={{ ...inputStyle, colorScheme: 'light', width: '100%' }} />
             </div>
-            <div style={{ minWidth: 0 }}>
+            <div>
               <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 6, fontWeight: 500 }}>{t('meds.endDate')}</div>
-              <input type="date" value={form.end_date} onChange={e => set('end_date')(e.target.value)} style={{ ...inputStyle, colorScheme: 'light', width: '100%', minWidth: 0 }} />
+              <input type="date" value={form.end_date} onChange={e => set('end_date')(e.target.value)} style={{ ...inputStyle, colorScheme: 'light', width: '100%' }} />
             </div>
           </div>
 
