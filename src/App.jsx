@@ -3,8 +3,7 @@ import { supabase } from './lib/supabase'
 import { useProfile } from './hooks/useProfile'
 import { usePreferences } from './hooks/usePreferences'
 import { useMedications } from './hooks/useMedications'
-import { usePushRegistration } from './hooks/usePushRegistration'
-import { initPushListeners } from './lib/push'
+import { subscribeToPush, hasAskedForPush } from './lib/pushSubscribe'
 import { T, globalCss } from './lib/theme'
 import { useTranslation, LANGUAGES } from './lib/i18n.jsx'
 import { useTabGuide, HowToGuideModal, HelpIconButton } from './lib/howToGuide.jsx'
@@ -148,20 +147,23 @@ export default function App() {
     setOnboardingSeen(localStorage.getItem(`auron_welcomed_${uid}`) === 'seen')
   }, [uid])
 
-  usePushRegistration(uid, onboardingSeen)
-
-  // Notification tap → open the relevant tab, wherever the app was
-  // (open, backgrounded, or fully closed) when it was tapped.
   useEffect(() => {
-    const remove = initPushListeners({
-      onNotificationTap: (data) => {
-        if (data?.route) setTab(data.route)
-        if (data?.route === 'calories' && data?.slot) {
-          setNutritionRequest({ slot: data.slot, ts: Date.now() })
-        }
-      },
-    })
-    return remove
+    if (!uid || !onboardingSeen) return
+    if (!hasAskedForPush(uid)) subscribeToPush(uid)
+  }, [uid, onboardingSeen])
+
+  // Notification tap → the service worker opens/focuses the app at
+  // e.g. "/?tab=workout&slot=breakfast". Read that once on load, apply
+  // it, then clean the URL so it doesn't stick around on refresh.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const route = params.get('tab')
+    const slot  = params.get('slot')
+    if (route) {
+      setTab(route)
+      if (route === 'calories' && slot) setNutritionRequest({ slot, ts: Date.now() })
+      window.history.replaceState({}, '', window.location.pathname)
+    }
   }, [])
 
   // selectedDate shared between TodayTab and useMedications so med card reflects the right day
