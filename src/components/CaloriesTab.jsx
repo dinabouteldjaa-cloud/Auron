@@ -181,9 +181,18 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
     if (!desc.trim()) return
     setScreen('flow')
     setLoading(true); setResult(null); setQuestions(null); setSaved(false)
+    const attempt = async () => {
+      const raw = await estimateMealFromDescription(preferences, desc, lang)
+      return parseResponse(raw)
+    }
     try {
-      const raw    = await estimateMealFromDescription(preferences, desc, lang)
-      const parsed = parseResponse(raw)
+      let parsed
+      try {
+        parsed = await attempt()
+      } catch (e1) {
+        console.error('Meal estimate failed, retrying once:', e1)
+        parsed = await attempt()
+      }
       if (parsed.needsClarification && parsed.questions?.length > 0) {
         setQuestions(parsed.questions)
         setAnswerDrafts(Object.fromEntries(parsed.questions.map(q => [q, ''])))
@@ -193,7 +202,7 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
         setResult({ error: estimateErrorMsg })
       }
     } catch (e) {
-      console.error('Meal estimate failed:', e)
+      console.error('Meal estimate failed on retry:', e)
       setResult({ error: fr ? "Impossible d'estimer. Essayez de décrire avec plus de détails — précisez les quantités." : 'Could not estimate. Try describing in more detail — include portion sizes.' })
     }
     setLoading(false)
@@ -201,13 +210,22 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
 
   const submitAnswers = async () => {
     setLoading(true); setSaved(false)
+    const attempt = async () => {
+      const raw = await estimateMealFromDescription(preferences, desc, lang, { answers: answerDrafts })
+      return parseResponse(raw)
+    }
     try {
-      const raw    = await estimateMealFromDescription(preferences, desc, lang, { answers: answerDrafts })
-      const parsed = parseResponse(raw)
+      let parsed
+      try {
+        parsed = await attempt()
+      } catch (e1) {
+        console.error('Meal estimate (clarifying answers) failed, retrying once:', e1)
+        parsed = await attempt()
+      }
       setResult(isValidEstimate(parsed) ? parsed : { error: estimateErrorMsg })
       setQuestions(null)
     } catch (e) {
-      console.error('Meal estimate (clarifying answers) failed:', e)
+      console.error('Meal estimate (clarifying answers) failed on retry:', e)
       setResult({ error: fr ? "Impossible d'estimer. Essayez de décrire avec plus de détails — précisez les quantités." : 'Could not estimate. Try describing in more detail — include portion sizes.' })
       setQuestions(null)
     }
