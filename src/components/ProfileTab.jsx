@@ -4,8 +4,7 @@ import { T } from '../lib/theme'
 import { useTranslation } from '../lib/i18n.jsx'
 import { TabAuronCard } from './CoachAuron'
 import HealthPreferences from './HealthPreferences'
-import { unregisterPush, isNativePush, registerForPush } from '../lib/push'
-import { useNotificationPreferences } from '../hooks/useNotificationPreferences'
+import { subscribeToPush, unsubscribeFromPush, isPushSupported, pushPermissionState, hasExistingSubscription } from '../lib/pushSubscribe'
 
 // ─────────────────────────────────────────────
 // Design tokens
@@ -325,7 +324,7 @@ function HealthPage({ preferences, updatePreferences, onBack }) {
 // ─────────────────────────────────────────────
 function ToggleRow({ label, sub, value, onChange, disabled = false }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: `1px solid ${T.divider}` }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
       <div style={{ paddingRight: 12 }}>
         <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>{label}</div>
         {sub && <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>{sub}</div>}
@@ -348,24 +347,32 @@ function ToggleRow({ label, sub, value, onChange, disabled = false }) {
 
 function NotificationsPage({ userId, onBack }) {
   const { t } = useTranslation()
-  const { prefs, updatePrefs } = useNotificationPreferences(userId)
-  const native = isNativePush()
-  const state  = prefs.push_permission_state
+  const supported = isPushSupported()
+  const [permission,   setPermission]   = useState(pushPermissionState())
+  const [subscribed,   setSubscribed]   = useState(false)
+  const [checking,     setChecking]     = useState(true)
 
-  const CATEGORIES = [
-    { key: 'workout_reminder',    label: t('push.workoutReminder'),    sub: t('push.workoutReminderSub') },
-    { key: 'scheduled_workout',   label: t('push.scheduledWorkout'),   sub: t('push.scheduledWorkoutSub') },
-    { key: 'rest_day',            label: t('push.restDay'),            sub: t('push.restDaySub') },
-    { key: 'daily_motivation',    label: t('push.dailyMotivation'),    sub: t('push.dailyMotivationSub') },
-    { key: 'nutrition_reminder',  label: t('push.nutritionReminder'),  sub: t('push.nutritionReminderSub') },
-    { key: 'inactivity_reminder', label: t('push.inactivityReminder'), sub: t('push.inactivityReminderSub') },
-  ]
+  useEffect(() => {
+    if (!supported) { setChecking(false); return }
+    hasExistingSubscription().then(v => { setSubscribed(v); setChecking(false) })
+  }, [])
+
+  const handleToggle = async (turnOn) => {
+    if (turnOn) {
+      const result = await subscribeToPush(userId)
+      setPermission(pushPermissionState())
+      setSubscribed(result.state === 'granted')
+    } else {
+      await unsubscribeFromPush(userId)
+      setSubscribed(false)
+    }
+  }
 
   return (
     <div>
       <SubPageHeader title={t('push.title')} onBack={onBack} />
 
-      {!native && (
+      {!supported && (
         <Card style={{ marginBottom: 12 }}>
           <div style={{ textAlign: 'center', padding: '12px 0' }}>
             <div style={{ fontSize: 28, marginBottom: 10 }}>📱</div>
@@ -374,37 +381,23 @@ function NotificationsPage({ userId, onBack }) {
         </Card>
       )}
 
-      {native && state === 'denied' && (
+      {supported && permission === 'denied' && (
         <Card style={{ marginBottom: 12, borderColor: 'rgba(224,82,82,0.3)' }}>
           <div style={{ fontSize: 13, color: T.red, lineHeight: 1.5 }}>{t('push.deniedHint')}</div>
         </Card>
       )}
 
-      {native && (state === 'not_requested' || state === 'unavailable') && (
-        <button
-          onClick={() => registerForPush(userId).then(() => updatePrefs({}))}
-          style={{ width: '100%', padding: 13, borderRadius: 16, background: T.purple, color: '#fff', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}
-        >
-          {t('push.enable')}
-        </button>
-      )}
-
-      <Card style={{ padding: '4px 18px' }}>
-        {CATEGORIES.map(c => (
+      {supported && !checking && (
+        <Card style={{ padding: '4px 18px' }}>
           <ToggleRow
-            key={c.key}
-            label={c.label}
-            sub={c.sub}
-            value={prefs[c.key] !== false}
-            disabled={!native || state !== 'granted'}
-            onChange={(v) => updatePrefs({ [c.key]: v })}
+            label={t('push.enable')}
+            sub={t('push.enableSub')}
+            value={subscribed}
+            disabled={permission === 'denied'}
+            onChange={handleToggle}
           />
-        ))}
-        <div style={{ padding: '12px 0' }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>{t('push.accountImportant')}</div>
-          <div style={{ fontSize: 11.5, color: T.textMuted, marginTop: 2 }}>{t('push.accountImportantSub')}</div>
-        </div>
-      </Card>
+        </Card>
+      )}
     </div>
   )
 }
@@ -508,7 +501,7 @@ export default function ProfileTab({ user, profile, updateProfile, preferences, 
   if (page === 'language')      return <LanguagePage       lang={lang}               setLang={setLang}           updateProfile={updateProfile} onBack={() => setPage(null)} />
   if (page === 'notifications') return <NotificationsPage  userId={user?.id}         onBack={() => setPage(null)} />
   if (page === 'privacy')       return <PrivacyPage        onBack={() => setPage(null)} />
-  if (page === 'account')       return <AccountPage        user={user}               onSignOut={async () => { await unregisterPush(user?.id); await supabase.auth.signOut() }} lang={lang} onBack={() => setPage(null)} />
+  if (page === 'account')       return <AccountPage        user={user}               onSignOut={async () => { await unsubscribeFromPush(user?.id); await supabase.auth.signOut() }} lang={lang} onBack={() => setPage(null)} />
 
   // ── Hub ──────────────────────────────────────
   return (
