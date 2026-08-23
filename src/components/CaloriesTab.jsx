@@ -509,6 +509,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   const [suggestion,   setSuggestion]   = useState(null)   // parsed { meal, calories, protein, carbs, fat, whyItFits, ingredients, steps }
   const [loading,      setLoading]      = useState(false)
   const [fetched,      setFetched]      = useState(false)
+  const [suggestionError, setSuggestionError] = useState(false)
   const [showModify,   setShowModify]   = useState(false)
   const [modifyInput,  setModifyInput]  = useState('')
   const [saved,        setSaved]        = useState(false)
@@ -535,14 +536,16 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   const nutritionCtx = { totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF }
 
   const getSuggestion = async (avoidPrevious = false) => {
-    setLoading(true); setSaved(false); setLogged(false)
+    setLoading(true); setSaved(false); setLogged(false); setSuggestionError(false)
     try {
       const raw = await askMealSuggestion(preferences, nutritionCtx, lang, {
         avoidDish: avoidPrevious ? suggestion?.meal : '',
       })
       setSuggestion(parseResponse(raw))
-    } catch {
+    } catch (e) {
+      console.error('Meal suggestion failed:', e)
       setSuggestion(null)
+      setSuggestionError(true)
     }
     setLoading(false); setFetched(true)
   }
@@ -567,6 +570,7 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
     setSuggestion(null); setFetched(false); setLoading(false)
     setShowModify(false); setModifyInput('')
     setSaved(false); setLogged(false); setShowMoreOptions(false)
+    setSuggestionError(false)
   }
 
   // Show active restrictions so user knows they're being respected
@@ -635,6 +639,22 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 
       {loading && !suggestion && (
         <div style={{ fontSize: 13, color: C.textMuted }}>{t('cal.generating')}</div>
+      )}
+
+      {fetched && !loading && !suggestion && suggestionError && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: C.red || '#E5484D', marginBottom: 10 }}>{t('builder.error')}</div>
+          <button
+            onClick={() => getSuggestion(false)}
+            style={{
+              padding: '10px 16px', borderRadius: 12,
+              background: C.gold, color: C.dark, border: 'none',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            {t('builder.tryAgain')}
+          </button>
+        </div>
       )}
 
       {/* Structured suggestion */}
