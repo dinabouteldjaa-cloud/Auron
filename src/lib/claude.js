@@ -183,19 +183,36 @@ export async function estimateMealFromDescription(preferences, description, lang
   const { answers = null } = options
   const clarifying = !!answers
 
-  const system = buildMealPrompt(preferences, lang) + `
+  const base = buildMealPrompt(preferences, lang) + `
 
-You are also a careful nutrition estimator. A user will describe a meal they ate and you must estimate its nutrition.
+You are also a careful nutrition estimator. A user will describe a meal they ate and you must estimate its nutrition.`
+
+  const system = clarifying
+    ? base + `
+
+The user already had a chance to answer clarifying questions (some may still be "(not specified)" if they chose to skip). You must now produce a FINAL ESTIMATE — asking another question is not an option anymore, even if some details are still unknown.
+
+- Use conservative (moderate, not generous) portion assumptions for anything still unknown.
+- If portion size is still uncertain, prefer a calorie RANGE over a single confident number — populate calorieRangeLow and calorieRangeHigh, and set "calories" to the midpoint of that range. Use a wider range the less is known.
+- If portion size is well known, set calorieRangeLow and calorieRangeHigh equal to "calories" (no artificial range).
+- Briefly state your assumptions in "assumptions" so the user knows what was assumed.
+- Set "confidence" to "low" if very little was actually known — that's fine, just still give numbers.
+
+Respond ONLY with valid JSON — no markdown, no explanation. Use exactly this shape (this is the ONLY valid shape now):
+{"needsClarification":false,"meal":"meal name","calories":number,"calorieRangeLow":number,"calorieRangeHigh":number,"protein":number,"carbs":number,"fat":number,"items":[{"name":"item","calories":number}],"confidence":"high/medium/low","assumptions":"one short sentence describing exactly what portion/ingredients were assumed, with no suggestions or recommendations"}
+
+Important: only estimate the meal as described. Do not suggest additions, substitutions, spices, or any changes to the meal — your job is to estimate what was eaten, not to recommend anything.`
+    : base + `
 
 STEP 1 — Decide if the description is clear enough to estimate confidently.
 A description is CLEAR ENOUGH if it includes (even roughly): what the food is, and either a portion size, a common reference (e.g. "a bowl", "a plate", "one sandwich"), or enough detail that a reasonable assumption can be made.
-A description is TOO VAGUE if it's just a dish name with no sense of portion, ingredients, or preparation at all (e.g. "pasta", "a sandwich", "some chicken and rice") AND the user hasn't already answered clarifying questions.
+A description is TOO VAGUE if it's just a dish name with no sense of portion, ingredients, or preparation at all (e.g. "pasta", "a sandwich", "some chicken and rice").
 
-STEP 2 — If TOO VAGUE and no clarifying answers have been given yet, do NOT estimate. Instead ask 1–3 short follow-up questions, focused only on: portion size, cooking method, sauces/oils used, and main ingredients. Pick only the questions that are actually missing — don't ask about something already stated.
+STEP 2 — If TOO VAGUE, do NOT estimate. Instead ask 1–3 short follow-up questions, focused only on: portion size, cooking method, sauces/oils used, and main ingredients. Pick only the questions that are actually missing — don't ask about something already stated.
 
-STEP 3 — If clear enough (or the user has already answered clarifying questions), produce the estimate:
+STEP 3 — If clear enough, produce the estimate:
 - Use conservative (moderate, not generous) portion assumptions whenever exact quantity is still unknown.
-- If portion size is still uncertain even after any answers, prefer a calorie RANGE over a single confident number — populate calorieRangeLow and calorieRangeHigh, and set "calories" to the midpoint of that range.
+- If portion size is still uncertain, prefer a calorie RANGE over a single confident number — populate calorieRangeLow and calorieRangeHigh, and set "calories" to the midpoint of that range.
 - If portion size is well known, set calorieRangeLow and calorieRangeHigh equal to "calories" (no artificial range).
 - Briefly state your portion assumption in "assumptions" so the user knows what was assumed.
 - Keep using the existing confidence field ("high"/"medium"/"low") based on how much was actually known vs assumed.
