@@ -16,23 +16,30 @@ function getKey() {
 }
 
 // Core fetch — shared by all AI calls
-async function callGroq(systemPrompt, userMessage, maxTokens = 1000, temperature = 0.7) {
+async function callGroq(systemPrompt, userMessage, maxTokens = 1000, temperature = 0.7, jsonMode = false) {
   try {
+    const body = {
+      model: 'openai/gpt-oss-120b',
+      max_tokens: maxTokens,
+      temperature,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userMessage  },
+      ],
+    }
+    // gpt-oss-120b is a reasoning model — without this, it can mix internal
+    // "thinking" tokens into (or in place of) the JSON we asked for.
+    if (jsonMode) {
+      body.response_format = { type: 'json_object' }
+      body.reasoning_effort = 'low'
+    }
     const res = await fetch(GROQ_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${getKey()}`,
       },
-      body: JSON.stringify({
-        model: 'openai/gpt-oss-120b',
-        max_tokens: maxTokens,
-        temperature,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user',   content: userMessage  },
-        ],
-      }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     if (data.error) return `Error: ${data.error.message}`
@@ -169,7 +176,7 @@ Keep the same nutrition context above. Adapt the meal to satisfy the modificatio
   }
 
   // Slightly higher temperature here specifically so repeated taps give real variety
-  return callGroq(system, user, 500, 0.9)
+  return callGroq(system, user, 500, 0.9, true)
 }
 
 export async function estimateMealFromDescription(preferences, description, lang = 'en', options = {}) {
@@ -209,7 +216,7 @@ Important: only estimate the meal as described. Do not suggest additions, substi
     user += `\n\nThe user already answered these clarifying questions — use them and give a FINAL ESTIMATE now, do not ask further questions:\n${qa}`
   }
 
-  return callGroq(system, user, 600)
+  return callGroq(system, user, 600, 0.7, true)
 }
 
 export async function generateWorkoutPlan(goal, lang = 'en') {
