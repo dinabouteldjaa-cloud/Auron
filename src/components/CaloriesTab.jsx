@@ -151,8 +151,19 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
 
   // ── Existing estimation logic — unchanged ──────────────────────
   const parseResponse = (raw) => {
+    if (typeof raw === 'string' && raw.startsWith('Error:')) {
+      throw new Error(raw)
+    }
     const clean = raw.replace(/```json|```/g, '').trim()
-    return JSON.parse(clean)
+    try {
+      return JSON.parse(clean)
+    } catch (e) {
+      // Model sometimes wraps JSON with stray text despite instructions —
+      // fall back to extracting the first {...} block before giving up.
+      const match = clean.match(/\{[\s\S]*\}/)
+      if (match) return JSON.parse(match[0])
+      throw e
+    }
   }
 
   // Guards against a malformed/empty AI response rendering a blank estimate
@@ -181,7 +192,8 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
       } else {
         setResult({ error: estimateErrorMsg })
       }
-    } catch {
+    } catch (e) {
+      console.error('Meal estimate failed:', e)
       setResult({ error: fr ? "Impossible d'estimer. Essayez de décrire avec plus de détails — précisez les quantités." : 'Could not estimate. Try describing in more detail — include portion sizes.' })
     }
     setLoading(false)
@@ -194,7 +206,8 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
       const parsed = parseResponse(raw)
       setResult(isValidEstimate(parsed) ? parsed : { error: estimateErrorMsg })
       setQuestions(null)
-    } catch {
+    } catch (e) {
+      console.error('Meal estimate (clarifying answers) failed:', e)
       setResult({ error: fr ? "Impossible d'estimer. Essayez de décrire avec plus de détails — précisez les quantités." : 'Could not estimate. Try describing in more detail — include portion sizes.' })
       setQuestions(null)
     }
@@ -504,8 +517,19 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   const [showMoreOptions, setShowMoreOptions] = useState(false)
 
   const parseResponse = (raw) => {
+    if (typeof raw === 'string' && raw.startsWith('Error:')) {
+      throw new Error(raw)
+    }
     const clean = raw.replace(/```json|```/g, '').trim()
-    return JSON.parse(clean)
+    try {
+      return JSON.parse(clean)
+    } catch (e) {
+      // Model sometimes wraps JSON with stray text despite instructions —
+      // fall back to extracting the first {...} block before giving up.
+      const match = clean.match(/\{[\s\S]*\}/)
+      if (match) return JSON.parse(match[0])
+      throw e
+    }
   }
 
   const nutritionCtx = { totalCal, calorieGoal, totalP, proteinGoal, totalC, totalF }
