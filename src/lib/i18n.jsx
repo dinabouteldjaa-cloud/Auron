@@ -852,6 +852,26 @@ const translations = {
     'q.limitations.placeholder':'e.g. Bad knees, avoid jumping, no overhead pressing...',
     'q.request.q':'Any specific request for Auron?','q.request.sub':'Anything else you want in your plan.',
     'q.request.placeholder':'e.g. I want a simple dumbbell plan, avoid jumping, focus on arms and chest.',
+    // Option labels (goal)
+    'opt.Lose fat':'Lose fat','opt.Build muscle':'Build muscle',
+    'opt.Improve fitness':'Improve fitness','opt.Get stronger':'Get stronger',
+    'opt.Stay healthy':'Stay healthy',
+    // Location
+    'opt.Home':'Home','opt.Gym':'Gym','opt.Outdoor':'Outdoor','opt.Mix':'Mix',
+    // Equipment
+    'opt.No equipment':'No equipment','opt.Dumbbells':'Dumbbells',
+    'opt.Resistance bands':'Resistance bands','opt.Full gym':'Full gym','opt.Other':'Other',
+    // Days
+    'opt.2 days':'2 days','opt.3 days':'3 days','opt.4 days':'4 days',
+    'opt.5 days':'5 days','opt.6 days':'6 days',
+    // Duration
+    'opt.15 minutes':'15 minutes','opt.30 minutes':'30 minutes',
+    'opt.45 minutes':'45 minutes','opt.60 minutes':'60 minutes',
+    // Level
+    'opt.Beginner':'Beginner','opt.Intermediate':'Intermediate','opt.Advanced':'Advanced',
+    // Focus areas
+    'opt.Arms':'Arms','opt.Chest':'Chest','opt.Shoulders':'Shoulders',
+    'opt.Back':'Back','opt.Legs':'Legs','opt.Core':'Core','opt.Full body':'Full body',
     // Plan editor
     'plan.planName':'Plan name *','plan.planNotes':'Plan notes',
     'plan.sets':'Sets','plan.reps':'Reps','plan.sec':'Sec','plan.note':'Note',
