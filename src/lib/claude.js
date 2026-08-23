@@ -216,7 +216,7 @@ Important: only estimate the meal as described. Do not suggest additions, substi
     user += `\n\nThe user already answered these clarifying questions — use them and give a FINAL ESTIMATE now, do not ask further questions:\n${qa}`
   }
 
-  return callGroq(system, user, 600, 0.7, true)
+  return callGroq(system, user, 900, 0.7, true)
 }
 
 export async function generateWorkoutPlan(goal, lang = 'en') {
