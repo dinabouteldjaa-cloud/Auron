@@ -537,15 +537,23 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
 
   const getSuggestion = async (avoidPrevious = false) => {
     setLoading(true); setSaved(false); setLogged(false); setSuggestionError(false)
-    try {
+    const attempt = async () => {
       const raw = await askMealSuggestion(preferences, nutritionCtx, lang, {
         avoidDish: avoidPrevious ? suggestion?.meal : '',
       })
-      setSuggestion(parseResponse(raw))
-    } catch (e) {
-      console.error('Meal suggestion failed:', e)
-      setSuggestion(null)
-      setSuggestionError(true)
+      return parseResponse(raw)
+    }
+    try {
+      setSuggestion(await attempt())
+    } catch (e1) {
+      console.error('Meal suggestion failed, retrying once:', e1)
+      try {
+        setSuggestion(await attempt())
+      } catch (e2) {
+        console.error('Meal suggestion failed on retry:', e2)
+        setSuggestion(null)
+        setSuggestionError(true)
+      }
     }
     setLoading(false); setFetched(true)
   }
