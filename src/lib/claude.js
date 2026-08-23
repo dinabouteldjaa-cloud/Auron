@@ -25,7 +25,7 @@ async function callGroq(systemPrompt, userMessage, maxTokens = 1000, temperature
         'Authorization': `Bearer ${getKey()}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-120b',
         max_tokens: maxTokens,
         temperature,
         messages: [
