@@ -3,6 +3,8 @@ import { supabase } from './lib/supabase'
 import { useProfile } from './hooks/useProfile'
 import { usePreferences } from './hooks/usePreferences'
 import { useMedications } from './hooks/useMedications'
+import { usePushRegistration } from './hooks/usePushRegistration'
+import { initPushListeners } from './lib/push'
 import { T, globalCss } from './lib/theme'
 import { useTranslation, LANGUAGES } from './lib/i18n.jsx'
 import { useTabGuide, HowToGuideModal, HelpIconButton } from './lib/howToGuide.jsx'
@@ -137,6 +139,31 @@ export default function App() {
   const { profile,     updateProfile     } = useProfile(uid)
   const { preferences, updatePreferences } = usePreferences(uid)
 
+  // Onboarding must be seen/dismissed before we ever prompt for push
+  // permission — recomputed on login, and flipped true the moment
+  // TodayTab's welcome flow is dismissed.
+  const [onboardingSeen, setOnboardingSeen] = useState(false)
+  useEffect(() => {
+    if (!uid) return
+    setOnboardingSeen(localStorage.getItem(`auron_welcomed_${uid}`) === 'seen')
+  }, [uid])
+
+  usePushRegistration(uid, onboardingSeen)
+
+  // Notification tap → open the relevant tab, wherever the app was
+  // (open, backgrounded, or fully closed) when it was tapped.
+  useEffect(() => {
+    const remove = initPushListeners({
+      onNotificationTap: (data) => {
+        if (data?.route) setTab(data.route)
+        if (data?.route === 'calories' && data?.slot) {
+          setNutritionRequest({ slot: data.slot, ts: Date.now() })
+        }
+      },
+    })
+    return remove
+  }, [])
+
   // selectedDate shared between TodayTab and useMedications so med card reflects the right day
   const [viewDate, setViewDate] = useState(null) // null = today
 
@@ -203,6 +230,7 @@ export default function App() {
         onOpenWorkout={() => setTab('workout')}
         onOpenNutrition={(slot) => { setTab('calories'); if (slot) setNutritionRequest({ slot, ts: Date.now() }) }}
         onOpenProgress={() => setTab('workouts')}
+        onOnboardingDismiss={() => setOnboardingSeen(true)}
       />
     ),
     workouts: (
