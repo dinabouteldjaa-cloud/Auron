@@ -17,6 +17,8 @@
 //
 // Deploy with:  supabase functions deploy check-nutrition-hydration --no-verify-jwt
 
+import { pickVariantForDate, renderBody, HYDRATION_VARIANTS, NUTRITION_PROGRESS_VARIANTS, NO_FOOD_LOGGED_VARIANTS } from '../_shared/messageVariants.ts'
+
 const WEBHOOK_SECRET   = Deno.env.get('WEBHOOK_SECRET')!
 const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -152,11 +154,12 @@ Deno.serve(async (req) => {
 
       if (currentMl < waterGoal * 0.5) {
         const remainingL = ((waterGoal - currentMl) / 1000).toFixed(1)
+        const variant = pickVariantForDate(today, userId, HYDRATION_VARIANTS)
         const ok = await sendReminder(
           userId,
           `hydration_reminder:${today}`,
-          'Hydration check 💧',
-          `You still have ${remainingL} L left to reach today's water goal.`,
+          variant.title,
+          renderBody(variant, remainingL),
           'hydration_reminder'
         )
         if (ok) { sent++; console.log(`Sent hydration_reminder to user=${userId}`) }
@@ -171,11 +174,12 @@ Deno.serve(async (req) => {
 
       if (!todayFood) {
         // Nothing logged today at all → "no food logged" case.
+        const variant = pickVariantForDate(today, userId, NO_FOOD_LOGGED_VARIANTS)
         const ok = await sendReminder(
           userId,
           `nutrition_reminder:${today}`,
-          "Don't forget to log your meals 🥗",
-          'Nothing has been logged today yet.',
+          variant.title,
+          renderBody(variant),
           'nutrition_reminder'
         )
         if (ok) { sent++; console.log(`Sent nutrition_reminder (no food logged) to user=${userId}`) }
@@ -192,13 +196,14 @@ Deno.serve(async (req) => {
           const parts: string[] = []
           if (calBehind) parts.push(`${Math.round(calRemaining)} calories`)
           if (proBehind) parts.push(`${Math.round(proRemaining)}g of protein`)
-          const body = `You still have ${parts.join(' and ')} left today.`
+          const remaining = parts.join(' and ')
 
+          const variant = pickVariantForDate(today, userId, NUTRITION_PROGRESS_VARIANTS)
           const ok = await sendReminder(
             userId,
             `nutrition_reminder:${today}`,
-            "Still working toward today's goal 🍽️",
-            body,
+            variant.title,
+            renderBody(variant, remaining),
             'nutrition_reminder'
           )
           if (ok) { sent++; console.log(`Sent nutrition_reminder (progress) to user=${userId}`) }
