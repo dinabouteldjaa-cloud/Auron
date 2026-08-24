@@ -22,30 +22,53 @@ function restHeaders() {
   }
 }
 
-// "HH:MM" and "YYYY-MM-DD" for a given IANA timezone, computed the same
-// way the frontend does (Intl API) — keeps behavior identical to the app.
+// "HH:MM", "YYYY-MM-DD", and weekday key ('sun'..'sat') for a given IANA
+// timezone, computed the same way the frontend does (Intl API) — keeps
+// behavior identical to the app.
+const WEEKDAY_KEYS: Record<string, string> = {
+  Sun: 'sun', Mon: 'mon', Tue: 'tue', Wed: 'wed', Thu: 'thu', Fri: 'fri', Sat: 'sat',
+}
+
 function localNow(timezone: string) {
   const now = new Date()
   const fmt = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone || 'UTC',
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', hour12: false,
+    weekday: 'short',
   })
   const parts = Object.fromEntries(fmt.formatToParts(now).map(p => [p.type, p.value]))
   return {
     date: `${parts.year}-${parts.month}-${parts.day}`,
     time: `${parts.hour}:${parts.minute}`,
+    weekday: WEEKDAY_KEYS[parts.weekday] || 'sun',
   }
 }
 
+// Normalizes to "HH:MM" regardless of source format — handles a plain
+// "HH:MM" string, a "HH:MM:SS" string (native Postgres `time` columns
+// come back with seconds via PostgREST), or an array that PostgREST
+// already parsed from a jsonb column instead of a JSON-encoded string.
+function toHHMM(raw: any): string | null {
+  if (!raw || typeof raw !== 'string') return null
+  return raw.slice(0, 5)
+}
+
 function parseTimes(med: any): string[] {
-  if (med.reminder_times) {
-    try {
-      const arr = JSON.parse(med.reminder_times)
-      if (Array.isArray(arr) && arr.length > 0) return arr.filter(Boolean)
-    } catch { /* fall through */ }
+  let raw: any = med.reminder_times
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw) } catch { raw = null }
   }
-  return med.reminder_time ? [med.reminder_time] : []
+  const list: any[] = Array.isArray(raw) && raw.length > 0 ? raw : (med.reminder_time ? [med.reminder_time] : [])
+  return list.map(toHHMM).filter(Boolean) as string[]
+}
+
+function parseDays(med: any): string[] | null {
+  let raw: any = med.reminder_days
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw) } catch { raw = null }
+  }
+  return Array.isArray(raw) && raw.length > 0 ? raw : null
 }
 
 Deno.serve(async (req) => {
@@ -55,7 +78,7 @@ Deno.serve(async (req) => {
 
   // Active medications.
   const medsRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/medications?active=eq.true&select=id,user_id,name,reminder_time,reminder_times,start_date,end_date`,
+    `${SUPABASE_URL}/rest/v1/medications?active=eq.true&select=id,user_id,medication_name,reminder_time,reminder_times,reminder_days,frequency,start_date,end_date`,
     { headers: restHeaders() }
   )
   const meds = await medsRes.json()
@@ -64,6 +87,7 @@ Deno.serve(async (req) => {
     return new Response('ok')
   }
   if (meds.length === 0) return new Response(JSON.stringify({ checked: 0, sent: 0 }))
+  console.log(`Checking ${meds.length} active medication(s)`)
 
   // Timezones for every user with an active medication (fetched
   // separately — medications has no direct FK to profiles for
@@ -80,13 +104,18 @@ Deno.serve(async (req) => {
 
   for (const med of meds) {
     const timezone = timezoneByUser.get(med.user_id) || 'UTC'
-    const { date: today, time: nowHHMM } = localNow(timezone)
+    const { date: today, time: nowHHMM, weekday } = localNow(timezone)
 
     if (med.start_date && med.start_date > today) continue
     if (med.end_date && med.end_date < today) continue
 
+    const days = parseDays(med)
+    if (days && !days.includes(weekday)) continue
+
     const times = parseTimes(med)
     if (!times.includes(nowHHMM)) continue
+
+    console.log(`Match: med=${med.id} name="${med.medication_name}" user=${med.user_id} tz=${timezone} now=${nowHHMM} weekday=${weekday}`)
 
     const dedupKey = `medication_reminder:${med.id}:${nowHHMM}:${today}`
 
@@ -109,7 +138,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         user_id: med.user_id,
         title: 'Medication reminder',
-        body: `Time to take ${med.name}`,
+        body: `Time to take ${med.medication_name}`,
         url: '/?tab=medication',
         category: 'medication_reminder',
       }),
