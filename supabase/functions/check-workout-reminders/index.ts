@@ -14,6 +14,8 @@
 //
 // Deploy with:  supabase functions deploy check-workout-reminders --no-verify-jwt
 
+import { pickVariantForDate, renderBody, SCHEDULED_WORKOUT_VARIANTS } from '../_shared/messageVariants.ts'
+
 const WEBHOOK_SECRET    = Deno.env.get('WEBHOOK_SECRET')!
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -114,13 +116,14 @@ Deno.serve(async (req) => {
       continue
     }
 
+    const variant = pickVariantForDate(today, plan.user_id, SCHEDULED_WORKOUT_VARIANTS)
     const notifRes = await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
       method: 'POST',
       headers: restHeaders(),
       body: JSON.stringify({
         user_id: plan.user_id,
-        title: 'Time to train 💪',
-        body: `${plan.name} is scheduled now.`,
+        title: variant.title,
+        body: renderBody(variant, plan.name),
         url: '/?tab=workout',
         category: 'scheduled_workout',
       }),
