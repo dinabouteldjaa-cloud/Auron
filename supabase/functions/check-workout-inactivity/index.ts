@@ -13,6 +13,8 @@
 //
 // Deploy with:  supabase functions deploy check-workout-inactivity --no-verify-jwt
 
+import { pickVariantForDate, renderBody, INACTIVITY_3_VARIANTS, INACTIVITY_7_VARIANTS } from '../_shared/messageVariants.ts'
+
 const WEBHOOK_SECRET    = Deno.env.get('WEBHOOK_SECRET')!
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -100,12 +102,14 @@ Deno.serve(async (req) => {
     let body  = ''
     if (daysSince === 3) {
       milestone = 3
-      title = 'Ready to get back into it? 👀'
-      body  = "It's been 3 days since your last workout. Let's get moving."
+      const variant = pickVariantForDate(today, userId, INACTIVITY_3_VARIANTS)
+      title = variant.title
+      body  = renderBody(variant)
     } else if (daysSince === 7) {
       milestone = 7
-      title = 'Auron misses you 💪'
-      body  = "It's been a week since your last workout. How about one session today?"
+      const variant = pickVariantForDate(today, userId, INACTIVITY_7_VARIANTS)
+      title = variant.title
+      body  = renderBody(variant)
     }
     if (!milestone) continue // not exactly at a threshold day — nothing to send
 
