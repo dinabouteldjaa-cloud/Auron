@@ -85,6 +85,7 @@ function MedModal({ med, onSave, onClose }) {
     dosage:          med?.dosage          || '',
     frequency:       med?.frequency       || 'daily',
     reminder_times:  parseTimes(med?.reminder_times || med?.reminder_time),
+    reminder_days:   Array.isArray(med?.reminder_days) ? med.reminder_days : (() => { try { return med?.reminder_days ? JSON.parse(med.reminder_days) : [] } catch { return [] } })(),
     notes:           med?.notes           || '',
     start_date:      med?.start_date      || new Date().toISOString().split('T')[0],
     end_date:        med?.end_date        || '',
@@ -99,12 +100,12 @@ function MedModal({ med, onSave, onClose }) {
     const opt   = FREQ_OPTIONS.find(f => f.value === val)
     const count = opt?.times || 1
     if (val === 'as_needed') {
-      setForm(p => ({ ...p, frequency: val, reminder_times: [] }))
+      setForm(p => ({ ...p, frequency: val, reminder_times: [], reminder_days: [] }))
     } else {
       setForm(p => {
         const existing = p.reminder_times.filter(Boolean)
         const times = Array.from({ length: count }, (_, i) => existing[i] || '')
-        return { ...p, frequency: val, reminder_times: times }
+        return { ...p, frequency: val, reminder_times: times, reminder_days: val === 'weekly' ? p.reminder_days : [] }
       })
     }
   }
@@ -127,6 +128,7 @@ function MedModal({ med, onSave, onClose }) {
       frequency:       form.frequency,
       reminder_time:   filledTimes[0] || null,          // keep single field for compat
       reminder_times:  JSON.stringify(filledTimes),     // new multi-time field
+      reminder_days:   form.frequency === 'weekly' && form.reminder_days.length > 0 ? form.reminder_days : null,
       notes:           form.notes.trim(),
       start_date:      form.start_date || null,
       end_date:        form.end_date   || null,
@@ -184,6 +186,33 @@ function MedModal({ med, onSave, onClose }) {
               ))}
             </div>
           </div>
+
+          {form.frequency === 'weekly' && (
+            <div>
+              <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 8, fontWeight: 500 }}>{t('meds.dayOfWeek')}</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {[
+                  { key: 'mon', i18n: 'sched.mon' }, { key: 'tue', i18n: 'sched.tue' },
+                  { key: 'wed', i18n: 'sched.wed' }, { key: 'thu', i18n: 'sched.thu' },
+                  { key: 'fri', i18n: 'sched.fri' }, { key: 'sat', i18n: 'sched.sat' },
+                  { key: 'sun', i18n: 'sched.sun' },
+                ].map(d => {
+                  const active = form.reminder_days.includes(d.key)
+                  return (
+                    <button key={d.key} onClick={() => set('reminder_days')(active ? [] : [d.key])} style={{
+                      padding: '7px 12px', borderRadius: 20, fontSize: 13, cursor: 'pointer',
+                      border: `1px solid ${active ? T.purple : T.border}`,
+                      background: active ? T.purpleLight : 'transparent',
+                      color: active ? T.purple : T.textMuted,
+                      transition: 'all 0.15s',
+                    }}>
+                      {t(d.i18n)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {showTimes && (
             <div>
