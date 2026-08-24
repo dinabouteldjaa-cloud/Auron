@@ -10,6 +10,8 @@
 //
 // Deploy with:  supabase functions deploy check-medication-reminders --no-verify-jwt
 
+import { pickVariantForDate, renderBody, MEDICATION_VARIANTS } from '../_shared/messageVariants.ts'
+
 const WEBHOOK_SECRET    = Deno.env.get('WEBHOOK_SECRET')!
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -132,13 +134,14 @@ Deno.serve(async (req) => {
       continue
     }
 
+    const variant = pickVariantForDate(today, med.user_id, MEDICATION_VARIANTS)
     await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
       method: 'POST',
       headers: restHeaders(),
       body: JSON.stringify({
         user_id: med.user_id,
-        title: 'Medication reminder',
-        body: `Time to take ${med.medication_name}`,
+        title: variant.title,
+        body: renderBody(variant, med.medication_name),
         url: '/?tab=medication',
         category: 'medication_reminder',
       }),
