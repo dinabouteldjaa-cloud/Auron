@@ -92,6 +92,118 @@ function MacroBar({ label, current, goal, color }) {
 }
 
 // ─────────────────────────────────────────────
+// Editable nutrition values (shared by library, AI and logged-entry editing)
+// ─────────────────────────────────────────────
+const NUTRI_FIELDS = [
+  { key: 'cal', labelKey: 'nutri.kcal',    unit: 'kcal', color: T.purple },
+  { key: 'p',   labelKey: 'cal.protein',   unit: 'g',    color: T.blue   },
+  { key: 'c',   labelKey: 'cal.carbs',     unit: 'g',    color: T.amber  },
+  { key: 'f',   labelKey: 'nutri.fat',     unit: 'g',    color: T.red    },
+]
+
+// Returns a finite number >= 0, or null when the text is empty/invalid/negative.
+function parseNutri(v) {
+  if (v === '' || v == null) return null
+  const n = Number(String(v).replace(',', '.'))
+  return Number.isFinite(n) && n >= 0 ? n : null
+}
+
+// Final values to persist: calories are an int column, macros keep 1 decimal.
+function toSaveValues(vals) {
+  return {
+    calories: Math.round(parseNutri(vals.cal) ?? 0),
+    protein:  Math.round((parseNutri(vals.p) ?? 0) * 10) / 10,
+    carbs:    Math.round((parseNutri(vals.c) ?? 0) * 10) / 10,
+    fat:      Math.round((parseNutri(vals.f) ?? 0) * 10) / 10,
+  }
+}
+
+const allNutriValid = (vals) => NUTRI_FIELDS.every(f => parseNutri(vals[f.key]) !== null)
+
+// vals: { cal, p, c, f } (strings or numbers shown in the inputs)
+// edited: { cal?, p?, c?, f? } truthy for fields the user changed manually
+function NutritionEditor({ vals, edited = {}, onChange, onReset, hideError = false }) {
+  const { t } = useTranslation()
+  const anyEdited = NUTRI_FIELDS.some(f => edited[f.key])
+  const anyInvalid = !allNutriValid(vals)
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+        {NUTRI_FIELDS.map(f => {
+          const invalid = parseNutri(vals[f.key]) === null
+          return (
+            <div key={f.key} style={{ textAlign: 'center' }}>
+              <input
+                type="number" inputMode="decimal" min="0" step="any"
+                value={vals[f.key]}
+                onChange={e => onChange(f.key, e.target.value)}
+                aria-label={t(f.labelKey)}
+                style={{
+                  width: '100%', boxSizing: 'border-box', textAlign: 'center', padding: '9px 2px',
+                  borderRadius: 10, background: T.surface, color: f.color, fontSize: 16, fontWeight: 700, outline: 'none',
+                  border: `1.5px solid ${invalid ? T.red : edited[f.key] ? T.purple : T.border}`,
+                }}
+              />
+              <div style={{ fontSize: 10, color: T.textMuted, marginTop: 3 }}>{f.unit} {t(f.labelKey)}</div>
+            </div>
+          )
+        })}
+      </div>
+      {anyInvalid && !hideError && (
+        <div style={{ fontSize: 11.5, color: T.red, marginTop: 8, textAlign: 'center' }}>{t('nutri.invalid')}</div>
+      )}
+      {anyEdited && onReset && (
+        <button onClick={onReset} style={{ display: 'block', margin: '8px auto 0', background: 'none', border: 'none', color: T.purple, fontSize: 12, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+          {t('nutri.reset')}
+        </button>
+      )}
+    </div>
+  )
+}
+
+// Bottom sheet to edit an already-logged entry (only touches that food_logs row).
+function EditLogModal({ entry, onSave, onClose }) {
+  const { t } = useTranslation()
+  const [name, setName] = useState(entry.food_name || '')
+  const [vals, setVals] = useState({ cal: String(entry.calories ?? 0), p: String(entry.protein ?? 0), c: String(entry.carbs ?? 0), f: String(entry.fat ?? 0) })
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+  const valid = allNutriValid(vals) && name.trim().length > 0
+
+  const submit = async () => {
+    if (!valid || saving) return
+    setSaving(true); setErr('')
+    const ok = await onSave(entry.id, { food_name: name.trim(), ...toSaveValues(vals) })
+    if (ok) onClose(); else { setErr(t('nutri.saveError')); setSaving(false) }
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.55)', zIndex: 400, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, padding: '22px 22px 32px', boxSizing: 'border-box' }}>
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: T.divider, margin: '0 auto 16px' }} />
+        <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginBottom: 12 }}>{t('nutri.editEntry')}</div>
+        <input
+          value={name} onChange={e => setName(e.target.value)}
+          style={{ width: '100%', padding: '12px 14px', borderRadius: 14, background: T.surfaceMid, border: `1px solid ${T.border}`, color: T.text, fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 14 }}
+        />
+        <NutritionEditor vals={vals} onChange={(k, v) => setVals(p => ({ ...p, [k]: v }))} />
+        {err && <div style={{ fontSize: 12, color: T.red, textAlign: 'center', marginBottom: 10 }}>{err}</div>}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={submit} disabled={!valid || saving}
+            style={{ flex: 2, padding: 13, borderRadius: 20, border: 'none', background: valid ? T.purple : T.surfaceMid, color: valid ? '#fff' : T.textMuted, fontSize: 14, fontWeight: 600, cursor: valid ? 'pointer' : 'default' }}>
+            {t('nutri.saveChanges')}
+          </button>
+          <button onClick={onClose}
+            style={{ flex: 1, padding: 13, borderRadius: 20, background: 'transparent', color: T.textMuted, border: `1px solid ${T.border}`, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            {t('cal.cancel')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────
 // AI Describe & Estimate meal
 // ─────────────────────────────────────────────
 const MEAL_EXAMPLES = [
@@ -143,6 +255,10 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
   const [saved,        setSaved]        = useState(false)
   const [showSaveModal,setShowSaveModal]= useState(false)
   const [saveName,     setSaveName]     = useState('')
+  const [edits,        setEdits]        = useState({})   // manual overrides of the AI estimate: { cal, p, c, f }
+  useEffect(() => { setEdits({}) }, [result])             // a brand-new estimate starts clean; edits survive re-renders
+  const estValid = !!result && !result.error &&
+    allNutriValid({ cal: edits.cal ?? result.calories, p: edits.p ?? result.protein, c: edits.c ?? result.carbs, f: edits.f ?? result.fat })
 
   // Stable per-visit "seed" so Auron doesn't re-roll variety on every
   // re-render, but still varies between separate visits to this flow.
@@ -417,14 +533,12 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
               )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 10 }}>
-              {[['Calories', result.calories, 'kcal', C.gold], [t('cal.protein'), result.protein, 'g', C.blue], [t('cal.carbs'), result.carbs, 'g', C.amber], ['Fat', result.fat, 'g', C.green]].map(([l, v, u, col]) => (
-                <div key={l} style={{ background: C.surface, borderRadius: 12, padding: '10px 8px', textAlign: 'center', boxShadow: C.shadowCard }}>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: col }}>{v}</div>
-                  <div style={{ fontSize: 9.5, color: C.textMuted }}>{u} {l}</div>
-                </div>
-              ))}
-            </div>
+            <NutritionEditor
+              vals={{ cal: edits.cal ?? result.calories, p: edits.p ?? result.protein, c: edits.c ?? result.carbs, f: edits.f ?? result.fat }}
+              edited={Object.fromEntries(Object.keys(edits).map(k => [k, true]))}
+              onChange={(k, v) => setEdits(prev => ({ ...prev, [k]: v }))}
+              onReset={() => setEdits({})}
+            />
 
             {result.calorieRangeLow != null && result.calorieRangeHigh != null && result.calorieRangeHigh > result.calorieRangeLow && (
               <div style={{ fontSize: 11.5, color: C.textMuted, textAlign: 'center', marginBottom: 12 }}>
@@ -449,7 +563,11 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
 
             {/* Primary action */}
             <button
-              onClick={() => onLog({ name: result.meal, cal: result.calories, p: result.protein, c: result.carbs, f: result.fat }, meal)}
+              disabled={!allNutriValid({ cal: edits.cal ?? result.calories, p: edits.p ?? result.protein, c: edits.c ?? result.carbs, f: edits.f ?? result.fat })}
+              onClick={() => {
+                const v = toSaveValues({ cal: edits.cal ?? result.calories, p: edits.p ?? result.protein, c: edits.c ?? result.carbs, f: edits.f ?? result.fat })
+                onLog({ name: result.meal, calories: v.calories, protein: v.protein, carbs: v.carbs, fat: v.fat }, meal)
+              }}
               style={{ width: '100%', padding: 16, borderRadius: 24, background: C.gold, color: C.dark, border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginBottom: 10, boxShadow: `0 4px 14px ${C.gold}55` }}
             >
               {fr ? 'Enregistrer ce repas' : 'Log Meal'}
@@ -458,8 +576,8 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
             {/* Secondary actions */}
             <div style={{ display: 'flex', gap: 8 }}>
               <button
-                onClick={() => { setSaveName(result.meal || ''); setShowSaveModal(true) }}
-                disabled={saved}
+                onClick={() => { if (!estValid) return; setSaveName(result.meal || ''); setShowSaveModal(true) }}
+                disabled={saved || !estValid}
                 style={{
                   flex: 1, padding: 12, borderRadius: 18, border: `1px solid ${saved ? C.green : C.border}`,
                   background: saved ? C.greenLight : 'transparent', color: saved ? C.green : C.textMuted,
@@ -493,18 +611,18 @@ function DescribeMeal({ preferences, profile, onLog, onSave, onBack, lang = 'en'
                   />
                   <button
                     onClick={() => {
-                      if (!saveName.trim()) return
+                      if (!saveName.trim() || !estValid) return
                       onSave?.({
-                        name: saveName.trim(), calories: result.calories, protein: result.protein,
-                        carbs: result.carbs, fat: result.fat,
+                        name: saveName.trim(),
+                        ...(() => { const v = toSaveValues({ cal: edits.cal ?? result.calories, p: edits.p ?? result.protein, c: edits.c ?? result.carbs, f: edits.f ?? result.fat }); return { calories: v.calories, protein: v.protein, carbs: v.carbs, fat: v.fat } })(),
                         ingredients: result.items?.map(i => i.name) || null,
                         source: 'estimator',
                       })
                       setSaved(true)
                       setShowSaveModal(false)
                     }}
-                    disabled={!saveName.trim()}
-                    style={{ width: '100%', padding: 14, borderRadius: 20, background: saveName.trim() ? C.gold : C.surfaceLight, color: saveName.trim() ? C.dark : C.textMuted, border: 'none', fontSize: 14, fontWeight: 600, cursor: saveName.trim() ? 'pointer' : 'default' }}
+                    disabled={!saveName.trim() || !estValid}
+                    style={{ width: '100%', padding: 14, borderRadius: 20, background: saveName.trim() && estValid ? C.gold : C.surfaceLight, color: saveName.trim() && estValid ? C.dark : C.textMuted, border: 'none', fontSize: 14, fontWeight: 600, cursor: saveName.trim() && estValid ? 'pointer' : 'default' }}
                   >
                     {fr ? 'Enregistrer' : 'Save'}
                   </button>
@@ -534,6 +652,9 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
   const [logged,       setLogged]       = useState(false)
   const [selectedSlot, setSelectedSlot] = useState(mealSlot || 'breakfast')
   const [showMoreOptions, setShowMoreOptions] = useState(false)
+  const [edits,        setEdits]        = useState({})   // manual overrides of the AI suggestion: { cal, p, c, f }
+  useEffect(() => { setEdits({}) }, [suggestion])         // a new suggestion starts clean; edits survive re-renders
+  const sugVals = suggestion ? { cal: edits.cal ?? suggestion.calories, p: edits.p ?? suggestion.protein, c: edits.c ?? suggestion.carbs, f: edits.f ?? suggestion.fat } : null
 
   const parseResponse = (raw) => {
     if (typeof raw === 'string' && raw.startsWith('Error:')) {
@@ -688,14 +809,12 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
         <div style={{ marginBottom: 14, opacity: loading ? 0.5 : 1 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 10 }}>{suggestion.meal}</div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 10 }}>
-            {[['Calories', suggestion.calories, 'kcal', C.gold], [t('cal.protein'), suggestion.protein, 'g', C.blue], [t('cal.carbs'), suggestion.carbs, 'g', C.amber], ['Fat', suggestion.fat, 'g', C.green]].map(([l, v, u, col]) => (
-              <div key={l} style={{ background: C.surfaceLight, borderRadius: 10, padding: '8px 6px', textAlign: 'center' }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: col }}>{v}</div>
-                <div style={{ fontSize: 9.5, color: C.textMuted }}>{u} {l}</div>
-              </div>
-            ))}
-          </div>
+          <NutritionEditor
+            vals={sugVals}
+            edited={Object.fromEntries(Object.keys(edits).map(k => [k, true]))}
+            onChange={(k, v) => setEdits(prev => ({ ...prev, [k]: v }))}
+            onReset={() => setEdits({})}
+          />
 
           {suggestion.whyItFits && (
             <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 12, lineHeight: 1.5 }}>
@@ -757,10 +876,11 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
           {/* Primary action — unmistakably the main CTA */}
           <button
             onClick={() => {
-              onLog?.({ name: suggestion.meal, cal: suggestion.calories, p: suggestion.protein, c: suggestion.carbs, f: suggestion.fat }, selectedSlot)
+              const v = toSaveValues(sugVals)
+              onLog?.({ name: suggestion.meal, calories: v.calories, protein: v.protein, carbs: v.carbs, fat: v.fat }, selectedSlot)
               setLogged(true)
             }}
-            disabled={logged}
+            disabled={logged || !allNutriValid(sugVals)}
             style={{
               width: '100%', padding: 13, borderRadius: 16, border: 'none',
               background: logged ? C.greenLight : C.gold, color: logged ? C.green : C.dark,
@@ -776,16 +896,16 @@ function AISuggestionCard({ preferences, totalCal, calorieGoal, totalP, proteinG
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={() => {
+                  if (!allNutriValid(sugVals)) return
                   onSave?.({
-                    name: suggestion.meal, calories: suggestion.calories, protein: suggestion.protein,
-                    carbs: suggestion.carbs, fat: suggestion.fat,
+                    name: suggestion.meal, ...(() => { const v = toSaveValues(sugVals); return { calories: v.calories, protein: v.protein, carbs: v.carbs, fat: v.fat } })(),
                     ingredients: suggestion.ingredients || null,
                     steps: suggestion.steps || null,
                     source: 'suggestion',
                   })
                   setSaved(true)
                 }}
-                disabled={saved}
+                disabled={saved || !allNutriValid(sugVals)}
                 style={{
                   flex: 1, padding: '9px 0', borderRadius: 12, border: `1px solid ${saved ? C.green : C.border}`,
                   background: saved ? C.greenLight : 'transparent', color: saved ? C.green : C.textMuted,
@@ -911,7 +1031,7 @@ function SavedMealsPage({ savedMeals, onSelect, onDelete, onBack }) {
                 <div style={{ padding:'0 14px 14px', borderTop:`1px solid ${T.divider}` }}>
                   {/* Macro breakdown */}
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, margin:'12px 0' }}>
-                    {[['Kcal', m.calories, T.purple], [t('cal.protein'), `${m.protein}g`, T.blue], [t('cal.carbs'), `${m.carbs}g`, T.amber], ['Fat', `${m.fat}g`, T.red]].map(([l,v,c]) => (
+                    {[[t('nutri.kcal'), m.calories, T.purple], [t('cal.protein'), `${m.protein}g`, T.blue], [t('cal.carbs'), `${m.carbs}g`, T.amber], [t('nutri.fat'), `${m.fat}g`, T.red]].map(([l,v,c]) => (
                       <div key={l} style={{ background:T.surfaceLight, borderRadius:10, padding:'8px 4px', textAlign:'center' }}>
                         <div style={{ fontSize:15, fontWeight:700, color:c }}>{v}</div>
                         <div style={{ fontSize:9.5, color:T.textMuted }}>{l}</div>
@@ -1004,6 +1124,7 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
   const [loading,  setLoading]  = useState(false)
   const [selected, setSelected] = useState(null)  // food being customized
   const [qty,      setQty]      = useState('1')   // multiplier
+  const [overrides, setOverrides] = useState({})    // manually edited fields { cal, p, c, f } — never rescaled
   const [justSaved,setJustSaved]= useState(false)
   const [filterTab, setFilterTab] = useState('foods') // 'foods' | 'recent'
   const debounceRef = useRef(null)
@@ -1021,31 +1142,43 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
     return () => clearTimeout(debounceRef.current)
   }, [query])
 
-  const scale  = parseFloat(qty) || 1
+  // Quantity must be a number > 0; otherwise logging/saving is blocked (no silent default).
+  const qtyNum   = qty.trim() === '' ? NaN : Number(qty)
+  const qtyValid = Number.isFinite(qtyNum) && qtyNum > 0
+  const scale    = qtyValid ? qtyNum : NaN
+  const r1 = (n) => Math.round(n * 10) / 10          // macros keep one decimal
   const scaled = selected ? {
-    cal:    Math.round(selected.cal * scale),
-    p:      Math.round(selected.p   * scale),
-    c:      Math.round(selected.c   * scale),
-    f:      Math.round(selected.f   * scale),
-    fiber:  Math.round((selected.fiber  || 0) * scale),
-    sodium: Math.round((selected.sodium || 0) * scale),
+    cal:    qtyValid ? Math.round(selected.cal * scale) : '',   // calories stay whole numbers
+    p:      qtyValid ? r1(selected.p * scale) : '',
+    c:      qtyValid ? r1(selected.c * scale) : '',
+    f:      qtyValid ? r1(selected.f * scale) : '',
+    fiber:  qtyValid ? r1((selected.fiber  || 0) * scale) : 0,
+    sodium: qtyValid ? Math.round((selected.sodium || 0) * scale) : 0,
   } : null
 
+  // Displayed/final values: manual override wins, otherwise the scaled library value.
+  const finalVals = scaled ? {
+    cal: overrides.cal ?? scaled.cal, p: overrides.p ?? scaled.p,
+    c:   overrides.c   ?? scaled.c,   f: overrides.f ?? scaled.f,
+  } : null
+  const finalValid = finalVals ? (qtyValid && allNutriValid(finalVals)) : false
+
   const handleAdd = () => {
-    if (!selected) return
+    if (!selected || !finalValid) return
+    const v = toSaveValues(finalVals)
     onAdd({
-      name:     `${selected.name}${scale !== 1 ? ` ×${qty}` : ''}`,
-      calories: scaled.cal,
-      protein:  scaled.p,
-      carbs:    scaled.c,
-      fat:      scaled.f,
+      name:     `${selected.name}${qtyNum !== 1 ? ` ×${qty}` : ''}`,
+      calories: v.calories,
+      protein:  v.protein,
+      carbs:    v.carbs,
+      fat:      v.fat,
     }, selectedMeal)
     onClose()
   }
 
   // Recent/Saved meal shape → same as a search result, so the existing
   // quantity + meal-slot detail view can be reused for both.
-  const selectFood = (f) => { setSelected(f); setQty('1'); setJustSaved(false) }
+  const selectFood = (f) => { setSelected(f); setQty('1'); setOverrides({}); setJustSaved(false) }
 
   return (
     <div style={{ position:'fixed', inset:0, background:T.pageBg || '#F7F6FB', zIndex:300, display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto', overflowY:'auto' }}>
@@ -1073,18 +1206,17 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
           <div style={{ flex:1, overflowY:'auto', paddingBottom:24 }}>
             {/* Nutrition summary */}
             <div style={{ background:T.purpleLight, borderRadius:14, padding:'14px 16px', marginBottom:16 }}>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:12 }}>
-                {[['Kcal', scaled.cal, T.purple], ['Protein', `${scaled.p}g`, T.blue], ['Carbs', `${scaled.c}g`, T.amber], ['Fat', `${scaled.f}g`, T.red]].map(([l,v,c]) => (
-                  <div key={l} style={{ textAlign:'center' }}>
-                    <div style={{ fontSize:18, fontWeight:700, color:c }}>{v}</div>
-                    <div style={{ fontSize:10, color:T.textMuted }}>{l}</div>
-                  </div>
-                ))}
-              </div>
+              <NutritionEditor
+                vals={finalVals}
+                edited={Object.fromEntries(Object.keys(overrides).map(k => [k, true]))}
+                onChange={(k, v) => setOverrides(prev => ({ ...prev, [k]: v }))}
+                onReset={() => setOverrides({})}
+                hideError={!qtyValid}
+              />
               {(scaled.fiber > 0 || scaled.sodium > 0) && (
                 <div style={{ display:'flex', gap:16, fontSize:11, color:T.textMuted, borderTop:`1px solid ${T.border}`, paddingTop:8 }}>
-                  {scaled.fiber  > 0 && <span>Fiber: {scaled.fiber}g</span>}
-                  {scaled.sodium > 0 && <span>Sodium: {scaled.sodium}mg</span>}
+                  {scaled.fiber  > 0 && <span>{t('nutri.fiber')}: {scaled.fiber}g</span>}
+                  {scaled.sodium > 0 && <span>{t('nutri.sodium')}: {scaled.sodium}mg</span>}
                   <span style={{ marginLeft:'auto', color:T.textDim }}>{selected.source}</span>
                 </div>
               )}
@@ -1093,16 +1225,17 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
             {/* Quantity */}
             <div style={{ marginBottom:16 }}>
               <div style={{ fontSize:12, color:T.textMuted, marginBottom:8, fontWeight:500 }}>
-                Quantity <span style={{ color:T.textDim }}>({selected.serving} × qty)</span>
+                {t('nutri.quantity')} <span style={{ color:T.textDim }}>({selected.serving} × {t('nutri.qtyShort')})</span>
               </div>
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                <button onClick={() => setQty(q => String(Math.max(0.5, parseFloat(q)-0.5)))}
+                <button onClick={() => setQty(q => { const n = parseFloat(q); return String(Number.isFinite(n) && n > 0.5 ? n-0.5 : 0.5) })}
                   style={{ width:40, height:40, borderRadius:12, background:T.purpleLight, border:'none', fontSize:20, color:T.purple, cursor:'pointer', fontWeight:700 }}>−</button>
-                <input type="number" value={qty} onChange={e => setQty(e.target.value)} min="0.5" step="0.5"
-                  style={{ flex:1, textAlign:'center', padding:'10px', borderRadius:12, border:`1px solid ${T.border}`, background:T.surfaceMid, fontSize:16, fontWeight:700, color:T.text, outline:'none' }} />
-                <button onClick={() => setQty(q => String(parseFloat(q)+0.5))}
+                <input type="number" value={qty} onChange={e => setQty(e.target.value)} min="0" step="0.5"
+                  style={{ flex:1, textAlign:'center', padding:'10px', borderRadius:12, border:`1px solid ${qtyValid ? T.border : T.red}`, background:T.surfaceMid, fontSize:16, fontWeight:700, color:T.text, outline:'none' }} />
+                <button onClick={() => setQty(q => { const n = parseFloat(q); return String((Number.isFinite(n) && n > 0 ? n : 0)+0.5) })}
                   style={{ width:40, height:40, borderRadius:12, background:T.purpleLight, border:'none', fontSize:20, color:T.purple, cursor:'pointer', fontWeight:700 }}>+</button>
               </div>
+              {!qtyValid && <div style={{ fontSize:11.5, color:T.red, marginTop:6 }}>{t('nutri.qtyInvalid')}</div>}
             </div>
 
             {/* Meal slot */}
@@ -1118,8 +1251,8 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
             </div>
 
             <div style={{ display:'flex', gap:8 }}>
-              <button onClick={handleAdd} style={{ flex:2, padding:13, borderRadius:24, background:T.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer' }}>
-                + {t('cal.logMeal').replace('+ ','').replace('Log this meal','Log')} {scaled.cal} kcal
+              <button onClick={handleAdd} disabled={!finalValid} style={{ flex:2, padding:13, borderRadius:24, opacity: finalValid ? 1 : 0.5, background:T.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer' }}>
+                + {t('cal.logMeal').replace('+ ','').replace('Log this meal','Log')} {finalValid ? Math.round(parseNutri(finalVals.cal)) : '–'} kcal
               </button>
               {selected.savedMealId ? (
                 <button
@@ -1131,13 +1264,13 @@ function AddFoodModal({ selectedMeal, setSelectedMeal, onAdd, onClose, onDescrib
               ) : (
                 <button
                   onClick={() => {
+                    if (!finalValid) return
                     onSaveMeal?.({
-                      name: selected.name, calories: scaled.cal, protein: scaled.p,
-                      carbs: scaled.c, fat: scaled.f, ingredients: null, source: 'manual',
+                      name: selected.name, ...(() => { const v = toSaveValues(finalVals); return { calories: v.calories, protein: v.protein, carbs: v.carbs, fat: v.fat } })(), ingredients: null, source: 'manual',
                     })
                     setJustSaved(true)
                   }}
-                  disabled={justSaved}
+                  disabled={justSaved || !finalValid}
                   style={{
                     flex:1, padding:13, borderRadius:24, border:`1px solid ${justSaved ? T.green : T.border}`,
                     background: justSaved ? T.greenLight : 'transparent', color: justSaved ? T.green : T.textMuted,
@@ -1297,6 +1430,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
   const [loading,      setLoading]      = useState(true)
   const [modal,        setModal]        = useState(false)
   const [selectedMeal, setSelectedMeal] = useState('breakfast')
+  const [editingLog,   setEditingLog]   = useState(null)  // food_logs row being edited
   const [subView,      setSubView]      = useState('log') // 'log' | 'describe' | 'savedMeals'
   const [recentMeals,  setRecentMeals]  = useState([])
   const [savedMeals,   setSavedMeals]   = useState([])
@@ -1389,6 +1523,16 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
       setLogs(prev => [...prev, data])
       fetchRecentMeals() // keep Recent Meals current automatically
     }
+  }
+
+  // Edit an already-logged entry. Only that food_logs row changes — never the
+  // food library or saved meals. Returns true on success so the sheet can close.
+  const updateFood = async (id, fields) => {
+    const { data, error } = await supabase.from('food_logs').update(fields).eq('id', id).eq('user_id', userId).select().single()
+    if (error || !data) { console.error('updateFood failed:', error?.message); return false }
+    setLogs(prev => prev.map(f => f.id === id ? data : f))
+    fetchRecentMeals()
+    return true
   }
 
   const removeFood = async (id) => {
@@ -1514,7 +1658,7 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
         <Label>{t('cal.foodLog')}</Label>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 32, color: C.textMuted }}>Loading...</div>
+          <div style={{ textAlign: 'center', padding: 32, color: C.textMuted }}>{t('nutri.loading')}</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {MEAL_SLOTS.map(slot => {
@@ -1560,12 +1704,13 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
                   {/* Items */}
                   {items.map(f => (
                     <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 16px', borderBottom: `1px solid ${C.border}` }}>
-                      <div>
+                      <div onClick={() => setEditingLog(f)} style={{ cursor: 'pointer', flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 500 }}>{f.food_name}</div>
                         <div style={{ fontSize: 11, color: C.textMuted }}>P {f.protein}g · C {f.carbs}g · F {f.fat}g</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: C.gold }}>{f.calories} kcal</span>
+                        <span onClick={() => setEditingLog(f)} style={{ fontSize: 14, fontWeight: 600, color: C.gold, cursor: 'pointer' }}>{f.calories} kcal</span>
+                        <button onClick={() => setEditingLog(f)} aria-label={t('nutri.editEntry')} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 14, cursor: 'pointer', lineHeight: 1, padding: 0 }}>✎</button>
                         <button onClick={() => removeFood(f.id)} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>×</button>
                       </div>
                     </div>
@@ -1604,6 +1749,10 @@ export default function CaloriesTab({ userId, profile, preferences, lang = 'en',
         {t('disclaimer.line1')}<br />
         {t('disclaimer.line2')}
       </div>
+
+      {editingLog && (
+        <EditLogModal entry={editingLog} onSave={updateFood} onClose={() => setEditingLog(null)} />
+      )}
 
       {/* Add food modal */}
       {modal && (
